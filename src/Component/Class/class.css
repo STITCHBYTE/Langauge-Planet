@@ -1,0 +1,111 @@
+.search-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 240px;
+  width: 330px;
+}
+
+.search-wrapper {
+  width: 100%;
+  min-height: 48px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid #B3BAC6;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  width: 100%;
+}
+
+.search-icon-text {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.search-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.search-placeholder {
+  color: #64748b; /* Tailwind slate-500 */
+  font-size: 14px;
+}
+
+.filter-status-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.filter-label {
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500;    /* font-medium */
+  color: #9ca3af;      /* gray-400 */
+  align-self: stretch;
+  margin: auto 0;
+}
+
+.filter-box {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  align-self: stretch;
+  padding: 8px 12px;
+  margin: auto 0;
+  border-radius: 12px;
+  border: 1px solid #EDEEF1; /* var(--Gray-100) */
+}
+
+.filter-text-badge {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  align-self: stretch;
+  margin: auto 0;
+}
+
+.filter-text {
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 600;    /* font-semibold */
+  color: #27272a;      /* zinc-800 */
+  align-self: stretch;
+  margin: auto 0;
+}
+
+.filter-badge {
+  font-size: 0.75rem;  /* text-xs */
+  font-weight: 500;    /* font-medium */
+  letter-spacing: normal;
+  color: white;
+  background-color: #3b82f6; /* blue-500 */
+  padding: 0;
+  height: 17px;
+  min-height: 17px;
+  width: 17px;
+  border-radius: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.filter-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+  align-self: stretch;
+  margin: auto 0;
+}
+
