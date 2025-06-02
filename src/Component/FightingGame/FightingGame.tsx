@@ -351,8 +351,6 @@ const handleAction = (action: string) => {
           <div style={{ height: "100%", width: `${botHp}%`, background: "#f00", borderRadius: 4 }} />
         </div>
       </div>
-
-      {/* Canvas */}
       <Canvas camera={{ position: [0, 1.5, 6], fov: 50 }} style={{ backgroundImage: `url("/models/arena.jpg")`,
     backgroundSize: "cover",
     backgroundPosition: "center",
@@ -363,10 +361,6 @@ const handleAction = (action: string) => {
           <Character characterType="player" animationKey={playerAnim} basePosition={[-1.5, -2, 0]} rotation={[0, Math.PI / 1.75, 0]} />
           <Character characterType="bot" animationKey={botAnim} basePosition={[1.5, -2, 0]} rotation={[0, -Math.PI / 1.75, 0]} />
         </Suspense>
-        {/* <mesh position={[0, 0, -5]} scale={[20, 10, 1]}>
-  <planeGeometry args={[1, 1]} />
-  <meshBasicMaterial map={useLoader(THREE.TextureLoader, "/models/arena.jpg")} />
-</mesh> */}
         <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} />
       </Canvas>
 
