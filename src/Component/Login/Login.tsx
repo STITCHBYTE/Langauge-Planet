@@ -1,24 +1,38 @@
 "use client";
 import React, { useState } from "react";
-
+import { useNavigate } from "react-router-dom";
+import Server_url from "../../config";
 // InputField Component
 const InputField: React.FC<{
   label: string;
   type: string;
   placeholder?: string;
   showPasswordToggle?: boolean;
-}> = ({ label, type, placeholder, showPasswordToggle = false }) => {
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}> = ({
+  label,
+  type,
+  placeholder,
+  showPasswordToggle = false,
+  value,
+  onChange,
+}) => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="w-full">
-      <label className="text-sm font-medium leading-none text-zinc-800">{label}</label>
+      <label className="text-sm font-medium leading-none text-zinc-800">
+        {label}
+      </label>
       <div className="flex overflow-hidden gap-3 items-center px-4 py-3 mt-1 w-full bg-white rounded-md border border-solid border-gray-300 min-h-[44px]">
         <div className="flex flex-1 gap-2 items-center">
           <input
             type={showPassword ? "text" : type}
             placeholder={placeholder}
             className="w-full bg-transparent outline-none"
+            value={value}
+            onChange={onChange}
           />
         </div>
         {showPasswordToggle && (
@@ -26,6 +40,7 @@ const InputField: React.FC<{
             onClick={() => setShowPassword(!showPassword)}
             className="w-5"
             type="button"
+            aria-label="Toggle password visibility"
           >
             <img
               src="https://cdn.builder.io/api/v1/image/assets/TEMP/d880cb51f6550ddc260e9c622044ee45e8bd44bd"
@@ -55,7 +70,8 @@ const Logo: React.FC = () => (
 const TestimonialCard: React.FC = () => (
   <div className="flex flex-col p-4 w-full rounded-xl bg-zinc-700 text-sm">
     <p className="text-zinc-100">
-      Lorem ipsum dolor sit amet consectetur. Auctor lacus sodales nunc scelerisque consectetur.
+      Lorem ipsum dolor sit amet consectetur. Auctor lacus sodales nunc
+      scelerisque consectetur.
     </p>
     <div className="flex gap-3 items-center mt-3">
       <img
@@ -71,8 +87,7 @@ const TestimonialCard: React.FC = () => (
   </div>
 );
 
-
-// SocialLoginButtons Component
+// SocialLoginButtons Component (placeholder, no functionality)
 const SocialLoginButtons: React.FC = () => (
   <div className="flex gap-3 w-full text-base font-semibold text-gray-600">
     <button className="flex-1 flex justify-center items-center gap-3 p-3 bg-white rounded-md border border-gray-300">
@@ -103,42 +118,265 @@ const DividerWithText: React.FC = () => (
   </div>
 );
 
-// LoginForm Component
-const LoginForm: React.FC = () => (
-  <div className="w-full max-md:mt-6">
-    <h1 className="text-3xl font-semibold leading-tight text-black">Welcome back!</h1>
-    <div className="flex gap-1 mt-1 text-sm text-stone-500">
-      <p>Don't have an account?</p>
-      <button className="text-blue-600 font-semibold">Sign Up</button>
-    </div>
 
-    <form className="mt-6 space-y-4">
-      <InputField label="Email Address" type="email" placeholder="Enter your email" />
-      <InputField
-        label="Password"
-        type="password"
-        placeholder="Enter your password"
-        showPasswordToggle
-      />
-      <button className="w-full px-6 py-3 text-white text-base font-semibold bg-blue-600 rounded-lg mt-2">
-        Login
-      </button>
+const LoginForm: React.FC = () => {
+  const [formMode, setFormMode] = useState<"login" | "signup" | "forgot">("login");
+  const [first_name, setFirstName] = useState("");
+  const [last_name, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const isSignup = formMode === "signup";
+  const isForgot = formMode === "forgot";
 
-      <div className="flex justify-center mt-4 text-sm gap-1">
-        <span className="text-stone-500">Forgot Password?</span>
-        <button className="text-blue-500 font-semibold">Recover</button>
+  const resetMessages = () => {
+    setError(null);
+    setSuccessMessage(null);
+  };
+
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  resetMessages();
+
+  if (isSignup) {
+    if (!first_name.trim()) {
+      setError("First Name is required.");
+      return;
+    }
+    if (!last_name.trim()) {
+      setError("Last Name is required.");
+      return;
+    }
+    if (!username.trim()) {
+      setError("Username is required.");
+      return;
+    }
+  }
+ else if (!email.trim()) {
+    setError("Email is required.");
+    return;
+  }
+
+  if (!isForgot && !password) {
+    setError("Password is required.");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    let endpoint = "";
+    let payload: any = {};
+
+    switch (formMode) {
+      case "login":
+        endpoint = `${Server_url}/api/users/login/`;
+        payload = { email, password };
+        break;
+      case "signup":
+        endpoint = `${Server_url}/api/users/add/`;
+       payload = { first_name, last_name, username, email, password};
+        break;
+      case "forgot":
+        endpoint = `${Server_url}/api/users/forgot-password/`;
+        payload = { email };
+        break;
+      default:
+        throw new Error("Invalid form mode.");
+    }
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.message || `Request failed with status ${response.status}`);
+    }
+
+    if (data.success) {
+      setSuccessMessage(data.message || "Operation successful.");
+      // alert(data.message || "Operation successful.");
+      navigate('/Dashboard');
+
+      if ((formMode === "login" || formMode === "signup") && data.access && data.refresh) {
+        localStorage.setItem("authToken", data.access);
+        localStorage.setItem("refreshToken", data.refresh);
+        // Add post-login behavior here
+      }
+    } else {
+      setError(data.message || "Something went wrong.");
+    }
+  } catch (err: any) {
+    setError(err.message || "Unexpected error occurred.");
+  } finally {
+    setLoading(false);
+  }
+}; // ✅ Correctly ends the async function
+
+  return (
+    <div className="w-full max-md:mt-6">
+      <h1 className="text-3xl font-semibold leading-tight text-black">
+        {isSignup
+          ? "Create an account"
+          : isForgot
+          ? "Recover your password"
+          : "Welcome back!"}
+      </h1>
+
+      <div className="flex gap-1 mt-1 text-sm text-stone-500">
+        {isSignup ? (
+          <>
+            <p>Already have an account?</p>
+            <button
+              className="text-blue-600 font-semibold"
+              onClick={() => {
+                setFormMode("login");
+                resetMessages();
+              }}
+              type="button"
+            >
+              Login
+            </button>
+          </>
+        ) : (
+          <>
+            <p>Don't have an account?</p>
+            <button
+              className="text-blue-600 font-semibold"
+              onClick={() => {
+                setFormMode("signup");
+                resetMessages();
+              }}
+              type="button"
+            >
+              Sign Up
+            </button>
+          </>
+        )}
       </div>
 
-      <DividerWithText />
-      <SocialLoginButtons />
-    </form>
-  </div>
-);
+      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+        {isSignup && (
+          <div className="flex gap-4">
+            <div className="w-1/2">
+              <InputField
+                label="First Name"
+                type="text"
+                placeholder="Enter your first name"
+                value={first_name}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+            <div className="w-1/2">
+              <InputField
+                label="Last Name"
+                type="text"
+                placeholder="Enter your last name"
+                value={last_name}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        {isSignup && (
+          <InputField
+            label="Username"
+            type="text"
+            placeholder="Enter your username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        )}
+
+          <InputField
+            label="Email Address"
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        {!isForgot && (
+          <>
+            <InputField
+              label="Password"
+              type="password"
+              placeholder="Enter your password"
+              showPasswordToggle
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </>
+        )}
+
+        <button
+          className={`w-full px-6 py-3 text-white text-base font-semibold rounded-lg mt-2 ${
+            loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600"
+          }`}
+          type="submit"
+          disabled={loading}
+        >
+          {loading
+            ? "Please wait..."
+            : isSignup
+            ? "Sign Up"
+            : isForgot
+            ? "Send Recovery Email"
+            : "Login"}
+        </button>
+
+        {!isForgot && (
+          <div className="flex justify-center mt-4 text-sm gap-1">
+            <span className="text-stone-500">Forgot Password?</span>
+            <button
+              className="text-blue-500 font-semibold"
+              onClick={() => {
+                setFormMode("forgot");
+                resetMessages();
+              }}
+              type="button"
+            >
+              Recover
+            </button>
+          </div>
+        )}
+
+        {(formMode === "login" || formMode === "signup") && (
+          <>
+            <DividerWithText />
+            <SocialLoginButtons />
+          </>
+        )}
+      </form>
+
+      {error && (
+        <p className="mt-4 text-center text-red-600 font-semibold">{error}</p>
+      )}
+
+      {successMessage && (
+        <p className="mt-4 text-center text-green-600 font-semibold">
+          {successMessage}
+        </p>
+      )}
+    </div>
+  );
+};
+// ...existing code...
 
 // LeftPanel Component
 const LeftPanel: React.FC = () => (
   <div className="relative flex flex-col justify-between px-6 py-8 bg-[#122B59] bg-blend-overlay h-full rounded-l-lg overflow-hidden">
-       <img
+    <img
       src="https://cdn.builder.io/api/v1/image/assets/TEMP/37c12f6b1dffb54662660668d8b082c50fd1e467"
       alt="Background"
       className="object-cover absolute inset-0 w-full h-full rounded-l-lg"
@@ -150,7 +388,8 @@ const LeftPanel: React.FC = () => (
           The Enjoyable Way To Learn New Languages.
         </h1>
         <p className="mt-4 text-base">
-          Lorem ipsum dolor sit amet consectetur. Auctor lacus sodales nunc scelerisque consectetur.
+          Lorem ipsum dolor sit amet consectetur. Auctor lacus sodales nunc
+          scelerisque consectetur.
         </p>
       </div>
     </div>
@@ -166,7 +405,7 @@ const LeftPanel: React.FC = () => (
 const AuthenticationScreen: React.FC = () => {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="flex w-full max-w-4xl h-[720px] rounded-lg shadow-lg overflow-hidden bg-white">
+      <div className="flex w-full max-w-4xl h-[650px] rounded-lg shadow-lg overflow-hidden bg-white">
         <section className="w-[55%] hidden md:block">
           <LeftPanel />
         </section>

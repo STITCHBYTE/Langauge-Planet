@@ -1,9 +1,9 @@
 // tailwind.config.js
 module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx,html}",
-    "./public/index.html"
-  ],
+content: [
+  './src/**/*.{js,ts,jsx,tsx}',
+  '!./node_modules',
+],
   theme: {
     extend: {},
   },

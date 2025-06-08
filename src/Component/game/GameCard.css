@@ -332,3 +332,90 @@
   box-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
+
+
+
+.modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #1a1a2e;
+  padding: 48px;
+  border-radius: 20px;
+  color: #fff;
+  width: 700px;
+  text-align: center;
+  box-shadow: 0 0 40px #00f0ff88;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.modal-title {
+  font-size: 32px;
+  margin-bottom: 32px;
+  letter-spacing: 1px;
+}
+
+.modal-options {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  justify-content: center;
+}
+
+.option-button {
+  flex: 1;
+  border-radius: 12px;
+  padding: 24px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid;
+}
+
+.option-button .emoji {
+  font-size: 48px;
+}
+
+.option-button .label {
+  font-size: 24px;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.option-button.bot {
+  background: #00f0ff22;
+  border-color: #00f0ff;
+}
+.option-button.bot:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px #00f0ff;
+}
+
+.option-button.friends {
+  background: #ff00c822;
+  border-color: #ff00c8;
+}
+.option-button.friends:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px #ff00c8;
+}
+
+.cancel-button-wrapper {
+  margin-top: 32px;
+}
+
+.cancel-button {
+  color: #ccc;
+  font-size: 14px;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+}

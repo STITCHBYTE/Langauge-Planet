@@ -1,23 +1,66 @@
 "use client";
 
-import * as React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import GameCard from "./GameCard.tsx";
 import "./GameCard.css";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { io, Socket } from "socket.io-client";
 
 const SectionA: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
-   const navigate = useNavigate();
+  const navigate = useNavigate();
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    const socket = io("http://192.168.1.5:3001/friend", {
+      transports: ["websocket"],
+      reconnectionAttempts: 5,
+      timeout: 5000,
+    });
+
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("Connected to friend namespace");
+    });
+
+    socket.on("roomCreated", ({ roomCode, error }) => {
+      if (roomCode) {
+        console.log(`Room created successfully: ${roomCode}`);
+        setShowModal(false);
+        navigate(`/fighting-friends/${roomCode}`);
+      } else {
+        console.error("Room creation failed:", error || "Unknown error");
+      }
+    });
+
+    socket.on("joinRoomResult", ({ success, message }) => {
+      if (success) {
+        setShowModal(false);
+      } else {
+        alert(`Join failed: ${message}`);
+      }
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("Connection Error:", err.message);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [navigate]);
 
   const handlePlayWithBot = () => {
     setShowModal(false);
-    navigate("/fighting-game"); // change to your actual route
+    navigate("/fighting-game");
   };
 
   const handlePlayWithFriends = () => {
-    alert("Multiplayer mode coming soon!");
-  };
+  console.log("Requesting room creation from server...");
+  socketRef.current?.emit("createRoom");
+};
+
 
   return (
     <>
@@ -42,119 +85,31 @@ const SectionA: React.FC = () => {
         </div>
       </section>
 
-    {showModal && (
-  <div
-    style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: "rgba(0, 0, 0, 0.8)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 1000,
-    }}
-  >
-    <div
-      style={{
-        background: "#1a1a2e",
-        padding: "48px",
-        borderRadius: "20px",
-        color: "#fff",
-        width: "700px",
-        textAlign: "center",
-        boxShadow: "0 0 40px #00f0ff88",
-        fontFamily: "'Orbitron', sans-serif",
-      }}
-    >
-      <h2 style={{ fontSize: "32px", marginBottom: "32px", letterSpacing: "1px" }}>
-        ⚔️ Word Fight Game
-      </h2>
+      {showModal && (
+        <div className="modal-backdrop">
+          <div className="modal-content">
+            <h2 className="modal-title">⚔️ Word Fight Game</h2>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          gap: "30px",
-          justifyContent: "center",
-        }}
-      >
-        {/* Option 1: Play with Bot */}
-        <div
-          onClick={handlePlayWithBot}
-          style={{
-            flex: 1,
-            background: "#00f0ff22",
-            border: "2px solid #00f0ff",
-            borderRadius: "12px",
-            padding: "24px",
-            cursor: "pointer",
-            transition: "transform 0.2s, box-shadow 0.2s",
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.transform = "scale(1.05)";
-            e.currentTarget.style.boxShadow = "0 0 20px #00f0ff";
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = "none";
-          }}
-        >
-          <div style={{ fontSize: "48px" }}>🤖</div>
-          <div style={{ fontSize: "24px", marginTop: "10px", fontWeight: "bold" }}>
-            Play with Bot
+            <div className="modal-options">
+              <div className="option-button bot" onClick={handlePlayWithBot}>
+                <div className="emoji">🤖</div>
+                <div className="label">Play with Bot</div>
+              </div>
+
+              <div className="option-button friends" onClick={handlePlayWithFriends}>
+                <div className="emoji">🧑‍🤝‍🧑</div>
+                <div className="label">Play with Friends</div>
+              </div>
+            </div>
+
+            <div className="cancel-button-wrapper">
+              <button className="cancel-button" onClick={() => setShowModal(false)}>
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Option 2: Play with Friends */}
-        <div
-          onClick={handlePlayWithFriends}
-          style={{
-            flex: 1,
-            background: "#ff00c822",
-            border: "2px solid #ff00c8",
-            borderRadius: "12px",
-            padding: "24px",
-            cursor: "pointer",
-            transition: "transform 0.2s, box-shadow 0.2s",
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.transform = "scale(1.05)";
-            e.currentTarget.style.boxShadow = "0 0 20px #ff00c8";
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = "none";
-          }}
-        >
-          <div style={{ fontSize: "48px" }}>🧑‍🤝‍🧑</div>
-          <div style={{ fontSize: "24px", marginTop: "10px", fontWeight: "bold" }}>
-            Play with Friends
-          </div>
-        </div>
-      </div>
-
-      <div style={{ marginTop: "32px" }}>
-        <button
-          onClick={() => setShowModal(false)}
-          style={{
-            color: "#ccc",
-            fontSize: "14px",
-            textDecoration: "underline",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
+      )}
     </>
   );
 };

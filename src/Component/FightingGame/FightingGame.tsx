@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState, Suspense } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import io from "socket.io-client";
 
-const socket = io("http://localhost:3001");
+const socket = io("http://192.168.1.5:3001");
 
 type CharacterType = "player" | "bot";
 type QuizOption = { text: string; isCorrect: boolean };
