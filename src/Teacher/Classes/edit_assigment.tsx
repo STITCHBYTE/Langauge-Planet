@@ -185,7 +185,7 @@ const EditAssignmentPage = () => {
     }
     const fetchDiscussions = async () => {
       try {
-        const response = await fetch(`${Server_url}/api/classrooms/discussions/`, {
+        const response = await fetch(`${Server_url}/api/classrooms/classroom/${classroomId}/discussions/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) throw new Error('Failed to fetch discussions');

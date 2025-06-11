@@ -18,6 +18,11 @@ import ADD_Assignment from './Teacher/Classes/edit_assigment.tsx';
 import LandingPage from './LandingPage/LandingPage.tsx';
 import StudentsPage from './Student/StudentsPage.tsx';
 import AddStudents from './Student/AddStudentsPage.tsx';
+import TeacherLessonDisplay from './Teacher/Lesson/lessonDisplay.tsx';
+import AddLesson from './Teacher/Lesson/Add_lesson.tsx';
+import AddStage from './Teacher/Lesson/Add_Stage.tsx';
+import AddQuiz from './Teacher/Lesson/Add_Quiz.tsx';
+import LessonviewPage from './Teacher/Lesson/Lesson_view.tsx';
 function App() {
   return (
     <Router>
@@ -38,6 +43,11 @@ function App() {
         <Route path="/add-assignment/:classroomId" element={<ADD_Assignment />} />
         <Route path="/students-page" element={<StudentsPage />} />
         <Route path="/add-students" element={<AddStudents />} />
+        <Route path="/teacher-lesson-view" element={<TeacherLessonDisplay />} />
+        <Route path="/add-lesson" element={<AddLesson />} />
+        <Route path="/add-stage/:cc" element={<AddStage />} />
+        <Route path="/add-quiz/:lesson_id" element={<AddQuiz />} />
+        <Route path="/lesson-view/:lesson_id" element={<LessonviewPage />} />
         {/* Add more routes as needed */}
       </Routes>
     </Router>

@@ -19,7 +19,7 @@ const teacherRoutes: { [key: string]: string } = {
   Dashboard: '/Dashboard',
   Student: '/students-page',
   Classes: '/teacher-classes',
-  Lessons: '/learning',
+  Lessons: '/teacher-lesson-view',
 };
 
 const SidebarMenuItem = ({ icon, label, onNavigate }: SidebarMenuItemProps) => {

@@ -105,7 +105,7 @@ const ClassDashboard: React.FC = () => {
   const [filterValue, setFilterValue] = useState<string>('');
   const navigate = useNavigate();
 
-  const API_URL = `${Server_url}/api/classrooms/classroom/`;
+  const API_URL = `${Server_url}/api/classrooms/my-classrooms/`;
 const TOKEN = localStorage.getItem("authToken"); // Replace with your actual token
 
 useEffect(() => {

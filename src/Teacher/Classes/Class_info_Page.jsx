@@ -45,7 +45,7 @@ const ClassPage = () => {
     const fetchDiscussions = async () => {
       try {
         const response = await fetch(
-          `${Server_url}/api/classrooms/discussions/?classroom=${classId}`,
+          `${Server_url}/api/classrooms/classroom/${classId}/discussions/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -65,7 +65,7 @@ const ClassPage = () => {
     const fetchAssignments = async () => {
       try {
         const response = await fetch(
-          `${Server_url}/api/classrooms/assignments/?classroom=${classId}`,
+          `${Server_url}/api/classrooms/classroom/${classId}/assignments/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
