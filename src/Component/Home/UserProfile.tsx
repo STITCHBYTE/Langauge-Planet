@@ -1,42 +1,53 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react'; // Removed useEffect, useState
 import './Style.css';
 import { useNavigate } from 'react-router-dom';
-import Server_url from '../../config';
-const UserProfile = () => {
-  const [user, setUser] = useState<{ username: string; email: string } | null>(null);
-const initials = user?.username.slice(0, 2).toUpperCase();
-const navigate = useNavigate(); 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch(`${Server_url}/api/users/current`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
-          },
-        });
-        const data = await res.json();
-        setUser({ username: data.username, email: data.email });
-      } catch (err) {
-        console.error('Failed to fetch user info:', err);
-      }
-    };
+// Server_url is no longer needed here
+import { useView } from '../../Context/ViewContext.tsx'; // Import useView
 
-    fetchUser();
-  }, []);
+const UserProfile = () => {
+  // const [user, setUser] = useState<{ username: string; email: string } | null>(null); // Removed
+  const navigate = useNavigate();
+  const { currentUser, isLoadingUser } = useView(); // Get currentUser from context
+
+  // useEffect for fetchUser is removed
+
+  // Derive user details from currentUser obtained from context
+  // Using username for initials as per original code. If first_name is preferred and available:
+  // const initials = currentUser?.first_name ? currentUser.first_name.slice(0, 2).toUpperCase() : currentUser?.username?.slice(0, 2).toUpperCase() || '..';
+  const initials = currentUser?.username?.slice(0, 2).toUpperCase() || '..';
+  const displayName = currentUser?.username || 'Loading...';
+  const displayEmail = currentUser?.email || '...';
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('refreshToken');
-    navigate('/')// or use navigation to login page
+    // Optionally clear context state related to user if ViewProvider handles this on auth change
+    navigate('/'); // or use navigation to login page
   };
+
+  if (isLoadingUser && !currentUser) {
+    // Optional: Render a loading skeleton for UserProfile
+    return (
+      <div className="user-profile-container">
+        <div className="user-profile-info">
+          <span className="avatar-text">..</span>
+          <div className="user-profile-text">
+            <p className="user-profile-name">Loading...</p>
+            <p className="user-profile-email">...</p>
+          </div>
+        </div>
+        {/* Logout button can be hidden or disabled during loading */}
+      </div>
+    );
+  }
 
   return (
     <div className="user-profile-container">
-        <div className="user-profile-info">
-            <span className="avatar-text">{initials}</span>
+      <div className="user-profile-info">
+        <span className="avatar-text">{initials}</span>
         <div className="user-profile-text">
-          <p className="user-profile-name">{user?.username || 'Loading...'}</p>
-          <p className="user-profile-email">{user?.email || '...'}</p>
+          <p className="user-profile-name">{displayName}</p>
+          <p className="user-profile-email">{displayEmail}</p>
         </div>
       </div>
 
@@ -48,7 +59,6 @@ const navigate = useNavigate();
             className="user-profile-settings-icon"
           />
         </button>
-
       </div>
     </div>
   );

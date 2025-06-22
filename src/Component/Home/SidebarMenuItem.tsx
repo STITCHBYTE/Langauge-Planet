@@ -1,12 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import './Style.css';
-import { NavLink, useNavigate } from 'react-router-dom';
-import Server_url from '../../config';
+import { useNavigate, useLocation } from 'react-router-dom';
+
 interface SidebarMenuItemProps {
   icon: string;
   label: string;
-  onNavigate?: () => void;
+  onNavigate?: () => void; // Prop to call after navigation
+  isTeacher?: boolean;
+  studentView?: boolean;
 }
+
+// Define route mappings for both views
+const teacherRoutes: { [key: string]: string } = {
+  Dashboard: '/teacher-dashboard',
+  Student: '/students-page',
+  Classes: '/teacher-classes',
+  Lessons: '/lessons',
+};
 
 const studentRoutes: { [key: string]: string } = {
   Dashboard: '/Dashboard',
@@ -15,71 +25,47 @@ const studentRoutes: { [key: string]: string } = {
   Games: '/game',
 };
 
-const teacherRoutes: { [key: string]: string } = {
-  Dashboard: '/Dashboard',
-  Student: '/students-page',
-  Classes: '/teacher-classes',
-  Lessons: '/teacher-lesson-view',
-};
 
-const SidebarMenuItem = ({ icon, label, onNavigate }: SidebarMenuItemProps) => {
+const SidebarMenuItem = ({ 
+  icon, 
+  label, 
+  onNavigate, 
+  isTeacher = false,
+  studentView = false
+}: SidebarMenuItemProps) => {
   const navigate = useNavigate();
-  const [isTeacher, setIsTeacher] = useState<boolean | null>(null);
+  const location = useLocation();
 
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      try {
-        const res = await fetch(`${Server_url}/api/users/current`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
-          },
-        });
-        const data = await res.json();
-        setIsTeacher(data.is_teacher);
-      } catch (error) {
-        console.error('Error fetching user role:', error);
-        setIsTeacher(false); // Default to student if error
-      }
-    };
-
-    fetchUserRole();
-  }, []);
-
-  // Wait for user role to be fetched
-  if (isTeacher === null) return null;
-
-  const routes = isTeacher ? teacherRoutes : studentRoutes;
-  const destinationPath = routes[label];
-
-  const handleClick = () => {
-    if (destinationPath) {
-      navigate(destinationPath);
-      if (onNavigate) onNavigate();
+  const getRoute = () => {
+    if (!isTeacher) {
+      return studentRoutes[label] || "/students-page";
     } else {
-      console.warn(`No route defined for label: "${label}"`);
+      if (studentView) {
+        return teacherRoutes[label] 
+      } else {
+        return studentRoutes[label] 
+      }
     }
   };
 
-  if (destinationPath) {
-    return (
-      <NavLink
-        to={destinationPath}
-        className={({ isActive }) => 
-          `sidebar-menu-item ${isActive ? 'active' : ''}`
-        }
-        onClick={onNavigate}
-      >
-        <img src={icon} alt={`${label} icon`} className="sidebar-menu-icon" />
-        <span className="sidebar-menu-label">{label}</span>
-      </NavLink>
-    );
-  }
+  const route = getRoute();
+  const isActive = location.pathname === route;
+
+  const handleClick = () => {
+    navigate(route);
+    if (onNavigate) {
+      onNavigate(); // Call the callback if provided
+    }
+  };
 
   return (
-    <button className="sidebar-menu-item" onClick={handleClick}>
-      <img src={icon} alt={`${label} icon`} className="sidebar-menu-icon" />
+    <div 
+      className={`sidebar-menu-item ${isActive ? 'active' : ''}`}
+      onClick={handleClick}
+    >
+      <img src={icon} alt={label} className="sidebar-menu-icon" />
       <span className="sidebar-menu-label">{label}</span>
-    </button>
+    </div>
   );
 };
 

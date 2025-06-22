@@ -1,51 +1,145 @@
-import React, { useEffect, useState } from 'react';
-import SidebarMenuItem from './SidebarMenuItem.tsx';
+import React, { useEffect } from 'react';
+import { useView } from '../../Context/ViewContext.tsx';
 import UserProfile from './UserProfile.tsx';
 import './Style.css';
-import StudentIcon from './Assets/reading.png';
-import Server_url from '../../config';
-const Sidebar = () => {
-  const [isTeacher, setIsTeacher] = useState<boolean | null>(null);
+import { useNavigate, useLocation } from 'react-router-dom';
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch(`${Server_url}/api/users/current`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
-          },
-        });
-        const data = await res.json();
-        setIsTeacher(data.is_teacher);
-      } catch (err) {
-        console.error('Failed to fetch user role', err);
-      }
-    };
+// --- NEW: Import icons from react-icons library ---
+import { 
+  FiHome, 
+  FiUsers, 
+  FiBookOpen, 
+  FiClipboard, 
+  FiPlayCircle 
+} from 'react-icons/fi';
 
-    fetchUser();
-  }, []);
+// =================================================================
+// Sidebar Menu Item Component
+// =================================================================
+interface SidebarMenuItemProps {
+  icon: React.ReactNode; // Type is now React.ReactNode to accept components
+  label: string;
+  onNavigate?: () => void;
+  isTeacher: boolean;
+  studentView: boolean;
+}
 
-  if (isTeacher === null) return null; // or loading skeleton
+const teacherRoutes: { [key: string]: string } = {
+  Dashboard: '/teacher-dashboard', 
+  Student: '/students-page',
+  Classes: '/teacher-classes',
+  Lessons: '/lessons',
+};
 
-  const teacherMenu = [
-    { icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/d5af5c0e9aa7f43fc35ae5080ac91115d1a8bc9d?placeholderIfAbsent=true&apiKey=1b496253e45e4fc2b46bf96bdfd3025b", label: "Dashboard" },
-    { icon:  StudentIcon, label: "Student" },
-    { icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/ce252dd9a96ea8f88224bb455e7245216dec14bb?placeholderIfAbsent=true&apiKey=1b496253e45e4fc2b46bf96bdfd3025b", label: "Classes" },
-    { icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/b065c80f31f032c1aace0ca4d7fdcf6d011f90c8?placeholderIfAbsent=true&apiKey=1b496253e45e4fc2b46bf96bdfd3025b", label: "Lessons" },
-  ];
+const studentRoutes: { [key:string]: string } = {
+  Dashboard: '/Dashboard',
+  Lessons: '/learning',
+  Classes: '/classroom',
+  Games: '/game',
+};
 
-  const studentMenu = [
-    { icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/d5af5c0e9aa7f43fc35ae5080ac91115d1a8bc9d?placeholderIfAbsent=true&apiKey=1b496253e45e4fc2b46bf96bdfd3025b", label: "Dashboard" },
-    { icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/b065c80f31f032c1aace0ca4d7fdcf6d011f90c8?placeholderIfAbsent=true&apiKey=1b496253e45e4fc2b46bf96bdfd3025b", label: "Lessons" },
-    { icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/ce252dd9a96ea8f88224bb455e7245216dec14bb?placeholderIfAbsent=true&apiKey=1b496253e45e4fc2b46bf96bdfd3025b", label: "Classes" },
-    { icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/bff12902a5e5a70b79dcf423a31808be5e9542f8?placeholderIfAbsent=true&apiKey=1b496253e45e4fc2b46bf96bdfd3025b", label: "Games" },
-  ];
+const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({ 
+  icon, 
+  label, 
+  onNavigate, 
+  isTeacher,
+  studentView
+}) => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const menuItems = isTeacher ? teacherMenu : studentMenu;
+  const getRoute = () => {
+    if (isTeacher && studentView) {
+      return teacherRoutes[label] || '/teacher-dashboard';
+    }
+    return studentRoutes[label] || '/Dashboard';
+  };
+
+  const route = getRoute();
+  const isActive = location.pathname === route;
+
+  const handleClick = () => {
+    navigate(route);
+    if (onNavigate) {
+      onNavigate();
+    }
+  };
 
   return (
-    <div className="sidebar-container">
-      <div>
+    <div 
+      className={`sidebar-menu-item ${isActive ? 'active' : ''}`}
+      onClick={handleClick}
+    >
+      {/* The icon is now rendered as a component inside a span */}
+      <span className="sidebar-menu-icon">{icon}</span>
+      <span className="sidebar-menu-label">{label}</span>
+    </div>
+  );
+};
+
+
+// =================================================================
+// Main Sidebar Component
+// =================================================================
+const Sidebar: React.FC = () => {
+  const { 
+    studentView, 
+    isTeacher, 
+    isLoadingUser,
+    isMobileView,
+    isMobileMenuOpen,
+    toggleMobileMenu,
+    closeMobileMenu
+  } = useView();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const currentPath = location.pathname;
+    
+    if (currentPath === '/Dashboard' || currentPath === '/teacher-dashboard') {
+      if (isTeacher && studentView) {
+        if(currentPath !== '/teacher-dashboard') navigate('/teacher-dashboard', { replace: true });
+      } else {
+        if(currentPath !== '/Dashboard') navigate('/Dashboard', { replace: true });
+      }
+    }
+  }, [isTeacher, studentView, location.pathname, navigate]);
+
+
+  if (isLoadingUser && !isMobileMenuOpen) {
+    return <div className="sidebar-container">Loading...</div>;
+  }
+  
+  // --- UPDATED: Menus now use icon components instead of image URLs ---
+  const teacherMenu = [
+    { icon: <FiHome />, label: "Dashboard" },
+    { icon: <FiUsers />, label: "Student" },
+    { icon: <FiBookOpen />, label: "Classes" },
+    { icon: <FiClipboard />, label: "Lessons" },
+  ];
+  const studentMenu = [
+    { icon: <FiHome />, label: "Dashboard" },
+    { icon: <FiClipboard />, label: "Lessons" },
+    { icon: <FiBookOpen />, label: "Classes" },
+    { icon: <FiPlayCircle />, label: "Games" },
+  ];
+
+  let menuItems;
+  if (isTeacher) {
+    menuItems = studentView ? teacherMenu : studentMenu;
+  } else {
+    menuItems = studentMenu;
+  }
+
+  return (
+    <div className={`sidebar-container ${isMobileMenuOpen ? 'mobile-menu-open' : ''}`}>
+      <div className="sidebar-main-content">
+        {isMobileView && isMobileMenuOpen && (
+          <button className="mobile-menu-close-button" onClick={toggleMobileMenu}>
+            &times;
+          </button>
+        )}
         <div className="sidebar-logo">
           <img
             src="https://cdn.builder.io/api/v1/image/assets/TEMP/7d0ef5d1ebd1c8a7d379bdbf15b664f6acfd4a39"
@@ -56,19 +150,23 @@ const Sidebar = () => {
             <p className="sidebar-brand">Language Planet</p>
           </div>
         </div>
-
-        <div className="sidebar-menu">
+        <nav className="sidebar-menu">
           {menuItems.map((item, index) => (
             <SidebarMenuItem
               key={index}
               icon={item.icon}
               label={item.label}
+              isTeacher={isTeacher}
+              studentView={studentView}
+              onNavigate={isMobileView ? closeMobileMenu : undefined}
             />
           ))}
-        </div>
+        </nav>
       </div>
-
-      <UserProfile />
+      
+      <div className="sidebar-footer">
+        <UserProfile />
+      </div>
     </div>
   );
 };

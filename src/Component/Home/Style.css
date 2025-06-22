@@ -1,3 +1,18 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  /* Consider setting a base font-family if not done elsewhere, e.g.:
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  */
+}
+
 .dashboard-wrapper {
   display: flex;
   flex-direction: row;
@@ -6,12 +21,12 @@
 }
 .dashboard-main {
   flex: 1;
-  overflow: auto;
+  overflow: auto; /* Allows content to scroll if it exceeds viewport height */
 }
 .dashboard-content {
   flex: 1;
-  padding: 1.5rem;
-  margin-left: 17%;
+  /* padding: 1.5rem; */
+  margin-left: 17%; /* Space for the fixed sidebar on desktop */
 }
 .dashboard-sections {
   display: flex;
@@ -24,6 +39,10 @@
   gap: 1.5rem;
 }
 .sidebar-container {
+  position: fixed; /* Fixed on desktop */
+  top: 0;
+  left: 0;
+  height: 100vh;
   width: 16rem;
   background-color: #ffffff;
   border-right: 1px solid #e5e7eb;
@@ -31,15 +50,19 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  /* overflow: hidden; Removed for better behavior with flex-wrap, child elements handle their own overflow */
+  box-sizing: border-box;
+  z-index: 1000; /* Keep on top */
 }
 .sidebar-logo {
   display: flex;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 2rem; /* Adjusted from 1rem for better spacing if needed */
 }
 .sidebar-logo-img {
   width: 2rem;
   height: 2rem;
+  flex-shrink: 0; /* Prevent shrinking in flex layout */
 }
 .sidebar-logo-text {
   margin-left: 0.5rem;
@@ -58,7 +81,19 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  flex-grow: 1; /* Allows menu to take available space */
+  overflow-y: auto; /* Scroll for long menus */
+  margin-bottom: 1rem;
 }
+.sidebar-menu::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+/* ... other existing styles ... */
+
 .barchart-container {
   flex: 1;
   display: flex;
@@ -183,6 +218,7 @@
   height: 4rem;
   border-radius: 0.5rem;
   object-fit: cover;
+  flex-shrink: 0; /* Prevent icon from shrinking */
 }
 .game-card-content {
   margin-left: 1rem;
@@ -264,6 +300,7 @@
 .icon-wrapper {
   width: 48px;
   height: 48px;
+  flex-shrink: 0; /* Prevent icon from shrinking */
 }
 .icon-image {
   width: 100%;
@@ -312,10 +349,18 @@
   background-color: transparent;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; /* Added color transition */
 }
 .sidebar-menu-item:hover {
   background-color: #F3F4F6;
+}
+.sidebar-menu-item.active { /* Style for active menu item */
+  background-color: #e0e7ff; /* Example active color */
+  /* color: #2563eb; */ /* Example active text color */
+}
+.sidebar-menu-item.active .sidebar-menu-label {
+  /* color: #2563eb; */ /* Example active text color for label */
+  font-weight: 600;
 }
 .sidebar-menu-icon {
   width: 1.25rem; 
@@ -327,6 +372,8 @@
   color: #374151;
   font-size: 1rem;
   user-select: none;
+  flex-grow: 1; /* Allow label to take space */
+  text-align: left; /* Ensure text aligns left */
 }
 .user-profile-container {
   display: flex;
@@ -335,30 +382,57 @@
   padding: 1rem;
   border-top: 1px solid #E5E7EB;
   background-color: white;
+  flex-shrink: 0; /* Prevent shrinking when sidebar is a flex column */
 }
 .user-profile-info {
   display: flex;
   align-items: center;
+  overflow: hidden; /* Prevent text overflow issues */
 }
-.user-profile-avatar {
+.user-profile-avatar { /* This class was not used in HTML, but avatar-text is. Assuming this is for an img */
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 9999px;
   object-fit: cover;
-  margin-left: -1.75rem;
+  /* margin-left: -1.75rem; This seems like an odd negative margin */
+  margin-right: 0.75rem; /* Replaced negative margin with positive */
+  flex-shrink: 0;
+}
+.avatar-text { /* Style for initials if no image */
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background-color: #e0e7ff; /* Example background */
+    color: #3730a3; /* Example text color */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem; /* Adjust as needed */
+    margin-right: 0.75rem;
+    flex-shrink: 0;
 }
 .user-profile-text {
-  margin-left: 0.75rem;
+  /* margin-left: 0.75rem; Removed as avatar/initials now have margin-right */
+  overflow: hidden; /* Hide overflow */
+  text-overflow: ellipsis; /* Add ellipsis for long names/emails */
+  white-space: nowrap; /* Prevent wrapping for name/email to use ellipsis */
 }
 .user-profile-name {
   font-weight: 500;
   margin: 0;
   color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .user-profile-email {
   font-size: 0.875rem;
   color: #6B7280;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .user-profile-settings-btn {
   background: none;
@@ -366,6 +440,7 @@
   cursor: pointer;
   padding: 0;
   transition: opacity 0.2s ease-in-out;
+  flex-shrink: 0;
 }
 .user-profile-settings-btn:hover {
   opacity: 0.8;
@@ -434,6 +509,8 @@
   display: flex;
   align-items: center;
   margin-bottom: 1rem;
+  flex-wrap: wrap; /* Allow legend items to wrap */
+  gap: 0.5rem; /* Add gap for wrapped items */
 }
 .legend-item {
   display: flex;
@@ -463,7 +540,7 @@
   padding: 1.5rem;
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   width: 100%;
-  max-width: 600px;
+  max-width: 600px; /* This max-width might be too restrictive on wider screens if it's a main column item */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 .joined-classes-header {
@@ -490,11 +567,12 @@
 .view-all-button:hover {
   opacity: 0.8;
 }
+/* .view-all-text is duplicated, ensure one definition or merge */
 .view-all-text {
   margin-right: 0.5rem;
   font-size: 0.875rem;
 }
-.arrow-icon {
+.arrow-icon { /* This class is used multiple times, ensure its styling is generic enough or use more specific classes */
   width: 16px;
   height: 16px;
   object-fit: contain;
@@ -522,7 +600,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  max-width: 65%;
+  max-width: 65%; /* Can be problematic on small screens if right side is fixed width */
+  flex-grow: 1; /* Allow it to grow */
+  overflow: hidden; /* Prevent content from pushing out */
 }
 .class-card-icon {
   width: 60px;
@@ -531,23 +611,27 @@
   object-fit: cover;
   border: 2px solid #2563EB;
   margin-bottom: 0.5rem;
+  flex-shrink: 0;
 }
 .class-card-topic {
   font-weight: 600;
   font-size: 1.125rem;
   color: #111827;
   margin-bottom: 0.25rem;
+  word-break: break-word; /* Allow long topics to wrap */
 }
 .class-card-teacher {
   font-size: 0.9rem;
   color: #6B7280; 
+  word-break: break-word; /* Allow long teacher names to wrap */
 }
 .class-card-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 3.75rem;
-  min-width: 120px;
+  gap: 3.75rem; /* This large gap might be an issue */
+  min-width: 120px; /* This can cause overflow if .class-card-left doesn't shrink enough */
+  flex-shrink: 0; /* Prevent this part from shrinking too much */
 }
 .class-card-status {
   background-color: #EFF6FF;
@@ -568,6 +652,7 @@
   font-weight: 600;
   font-size: 0.9rem;
   transition: background-color 0.2s ease-in-out;
+  white-space: nowrap;
 }
 .class-card-button:hover {
   background-color: #1D4ED8;
@@ -576,10 +661,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: 1rem; /* This was 1rem, ensure it's consistent with other header spacing */
+  padding: 0.5rem 0; /* Add some vertical padding if needed */
 }
 .header-title {
-  font-size: 1.125rem;
+  font-size: 1.125rem; /* Was 1.125rem, ensure consistency */
   font-weight: 600;
   margin: 0;
 }
@@ -603,6 +689,7 @@
   align-items: center;
   gap: 0.25rem;
 }
+/* .icon-image is defined twice, merging */
 .icon-image {
   display: block;
   object-fit: contain;
@@ -615,80 +702,98 @@
   width: 0.75rem;
   height: 0.75rem;
 }
-.sidebar-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  width: 16rem;
-  background-color: #ffffff;
-  border-right: 1px solid #e5e7eb;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow: hidden;
-  box-sizing: border-box;
-  z-index: 1000;
-}
-.sidebar-menu {
-  flex-grow: 1;
-  overflow-y: auto;
-  margin-bottom: 1rem;
-}
-.sidebar-menu::-webkit-scrollbar {
-  width: 6px;
-}
-.sidebar-menu::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 3px;
-}
-.sidebar-logo {
-  margin-bottom: 1rem;
-}
+
+/* --- Responsive Adjustments --- */
 
 /* For tablets and below (≤1024px) */
 @media (max-width: 1024px) {
   .dashboard-content {
     margin-left: 0;
-    padding: 1rem;
-  }
-
-  .dashboard-wrapper {
-    flex-direction: column;
-  }
-
-  .dashboard-row {
-    flex-direction: column;
+    /* Adjust this padding based on your mobile header's height.
+       If your header is around 60px tall, 4rem (64px) or 4.5rem (72px) is a good start. */
+    padding-top: 4.5rem;
   }
 
   .sidebar-container {
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: space-around;
-    border-right: none;
-    border-bottom: 1px solid #e5e7eb;
-    padding: 1rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    max-width: 80%; /* Good for larger tablets, prevents full-width takeover */
+    height: 100vh;
+    transform: translateX(-100%);
+    background-color: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    /* border-bottom: none; */ /* Already in your snippet, correct */
+    display: flex; /* Ensure flex properties are active */
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 1.5rem;
+    overflow-y: auto; /* Allows scrolling within the sidebar if content overflows */
+    z-index: 1002;    /* Above main content, potentially below modals */
+    transition: transform 0.3s ease-in-out;
+    box-sizing: border-box; /* Important for consistent sizing with padding */
+  }
+
+  .sidebar-container.mobile-menu-open {
+    transform: translateX(0);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Enhanced shadow for better depth */
+  }
+
+  .header-hamburger-button {
+    display: inline-flex; /* Shows the hamburger button */
+    align-items: center;
+    justify-content: center;
+    /* Global styles for padding, margin-left should apply */
+  }
+
+  .mobile-menu-close-button {
+    display: block; /* Show the 'X' button inside the sidebar */
+    position: absolute;
+    top: 1rem;    /* Adjust for visual preference */
+    right: 1.25rem; /* Adjust for visual preference */
+    background: transparent;
+    border: none;
+    font-size: 2rem; /* Larger for easier tapping */
+    font-weight: 300;
+    color: #555;
+    cursor: pointer;
+    padding: 0.25rem; /* Small padding for tap area */
+    line-height: 1;
+    z-index: 1003; /* Above other sidebar content */
+  }
+  .mobile-menu-close-button:hover {
+    color: #000;
+  }
+
+  .header-container {
+    /* If you make the header sticky on mobile: */
+    /* position: sticky; */
+    /* top: 0; */
+    /* background-color: #ffffff; */ /* Necessary for sticky header */
+    /* z-index: 1001; */ /* Below open sidebar (1002), above content */
+    /* box-shadow: 0 2px 4px rgba(0,0,0,0.05); */ /* Optional: adds depth */
+    padding: 0.75rem 1rem; /* Adjust padding for mobile header */
   }
 
   .sidebar-menu {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.75rem;
+    flex-direction: column; /* Ensure menu items are stacked vertically */
+    gap: 0.75rem; /* Space between menu items */
   }
 
-  .continue-learning-grid {
-    grid-template-columns: 1fr;
+  .user-profile-container {
+    margin-top: auto; /* Pushes user profile to the bottom of the flex column */
+    border-top: 1px solid #e5e7eb; /* Visual separator */
+    padding: 1rem; /* Consistent padding */
   }
 
-  .games-list {
+  /* Example: Make dashboard rows stack on tablets */
+  .dashboard-row {
     flex-direction: column;
+    gap: 1rem; /* Adjust gap for stacked items */
   }
-
-  .learning-card {
-    max-width: 100%;
+  .continue-learning-grid {
+    grid-template-columns: 1fr; /* Single column for cards */
   }
 }
 
@@ -696,158 +801,109 @@
 @media (max-width: 768px) {
   .dashboard-content {
     padding: 1rem 0.75rem;
-  }
-
-  .sidebar-logo {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .sidebar-logo-text {
-    margin-left: 0;
-    margin-top: 0.25rem;
-  }
-
-  .user-profile-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .continue-learning-header,
-  .games-section-header,
-  .weekly-stats-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .game-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .game-card-content {
-    margin-left: 0;
-    margin-top: 0.75rem;
-  }
-
-  .barchart-grid {
-    height: auto;
-  }
-
-  .barchart-bars {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .sidebar-menu-label {
-    font-size: 0.875rem;
-  }
-
-  .weekly-stats-button {
-    width: 100%;
-    justify-content: center;
-  }
-}
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-  .sidebar-container {
-    width: 12rem;
-    padding: 1rem;
-  }
-
-  .class-card {
-    max-width: 100%;
-  }
-
-  .class-card-left {
-    max-width: 100%;
-  }
-
-  .class-card-right {
-    gap: 2rem;
-    min-width: 100px;
-  }
-
-  .joined-classes-section {
-    max-width: 100%;
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .sidebar-container {
-    position: absolute;
-    width: 100%;
-    height: auto;
-    padding: 1rem;
-    border-right: none;
-    border-bottom: 1px solid #e5e7eb;
-    z-index: 1000;
-  }
-
-  .joined-classes-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .class-card {
-    flex-direction: column;
-  }
-
-  .class-card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .class-card-right {
-    align-items: flex-start;
-    gap: 1rem;
-    min-width: unset;
+    padding-top: 4.5rem; /* Re-evaluate based on header height at this breakpoint */
   }
 
   .header-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
+    padding: 0.75rem 1rem; /* Consistent padding */
+    flex-wrap: wrap; /* Allow header items to wrap */
+  }
+
+  .header-greeting-wrapper {
+    width: 100%;
+    justify-content: space-between; /* Greeting on left, hamburger on right */
+    margin-bottom: 0.75rem; /* Space if header-actions wrap below */
+  }
+  .header-title {
+    font-size: 1.125rem; /* Adjust for readability */
   }
 
   .header-actions {
-    gap: 1rem;
+    width: 100%; /* Take full width if they wrap */
+    justify-content: flex-end; /* Align to the right */
+    gap: 1rem; /* Adjust gap */
+  }
+
+  /* Optionally hide or shrink less critical header items */
+  .header-actions .language-group,
+  .header-actions .avatar-group {
+    /* display: none; */
+  }
+  .header-actions .view-toggle-wrapper {
+    /* Consider making it smaller or hiding if space is very limited */
+    /* transform: scale(0.9); */
+    /* gap: 4px; */
+  }
+  .label { /* For view toggle */
+    font-size: 12px;
+  }
+
+  .sidebar-container {
+    padding: 1rem; /* Slightly less padding inside the sidebar */
+    width: 260px; /* Can be slightly narrower */
+  }
+
+  .sidebar-menu-label {
+    font-size: 0.9rem;
+  }
+
+  .mobile-menu-close-button {
+    top: 0.75rem;
+    right: 1rem;
   }
 }
 
+/* For very small mobile devices (≤480px) */
 @media (max-width: 480px) {
-  .view-all-text {
-    font-size: 0.75rem;
+  .dashboard-content {
+    padding: 0.75rem 0.5rem;
+    padding-top: 4rem; /* Re-evaluate based on header height */
   }
 
-  .section-title {
+  .header-container {
+    padding: 0.5rem 0.75rem;
+  }
+  .header-title {
     font-size: 1rem;
   }
-
-  .class-card-topic {
-    font-size: 1rem;
+  .header-hamburger-button svg {
+    width: 20px; /* Smaller hamburger icon */
+    height: 20px;
   }
 
-  .class-card-button {
-    font-size: 0.8rem;
-    padding: 0.4rem 0.75rem;
+  .header-actions {
+    gap: 0.5rem; /* Reduce gap further */
+    /* Consider justify-content: space-around or center if few items remain */
   }
-
-  .legend-item {
-    font-size: 0.875rem;
-    margin-right: 0.5rem;
+  /* Hide more items on very small screens */
+  .header-actions .language-group,
+  .header-actions .avatar-group,
+  .header-actions .student-header-icon {
+     display: none; /* Example: hide more icons */
   }
+   .header-actions .view-toggle-wrapper {
+     /* display: none; */ /* More likely to hide this on very small screens */
+   }
 
-  .weekly-stats-calendar-icon {
-    width: 0.75rem;
-    height: 0.75rem;
+  .sidebar-container {
+    width: 240px; /* Even narrower sidebar */
+    padding: 0.75rem;
+  }
+  .mobile-menu-close-button {
+    top: 0.5rem;
+    right: 0.75rem;
+    font-size: 1.75rem;
+  }
+  .sidebar-menu-label {
+    font-size: 0.85rem;
+  }
+  .medium-icon { /* General icon size reduction in header */
+    width: 1.25rem;
+    height: 1.25rem;
   }
 }
+
+/* Toggle Switch Styles (already provided, generally okay) */
 .view-toggle-wrapper {
   display: flex;
   align-items: center;
@@ -866,12 +922,12 @@
   font-weight: 600;
 }
 
-/* Toggle Switch */
 .switch {
   position: relative;
   display: inline-block;
   width: 40px;
   height: 22px;
+  flex-shrink: 0; /* Prevent switch from shrinking */
 }
 
 .switch input {
@@ -910,4 +966,307 @@ input:checked + .slider {
 
 input:checked + .slider:before {
   transform: translateX(18px);
+}
+/* ... existing styles ... */
+
+/* Hamburger Button */
+/*
+.hamburger-button {
+  display: none; 
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1001; 
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+*/
+
+/* New styles for hamburger within Header */
+.header-hamburger-button {
+  display: none; /* Hidden by default, shown in mobile media query */
+  background: none;
+  border: none;
+  padding: 0.25rem; /* Make it a bit easier to tap */
+  margin-left: 0.75rem; /* Space from greeting */
+  cursor: pointer;
+}
+.header-hamburger-button svg {
+  display: block; /* Prevents extra space below svg */
+}
+
+.header-greeting-wrapper {
+  display: flex;
+  align-items: center;
+  flex-grow: 1; /* Allow greeting to take space */
+}
+
+.header-container {
+  /* ... existing styles ... */
+  /* Ensure it can accommodate the hamburger on mobile */
+}
+
+
+/* --- Responsive Adjustments --- */
+
+/* For tablets and below (≤1024px) */
+@media (max-width: 1024px) {
+  .dashboard-content {
+    margin-left: 0;
+    /* Adjust this padding based on your mobile header's height.
+       If your header is around 60px tall, 4rem (64px) or 4.5rem (72px) is a good start. */
+    padding-top: 4.5rem;
+  }
+
+  .sidebar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    max-width: 80%; /* Good for larger tablets, prevents full-width takeover */
+    height: 100vh;
+    transform: translateX(-100%);
+    background-color: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    /* border-bottom: none; */ /* Already in your snippet, correct */
+    display: flex; /* Ensure flex properties are active */
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 1.5rem;
+    overflow-y: auto; /* Allows scrolling within the sidebar if content overflows */
+    z-index: 1002;    /* Above main content, potentially below modals */
+    transition: transform 0.3s ease-in-out;
+    box-sizing: border-box; /* Important for consistent sizing with padding */
+  }
+
+  .sidebar-container.mobile-menu-open {
+    transform: translateX(0);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Enhanced shadow for better depth */
+  }
+
+  .header-hamburger-button {
+    display: inline-flex; /* Shows the hamburger button */
+    align-items: center;
+    justify-content: center;
+    /* Global styles for padding, margin-left should apply */
+  }
+
+  .mobile-menu-close-button {
+    display: block; /* Show the 'X' button inside the sidebar */
+    position: absolute;
+    top: 1rem;    /* Adjust for visual preference */
+    right: 1.25rem; /* Adjust for visual preference */
+    background: transparent;
+    border: none;
+    font-size: 2rem; /* Larger for easier tapping */
+    font-weight: 300;
+    color: #555;
+    cursor: pointer;
+    padding: 0.25rem; /* Small padding for tap area */
+    line-height: 1;
+    z-index: 1003; /* Above other sidebar content */
+  }
+  .mobile-menu-close-button:hover {
+    color: #000;
+  }
+
+  .header-container {
+    /* If you make the header sticky on mobile: */
+    /* position: sticky; */
+    /* top: 0; */
+    /* background-color: #ffffff; */ /* Necessary for sticky header */
+    /* z-index: 1001; */ /* Below open sidebar (1002), above content */
+    /* box-shadow: 0 2px 4px rgba(0,0,0,0.05); */ /* Optional: adds depth */
+    padding: 0.75rem 1rem; /* Adjust padding for mobile header */
+  }
+
+  .sidebar-menu {
+    flex-direction: column; /* Ensure menu items are stacked vertically */
+    gap: 0.75rem; /* Space between menu items */
+  }
+
+  .user-profile-container {
+    margin-top: auto; /* Pushes user profile to the bottom of the flex column */
+    border-top: 1px solid #e5e7eb; /* Visual separator */
+    padding: 1rem; /* Consistent padding */
+  }
+
+  /* Example: Make dashboard rows stack on tablets */
+  .dashboard-row {
+    flex-direction: column;
+    gap: 1rem; /* Adjust gap for stacked items */
+  }
+  .continue-learning-grid {
+    grid-template-columns: 1fr; /* Single column for cards */
+  }
+}
+
+/* For mobile devices (≤768px) */
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding: 1rem 0.75rem;
+    padding-top: 4.5rem; /* Re-evaluate based on header height at this breakpoint */
+  }
+
+  .header-container {
+    padding: 0.75rem 1rem; /* Consistent padding */
+    flex-wrap: wrap; /* Allow header items to wrap */
+  }
+
+  .header-greeting-wrapper {
+    width: 100%;
+    justify-content: space-between; /* Greeting on left, hamburger on right */
+    margin-bottom: 0.75rem; /* Space if header-actions wrap below */
+  }
+  .header-title {
+    font-size: 1.125rem; /* Adjust for readability */
+  }
+
+  .header-actions {
+    width: 100%; /* Take full width if they wrap */
+    justify-content: flex-end; /* Align to the right */
+    gap: 1rem; /* Adjust gap */
+  }
+
+  /* Optionally hide or shrink less critical header items */
+  .header-actions .language-group,
+  .header-actions .avatar-group {
+    /* display: none; */
+  }
+  .header-actions .view-toggle-wrapper {
+    /* Consider making it smaller or hiding if space is very limited */
+    /* transform: scale(0.9); */
+    /* gap: 4px; */
+  }
+  .label { /* For view toggle */
+    font-size: 12px;
+  }
+
+  .sidebar-container {
+    padding: 1rem; /* Slightly less padding inside the sidebar */
+    width: 260px; /* Can be slightly narrower */
+  }
+
+  .sidebar-menu-label {
+    font-size: 0.9rem;
+  }
+
+  .mobile-menu-close-button {
+    top: 0.75rem;
+    right: 1rem;
+  }
+}
+
+/* For very small mobile devices (≤480px) */
+@media (max-width: 480px) {
+  .dashboard-content {
+    padding: 0.75rem 0.5rem;
+    padding-top: 4rem; /* Re-evaluate based on header height */
+  }
+
+  .header-container {
+    padding: 0.5rem 0.75rem;
+  }
+  .header-title {
+    font-size: 1rem;
+  }
+  .header-hamburger-button svg {
+    width: 20px; /* Smaller hamburger icon */
+    height: 20px;
+  }
+
+  .header-actions {
+    gap: 0.5rem; /* Reduce gap further */
+    /* Consider justify-content: space-around or center if few items remain */
+  }
+  /* Hide more items on very small screens */
+  .header-actions .language-group,
+  .header-actions .avatar-group,
+  .header-actions .student-header-icon {
+     display: none; /* Example: hide more icons */
+  }
+   .header-actions .view-toggle-wrapper {
+     /* display: none; */ /* More likely to hide this on very small screens */
+   }
+
+  .sidebar-container {
+    width: 240px; /* Even narrower sidebar */
+    padding: 0.75rem;
+  }
+  .mobile-menu-close-button {
+    top: 0.5rem;
+    right: 0.75rem;
+    font-size: 1.75rem;
+  }
+  .sidebar-menu-label {
+    font-size: 0.85rem;
+  }
+  .medium-icon { /* General icon size reduction in header */
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+/* Add this class to .dashboard-main via JS when mobile menu is open */
+.dashboard-main.menu-open > .dashboard-content {
+  filter: blur(3px) brightness(0.8);
+  pointer-events: none; /* Prevent interaction with the blurred content */
+  transition: filter 0.3s ease-in-out;
+}
+.dashboard-main > .dashboard-content {
+  transition: filter 0.3s ease-in-out; /* Transition for when menu closes */
+}
+
+.sidebar-menu-item.active {
+  background-color: #EFF6FF; /* A light blue (blue-50) */
+  color: #3B82F6;          /* A strong blue (blue-500) */
+}
+
+/* This rule makes the label text bold when the item is active.
+  The color is inherited from the parent `.active` class.
+*/
+.sidebar-menu-item.active .sidebar-menu-label {
+  font-weight: 600;
+}
+
+/* --- THIS IS THE KEY FIX ---
+  This highly specific rule targets the SVG element *inside* the icon's span
+  when the parent menu item is active. Setting 'stroke' to 'currentColor'
+  ensures the SVG inherits the blue color from its active parent.
+*/
+.sidebar-menu-item.active .sidebar-menu-icon svg {
+  stroke: #0D74FA;
+  fill: #0D74FA;
+}
+
+
+/* --- Supporting Styles (for default and hover states) --- */
+
+/* This is the default state for the icon wrapper */
+.sidebar-menu-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* Default color for the icon */
+  color: #6B7280; /* A neutral gray (gray-500) */
+  transition: color 0.2s ease-in-out;
+}
+
+/* Darken the icon slightly on hover for better feedback */
+.sidebar-menu-item:hover .sidebar-menu-icon {
+    color: #374151; /* A darker gray (gray-700) */
+}
+
+/* This ensures the SVG itself is sized correctly */
+.sidebar-menu-icon svg {
+    width: 100%;
+    height: 100%;
 }

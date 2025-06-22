@@ -343,141 +343,155 @@ const EditAssignmentPage = () => {
   };
 
   return (
-    <div >
-      <Sidebar/>
-      <div className="flex-1 ml-[17%] p-[1%]">
-        <Header/>
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      {/* Header */}
+      <Header />
+
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <div className="hidden lg:block w-64 bg-white shadow-md">
+          <Sidebar />
         </div>
-    <div className="bg-slate-50 min-h-screen p-4 sm:p-6 md:p-8 ml-[17%]">
-      <div className="max-w-7xl mx-auto">
-        <header>
-          <h1 className="text-3xl font-bold text-gray-900">Create New Assignment</h1>
-          <p className="text-sm text-gray-500 mt-1">For Classroom ID: {classroomId}</p>
-        </header>
 
-        <main className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
-          <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-xl font-bold text-gray-800">Assignment General Details</h2>
-            <p className="text-sm text-gray-500 mt-1">Fill out the general details for this assignment.</p>
+        {/* Main Content */}
+        <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto">
+          <div className="max-w-7xl mx-auto">
+            <header>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Edit Assignment</h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">For Classroom ID: {classroomId}</p>
+            </header>
 
-            <form className="mt-6 space-y-6">
-              {/* Assignment Title */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Assignment Title<span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
+            <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mt-6">
+              {/* Assignment Details */}
+              <div className="md:col-span-1 lg:col-span-2 bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800">Assignment General Details</h2>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">Fill out the general details for this assignment.</p>
+
+                <form className="mt-6 space-y-6">
+                  {/* Assignment Title */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
+                      Assignment Title<span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm"
+                    />
+                  </div>
+
+                  {/* Assignment Description */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
+                      Description<span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={4}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm"
+                    />
+                  </div>
+
+                  {/* Discussion Assigned */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
+                      Discussion Assigned<span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative mt-1">
+                      <select
+                        value={discussionId}
+                        onChange={(e) => setDiscussionId(e.target.value)}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm appearance-none focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      >
+                        <option value="">Select Discussion</option>
+                        {discussionOptions.map((d) => (
+                          <option key={d.id} value={d.id}>{d.title}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Due Date */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
+                      Due Date <span className="text-gray-500">(optional)</span>
+                    </label>
+                    <div className="relative mt-1">
+                      <input
+                        type="datetime-local"
+                        value={dueDate}
+                        onChange={e => setDueDate(e.target.value)}
+                        className="flex items-center justify-between w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm"
+                      />
+                      <Calendar className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+                </form>
               </div>
 
-              {/* Assignment Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Description<span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-              </div>
-
-              {/* Discussion Assigned */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Discussion Assigned<span className="text-red-500">*</span>
-                </label>
-                <div className="relative mt-1">
-                  <select
-                    value={discussionId}
-                    onChange={(e) => setDiscussionId(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm appearance-none focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">Select Discussion</option>
-                    {discussionOptions.map((d) => (
-                      <option key={d.id} value={d.id}>{d.title}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              {/* Questions Section */}
+              <div className="lg:col-span-1 flex flex-col">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800">Questions</h2>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">Questions will appear to your students in this order.</p>
+                <div className="mt-6 space-y-4 flex-grow overflow-y-auto pr-2" style={{ maxHeight: 'calc(2.5 * 18rem)'}}> 
+                  {questions.length === 0 && (
+                    <div className="flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-gray-300 rounded-lg h-48">
+                        <p className="text-gray-500 font-medium">No questions yet.</p>
+                        <p className="text-xs sm:text-sm text-gray-400">Click "Add Another Question" to get started.</p>
+                    </div>
+                  )}
+                  {questions.map((q, idx) => (
+                    q.isEditing ? (
+                        <QuestionEditForm
+                            key={q.id} question={q} index={idx} onSave={handleSaveQuestion}
+                            onFormChange={handleQuestionFormChange} onDelete={handleDeleteQuestion}
+                        />
+                    ) : (
+                        <QuestionDisplayCard
+                            key={q.id} question={q} index={idx} onEdit={handleEditQuestion}
+                            onDelete={handleDeleteQuestion}
+                        />
+                    )
+                  ))}
+                    <div ref={questionsEndRef} />
                 </div>
-              </div>
 
-              {/* Due Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Due Date <span className="text-gray-500">(optional)</span>
-                </label>
-                <div className="relative mt-1">
-                  <input
-                    type="datetime-local"
-                    value={dueDate}
-                    onChange={e => setDueDate(e.target.value)}
-                    className="flex items-center justify-between w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"
-                  />
-                  <Calendar className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                <button
+                  onClick={handleAddQuestion}
+                  className="w-full mt-4 flex items-center justify-center py-3 px-4 border-2 border-dashed border-gray-300 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-100 hover:border-gray-400 transition-colors"
+                >
+                  <Plus className="w-5 h-5 mr-2" /> Add Another Question
+                </button>
               </div>
-            </form>
-          </div>
+            </main>
 
-          <div className="lg:col-span-1 flex flex-col">
-            <h2 className="text-xl font-bold text-gray-800">Questions</h2>
-            <p className="text-sm text-gray-500 mt-1">Questions will appear to your students in this order.</p>
-            <div className="mt-6 space-y-4 flex-grow overflow-y-auto pr-2" style={{ maxHeight: 'calc(2.5 * 18rem)'}}> 
-              {questions.length === 0 && (
-                <div className="flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-gray-300 rounded-lg h-48">
-                    <p className="text-gray-500 font-medium">No questions yet.</p>
-                    <p className="text-sm text-gray-400">Click "Add Another Question" to get started.</p>
+            {/* Action Buttons */}
+            <div className="mt-8 flex flex-col sm:flex-row justify-end items-center gap-3">
+              {error && (
+                <div className="flex items-center text-xs sm:text-sm text-red-600 mb-2 sm:mb-0">
+                  <AlertCircle className="w-5 h-5 mr-2"/> {error}
                 </div>
               )}
-              {questions.map((q, idx) => (
-                q.isEditing ? (
-                    <QuestionEditForm
-                        key={q.id} question={q} index={idx} onSave={handleSaveQuestion}
-                        onFormChange={handleQuestionFormChange} onDelete={handleDeleteQuestion}
-                    />
-                ) : (
-                    <QuestionDisplayCard
-                        key={q.id} question={q} index={idx} onEdit={handleEditQuestion}
-                        onDelete={handleDeleteQuestion}
-                    />
-                )
-              ))}
-                <div ref={questionsEndRef} />
+              <button 
+                className="w-full sm:w-auto px-6 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50"
+                onClick={() => navigate(-1)} // Go back
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveAssignment}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto flex items-center justify-center px-6 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed"
+              >
+                <Check className="w-5 h-5 mr-2" /> {isSubmitting ? 'Saving...' : 'Save Assignment'}
+              </button>
             </div>
-
-            <button
-              onClick={handleAddQuestion}
-              className="w-full mt-4 flex items-center justify-center py-3 px-4 border-2 border-dashed border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100 hover:border-gray-400 transition-colors"
-            >
-              <Plus className="w-5 h-5 mr-2" /> Add Another Question
-            </button>
           </div>
-        </main>
-
-        <div className="mt-8 flex justify-end items-center space-x-4">
-            {error && <div className="flex items-center text-sm text-red-600"><AlertCircle className="w-5 h-5 mr-2"/> {error}</div>}
-          <button 
-            className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50"
-            onClick={() => navigate(-1)} // Go back
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSaveAssignment}
-            disabled={isSubmitting}
-            className="flex items-center px-6 py-2 border border-transparent rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed"
-          >
-            <Check className="w-5 h-5 mr-2" /> {isSubmitting ? 'Saving...' : 'Save Assignment'}
-          </button>
         </div>
       </div>
-    </div>
     </div>
   );
 };

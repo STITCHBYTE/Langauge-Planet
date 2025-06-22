@@ -26,10 +26,10 @@ export function BenefitCard({ title, description, bgColor, image, imageType }: B
         );
       case "centered":
         return (
-          <div className={`flex z-10 flex-col justify-center items-center px-11 mt-4 aspect-square ${bgColor} max-md:px-5`}>
+          <div className={`flex z-10 flex-col justify-center items-center px-4 sm:px-8 mt-4 aspect-square ${bgColor}`}>
             <img
               src={image}
-              className="object-contain w-full aspect-square"
+              className="object-contain w-24 sm:w-32 md:w-40 aspect-square"
             />
           </div>
         );
@@ -55,12 +55,14 @@ export function BenefitCard({ title, description, bgColor, image, imageType }: B
   };
 
   return (
-    <article className={`overflow-hidden px-6 pt-6 ${bgColor} rounded-2xl min-w-[25rem] w-[420px] max-md:px-5 max-h-[500px]`}>
+    <article
+      className={`overflow-hidden px-4 sm:px-6 md:px-10 pt-6 md:pt-10 pb-4 md:pb-8 ${bgColor} rounded-2xl min-w-[18rem] sm:min-w-[22rem] md:min-w-[22rem] w-full max-w-xs sm:max-w-sm md:max-w-md flex flex-col justify-between h-full`}
+    >
       <div className={imageType === "portrait" ? "z-10" : ""}>
-        <h3 className="text-4xl font-bold tracking-tighter text-stone-800">
+        <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tighter text-stone-800">
           {title}
         </h3>
-        <p className="mt-1 text-2xl font-medium tracking-tight leading-9 text-neutral-600">
+        <p className="mt-1 text-base sm:text-lg md:text-2xl font-medium tracking-tight leading-7 md:leading-9 text-neutral-600">
           {description}
         </p>
       </div>

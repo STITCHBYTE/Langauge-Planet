@@ -233,23 +233,29 @@ const AddStudentsPage = () => {
     };
 
     return (
-        <div>
-            <Sidebar />
-            <div className="ml-[17%] p-[1%]">
-                <Header />
-                <div className="p-4 md:p-8">
-                    <Breadcrumb />
-                    <div className="relative mb-6">
-                        <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search student by name or username..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+        <div className="min-h-screen flex flex-col bg-gray-50">
+            <Header />
+            <div className="flex flex-1">
+                {/* Sidebar */}
+                <div className="hidden lg:block w-64 bg-white border-r border-gray-200">
+                    <Sidebar />
+                </div>
+                {/* Main Content */}
+                <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
+                    <div className="max-w-6xl mx-auto">
+                        <Breadcrumb />
+                        <div className="relative mb-6">
+                            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search student by name or username..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        {renderContent()}
                     </div>
-                    {renderContent()}
                 </div>
             </div>
         </div>

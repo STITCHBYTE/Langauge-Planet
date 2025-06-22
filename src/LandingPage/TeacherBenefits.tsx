@@ -25,60 +25,59 @@ export function TeacherBenefits() {
   ];
 
   return (
-    <section className="overflow-hidden w-full bg-stone-50">
-      <div className="flex overflow-hidden relative flex-col px-20 pt-24 w-full min-h-[982px] max-md:px-5 max-md:pt-24 max-md:max-w-full">
+    <section className="overflow-hidden w-full bg-stone-50 py-16 px-4 sm:px-8 md:px-20">
+      <div className="relative flex flex-col w-full max-w-7xl mx-auto">
         <img
           src="https://cdn.builder.io/api/v1/image/assets/TEMP/9bd598ba969de7ee1e1c90d890625e5626974b98?placeholderIfAbsent=true&apiKey=b25fbc87d9254d4c96237d8f2fb90e0d"
-          className="object-cover absolute inset-0 size-full"
+          className="object-cover absolute inset-0 w-full h-full opacity-10 pointer-events-none"
+          alt="Background"
         />
-        <div className="flex relative flex-col max-md:max-w-full">
-          <header className="flex flex-col items-center self-center font-medium text-center max-md:max-w-full">
-            <div className="flex flex-col justify-center items-center px-3 py-1 text-base leading-none text-blue-600 bg-blue-100 rounded-xl border border-solid border-[color:var(--Primary-600,#0D74FA)]">
-              <span className="gap-1 self-stretch">
-                Teacher Benefits
-              </span>
+        <div className="relative flex flex-col w-full">
+          <header className="flex flex-col items-center font-medium text-center w-full max-w-3xl mx-auto">
+            <div className="flex flex-col justify-center items-center px-3 py-1 text-base leading-none text-blue-600 bg-blue-100 rounded-xl border border-solid border-blue-600">
+              <span>Teacher Benefits</span>
             </div>
-            <h2 className="mt-3 text-6xl font-semibold leading-tight text-blue-900 max-md:max-w-full max-md:text-4xl">
+            <h2 className="mt-3 text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight text-blue-900">
               Perks of being a{" "}
-              <span style={{color: "rgba(13,116,250,1)"}}>
+              <span className="text-blue-600">
                 Language Planet
               </span>{" "}
               teacher
             </h2>
-            <p className="mt-3 text-xl tracking-tight leading-8 text-slate-600 max-md:max-w-full">
+            <p className="mt-3 text-base sm:text-lg md:text-xl tracking-tight leading-7 md:leading-8 text-slate-600">
               Lorem ipsum dolor sit amet consectetur. Est urna sit rhoncus
               mauris ipsum. Ornare lectus commodo euismod elit elit aliquet
               dictumst varius ut. Et eget euismod blandit.
             </p>
           </header>
-          <div className="mt-9 max-md:max-w-full">
-            <div className="flex gap-5 max-md:flex-col max-md:">
-              <div className="w-[56%] max-md:ml-0 max-md:w-full">
-                <img
-                  src="https://cdn.builder.io/api/v1/image/assets/TEMP/1f81dd040ee49095677ce252d82d1eb4c821587b?placeholderIfAbsent=true&apiKey=b25fbc87d9254d4c96237d8f2fb90e0d"
-                  className="object-contain grow w-full aspect-square max-md:mt-10 max-md:max-w-full"
-                />
-              </div>
-              <div className="ml-5 w-[44%] max-md:ml-0 max-md:w-full">
-                <div className="self-stretch my-auto max-md:mt-10 max-md:max-w-full">
-                  {perks.map((perk, index) => (
-                    <article key={index} className={`flex flex-wrap gap-3 items-center ${index > 0 ? 'mt-8' : ''} max-md:max-w-full`}>
-                      <img
-                        src={perk.icon}
-                        className="object-contain shrink-0 self-stretch my-auto aspect-square w-[85px]"
-                      />
-                      <div className="self-stretch my-auto min-w-60 w-[419px]">
-                        <h3 className="text-2xl font-semibold tracking-tight leading-tight text-blue-950">
-                          {perk.title}
-                        </h3>
-                        <p className="mt-2 text-xl font-medium tracking-tight leading-6 text-slate-500">
-                          {perk.description}
-                        </p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </div>
+          <div className="mt-12 flex flex-col md:flex-row gap-10 w-full items-center">
+            {/* Teacher Illustration */}
+            <div className="w-full md:w-1/2 flex justify-center">
+              <img
+                src="https://cdn.builder.io/api/v1/image/assets/TEMP/1f81dd040ee49095677ce252d82d1eb4c821587b?placeholderIfAbsent=true&apiKey=b25fbc87d9254d4c96237d8f2fb90e0d"
+                className="object-contain w-full max-w-xs sm:max-w-md md:max-w-lg aspect-square"
+                alt="Teacher Illustration"
+              />
+            </div>
+            {/* Perks List */}
+            <div className="w-full md:w-1/2 flex flex-col gap-8">
+              {perks.map((perk, index) => (
+                <article key={index} className="flex gap-4 items-start">
+                  <img
+                    src={perk.icon}
+                    className="object-contain w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-white shadow"
+                    alt={perk.title + " icon"}
+                  />
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight text-blue-950">
+                      {perk.title}
+                    </h3>
+                    <p className="mt-2 text-base sm:text-lg font-medium tracking-tight leading-6 text-slate-500">
+                      {perk.description}
+                    </p>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
         </div>

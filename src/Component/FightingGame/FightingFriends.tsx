@@ -6,7 +6,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import io, { Socket } from "socket.io-client";
 import { useParams, useNavigate } from "react-router-dom";
 
-const SERVER_URL = "http://192.168.1.5:3001"; // Ensure this is your actual server IP/domain
+const SERVER_URL = "http://localhost:8082"; // Ensure this is your actual server IP/domain
 
 interface PlayerState {
   id: string;

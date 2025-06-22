@@ -12,7 +12,7 @@ const SectionA: React.FC = () => {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io("http://192.168.1.5:3001/friend", {
+    const socket = io("http://192.168.1.2:8082/friend", {
       transports: ["websocket"],
       reconnectionAttempts: 5,
       timeout: 5000,

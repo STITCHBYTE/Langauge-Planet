@@ -5,11 +5,14 @@ import FilterStatus from "./FilterStatus.tsx";
 import LessonCard from "./clsaaCard.tsx";
 import Header from "../Home/Header.tsx";
 import Sidebar from "../Home/Sidebar.tsx";
+import '../Home/Style.css'; // Ensure the main dashboard styles are imported
+
 function Lessons() {
   return (
-    <div>
+    <div className="dashboard-wrapper"> {/* Optional: if you need the wrapper's flex behavior */}
         <Sidebar/>
-    <section style={{ padding: "1.50rem" , marginLeft:"17%"}}>
+    {/* Apply the dashboard-content class for responsive padding and margin */}
+    <section className="dashboard-content"> 
      
         <Header />
       <div style={{ display: "flex", flexWrap: "wrap", gap: "40px", justifyContent: "space-between", alignItems: "flex-end", width: "100%"}}>

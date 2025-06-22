@@ -72,28 +72,31 @@ const ClassForm: React.FC = () => {
 };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex flex-col p-[1%] ml-[17%]">
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      {/* Header */}
+      <div className="w-full">
         <Header />
       </div>
 
       <div className="flex flex-1">
-        <div className="w-64 bg-white shadow-md">
+        {/* Sidebar */}
+        <div className="hidden lg:block w-64 bg-white shadow-md">
           <Sidebar />
         </div>
 
-        <div className="flex-1 bg-gray-100 p-8 overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-5xl mx-auto">
+        {/* Main Content */}
+        <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto">
             <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 {/* Left column */}
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-800 mb-2">Basic Details</h2>
-                  <p className="text-sm text-gray-500 mb-6">Fill out the basic details for this class</p>
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Basic Details</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 mb-6">Fill out the basic details for this class</p>
 
                   {/* Class Title */}
                   <div className="mb-6">
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="title" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Class Title<span className="text-red-500">*</span>
                     </label>
                     <input
@@ -102,21 +105,21 @@ const ClassForm: React.FC = () => {
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       required
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
                       placeholder="Enter class title"
                     />
                   </div>
 
-                  {/* Access Type (Private toggle) */}
+                  {/* Access Type */}
                   <div className="mb-6">
-  <label htmlFor="accessType" className="block text-sm font-medium text-gray-700 mb-1">
+  <label htmlFor="accessType" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
     Access Type<span className="text-red-500">*</span>
   </label>
   <select
     id="accessType"
     value={accessType}
     onChange={(e) => setAccessType(e.target.value as 'public' | 'private')}
-    className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+    className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
   >
     <option value="public">Public</option>
     <option value="private">Private</option>
@@ -125,7 +128,7 @@ const ClassForm: React.FC = () => {
 
                   {/* Class Description */}
                   <div className="mb-6">
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="description" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Class Description<span className="text-red-500">*</span>
                     </label>
                     <textarea
@@ -135,7 +138,7 @@ const ClassForm: React.FC = () => {
                       rows={4}
                       maxLength={500}
                       required
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-y"
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm resize-y"
                       placeholder="Enter description"
                     ></textarea>
                     <p className="mt-1 text-xs text-gray-500">{descriptionWordCount}/100 words</p>
@@ -144,10 +147,10 @@ const ClassForm: React.FC = () => {
 
                 {/* Right column - Image upload */}
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-800 mb-2">Class Display Image</h2>
-                  <p className="text-sm text-gray-500 mb-6">Upload a display image for this class</p>
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Class Display Image</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 mb-6">Upload a display image for this class</p>
 
-                  <div className="flex justify-center items-center h-64 border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:border-blue-400 transition relative group">
+                  <div className="flex justify-center items-center h-40 sm:h-56 md:h-64 border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:border-blue-400 transition relative group">
                     <input
                       type="file"
                       id="displayImageUpload"
@@ -157,12 +160,12 @@ const ClassForm: React.FC = () => {
                     />
                     {image ? (
                       <div className="text-center">
-                        <img src={URL.createObjectURL(image)} alt="Preview" className="max-h-56 mx-auto object-contain" />
-                        <p className="mt-2 text-sm text-gray-600">{image.name}</p>
+                        <img src={URL.createObjectURL(image)} alt="Preview" className="max-h-32 sm:max-h-40 md:max-h-56 mx-auto object-contain" />
+                        <p className="mt-2 text-xs sm:text-sm text-gray-600">{image.name}</p>
                       </div>
                     ) : (
                       <div className="text-center">
-                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 48 48">
+                        <svg className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" fill="none" viewBox="0 0 48 48">
                           <path
                             d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L40 32"
                             stroke="currentColor"
@@ -171,7 +174,7 @@ const ClassForm: React.FC = () => {
                             strokeLinejoin="round"
                           />
                         </svg>
-                        <p className="mt-2 text-sm text-gray-600">Tap to Upload</p>
+                        <p className="mt-2 text-xs sm:text-sm text-gray-600">Tap to Upload</p>
                         <p className="text-xs text-gray-500">PNG, JPG, GIF | 10MB max.</p>
                       </div>
                     )}
@@ -180,17 +183,17 @@ const ClassForm: React.FC = () => {
               </div>
 
               {/* Buttons */}
-              <div className="mt-10 pt-6 border-t border-gray-200 flex justify-end space-x-3">
+              <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => console.log('Cancelled')}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                 >
                   Save Details
                 </button>

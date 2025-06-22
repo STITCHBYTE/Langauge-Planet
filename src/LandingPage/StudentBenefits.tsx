@@ -48,27 +48,27 @@ export function StudentBenefits() {
   ];
 
   return (
-    <section className="flex flex-col py-28 pl-20 w-full bg-green-50 max-md:py-24 max-md:pl-5 max-md:max-w-full">
-      <header className="flex flex-col items-center self-center max-w-full font-medium text-center w-[802px]">
-        <div className="flex flex-col justify-center items-center px-3 py-1 text-base leading-none text-blue-600 bg-blue-100 rounded-xl border border-solid border-[color:var(--Primary-600,#0D74FA)]">
+    <section className="flex flex-col py-16 px-4 sm:px-8 md:px-16 w-full bg-green-50">
+      <header className="flex flex-col items-center self-center max-w-full font-medium text-center w-full md:w-[802px]">
+        <div className="flex flex-col justify-center items-center px-3 py-1 text-base leading-none text-blue-600 bg-blue-100 rounded-xl border border-solid border-blue-600">
           <span className="gap-1 self-stretch text-blue-600">
             Student Benefits
           </span>
         </div>
-        <h2 className="mt-3 text-6xl font-semibold leading-tight text-blue-900 max-md:max-w-full max-md:text-4xl">
+        <h2 className="mt-3 text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight text-blue-900">
           What we have for you
         </h2>
-        <p className="self-stretch mt-3 text-xl tracking-tight leading-8 text-slate-600 max-md:max-w-full">
+        <p className="self-stretch mt-3 text-base sm:text-lg md:text-xl tracking-tight leading-7 md:leading-8 text-slate-600">
           Lorem ipsum dolor sit amet consectetur. Est urna sit rhoncus
           mauris ipsum. Ornare lectus commodo euismod elit elit aliquet
           dictumst varius ut. Et eget euismod blandit.
         </p>
       </header>
-      <div className="flex overflow-x-auto gap-4 items-start mt-20 mb-0 max-md:mt-10 max-md:mb-2.5">
+      {/* Responsive grid for cards */}
+      <div className="mt-12 grid grid-flow-col auto-cols-[80%] sm:auto-cols-[45%] md:auto-cols-[30%] gap-6 sm:gap-8 md:gap-4 overflow-x-auto pb-4 md:grid-flow-row md:grid-cols-3 md:auto-cols-auto md:overflow-x-visible">
         {benefits.map((benefit, index) => (
           <BenefitCard key={index} {...benefit} />
         ))}
-        <div className="flex shrink-0 h-[517px] w-[94px]" />
       </div>
     </section>
   );

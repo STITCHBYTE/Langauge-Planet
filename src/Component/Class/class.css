@@ -5,6 +5,8 @@
   min-height: 48px;
   min-width: 240px;
   width: 330px;
+  /* Added for flexibility if it's part of a larger flex layout */
+  flex-shrink: 0; 
 }
 
 .search-wrapper {
@@ -35,43 +37,51 @@
   width: 20px;
   height: 20px;
   object-fit: contain;
+  flex-shrink: 0; /* Prevent icon from shrinking */
 }
 
 .search-placeholder {
   color: #64748b; /* Tailwind slate-500 */
   font-size: 14px;
+  white-space: nowrap; /* Prevent placeholder from wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .filter-status-container {
   display: flex;
-  gap: 8px;
+  gap: 8px; /* Reduced default gap slightly */
   align-items: center;
+  flex-wrap: wrap; /* Allow items to wrap on smaller screens before media queries kick in */
 }
 
 .filter-label {
   font-size: 0.875rem; /* text-sm */
   font-weight: 500;    /* font-medium */
   color: #9ca3af;      /* gray-400 */
-  align-self: stretch;
+  align-self: center; /* Changed from stretch for better wrap behavior */
   margin: auto 0;
+  white-space: nowrap; /* Prevent label from wrapping */
 }
 
 .filter-box {
   display: flex;
   gap: 8px;
   align-items: center;
-  align-self: stretch;
+  align-self: center; /* Changed from stretch */
   padding: 8px 12px;
   margin: auto 0;
   border-radius: 12px;
   border: 1px solid #EDEEF1; /* var(--Gray-100) */
+  background-color: #fff; /* Added background for consistency */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Optional: subtle shadow */
 }
 
 .filter-text-badge {
   display: flex;
   gap: 4px;
   align-items: center;
-  align-self: stretch;
+  align-self: center; /* Changed from stretch */
   margin: auto 0;
 }
 
@@ -79,8 +89,9 @@
   font-size: 0.875rem; /* text-sm */
   font-weight: 600;    /* font-semibold */
   color: #27272a;      /* zinc-800 */
-  align-self: stretch;
+  align-self: center; /* Changed from stretch */
   margin: auto 0;
+  white-space: nowrap;
 }
 
 .filter-badge {
@@ -93,11 +104,13 @@
   height: 17px;
   min-height: 17px;
   width: 17px;
-  border-radius: 100px;
+  min-width: 17px; /* Ensure it doesn't collapse */
+  border-radius: 50%; /* Changed to 50% for perfect circle */
   display: flex;
   justify-content: center;
   align-items: center;
   white-space: nowrap;
+  flex-shrink: 0; /* Prevent badge from shrinking */
 }
 
 .filter-icon {
@@ -105,7 +118,140 @@
   height: 16px;
   object-fit: contain;
   flex-shrink: 0;
-  align-self: stretch;
+  align-self: center; /* Changed from stretch */
   margin: auto 0;
 }
+
+/* --- Responsive Adjustments --- */
+
+/* For tablets (≤1024px) - Adjust search width if needed */
+@media (max-width: 1024px) {
+  .search-container {
+    width: 100%; /* Allow search to take more space or full width */
+    max-width: 400px; /* Optional: constrain max width on tablets */
+  }
+  .filter-status-container {
+    /* If search and filter are in a row, this container might need to adjust */
+    /* For example, if they are direct children of a flex container: */
+    /* flex-grow: 1; */
+  }
+}
+
+/* For mobile devices (≤768px) */
+@media (max-width: 768px) {
+  .search-container {
+    width: 100%; /* Full width for search on mobile */
+    max-width: none; /* Remove max-width constraint */
+    min-width: unset; /* Remove min-width */
+  }
+
+  .search-box {
+    padding: 6px 10px; /* Slightly reduce padding */
+    gap: 8px;
+  }
+  .search-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .search-placeholder {
+    font-size: 13px;
+  }
+
+  .filter-status-container {
+    gap: 10px; /* Adjust gap for wrapped items */
+    /* If the filter items should stack vertically instead of wrapping: */
+    /* flex-direction: column; */
+    /* align-items: stretch; */ /* To make items full width in column */
+  }
+
+  .filter-label {
+    font-size: 0.8rem;
+    /* If stacking, you might want full width: */
+    /* width: 100%; */
+    /* text-align: left; */
+    /* margin-bottom: 4px; */
+  }
+
+  .filter-box {
+    padding: 6px 10px; /* Slightly reduce padding */
+    /* If stacking: */
+    /* width: 100%; */
+    /* justify-content: space-between; */ /* If you want icon on the right */
+  }
+
+  .filter-text {
+    font-size: 0.8rem;
+  }
+
+  .filter-badge {
+    height: 16px;
+    width: 16px;
+    min-height: 16px;
+    min-width: 16px;
+    font-size: 0.7rem;
+  }
+
+  .filter-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* For very small mobile devices (≤480px) */
+@media (max-width: 480px) {
+  .search-box {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  .search-icon {
+    width: 16px;
+    height: 16px;
+  }
+  .search-placeholder {
+    font-size: 12px;
+  }
+
+  .filter-status-container {
+    gap: 8px;
+  }
+
+  .filter-label {
+    font-size: 0.75rem;
+  }
+
+  .filter-box {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .filter-text {
+    font-size: 0.75rem;
+  }
+
+  .filter-badge {
+    height: 15px;
+    width: 15px;
+    min-height: 15px;
+    min-width: 15px;
+    font-size: 0.65rem;
+  }
+}
+
+/* In Home/Style.css or a global stylesheet */
+.dashboard-content {
+  flex: 1; /* If inside a flex container like dashboard-main */
+  padding: 1.5rem;
+  margin-left: 17%; /* For desktop when sidebar is fixed and 17% wide */
+  transition: margin-left 0.3s ease-in-out; /* Smooth transition if sidebar width changes */
+}
+
+@media (max-width: 1024px) { /* Or your tablet breakpoint */
+  .dashboard-content {
+    margin-left: 0; /* Remove margin when sidebar is an overlay or hidden */
+    /* Adjust padding-top if you have a fixed mobile header */
+    padding-top: 1rem; 
+  }
+}
+
+/* Add other breakpoints as needed */
 

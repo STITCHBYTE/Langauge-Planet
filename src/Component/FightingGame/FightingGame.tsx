@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import io from "socket.io-client";
 
-const socket = io("http://192.168.1.5:3001");
+const socket = io("http://localhost:8082");
 
 type CharacterType = "player" | "bot";
 type QuizOption = { text: string; isCorrect: boolean };

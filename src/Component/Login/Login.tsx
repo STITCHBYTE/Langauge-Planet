@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Server_url from "../../config";
+import toast, { Toaster } from "react-hot-toast";
+
 // InputField Component
 const InputField: React.FC<{
   label: string;
@@ -118,7 +120,6 @@ const DividerWithText: React.FC = () => (
   </div>
 );
 
-
 const LoginForm: React.FC = () => {
   const [formMode, setFormMode] = useState<"login" | "signup" | "forgot">("login");
   const [first_name, setFirstName] = useState("");
@@ -126,6 +127,7 @@ const LoginForm: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState(""); // Add this state if you want confirm password
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -138,90 +140,113 @@ const LoginForm: React.FC = () => {
     setSuccessMessage(null);
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  resetMessages();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    resetMessages();
 
-  if (isSignup) {
-    if (!first_name.trim()) {
-      setError("First Name is required.");
-      return;
-    }
-    if (!last_name.trim()) {
-      setError("Last Name is required.");
-      return;
-    }
-    if (!username.trim()) {
-      setError("Username is required.");
-      return;
-    }
-  }
- else if (!email.trim()) {
-    setError("Email is required.");
-    return;
-  }
+    // Convert email and username to lowercase
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedUsername = username.trim().toLowerCase();
 
-  if (!isForgot && !password) {
-    setError("Password is required.");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    let endpoint = "";
-    let payload: any = {};
-
-    switch (formMode) {
-      case "login":
-        endpoint = `${Server_url}/api/users/login/`;
-        payload = { email, password };
-        break;
-      case "signup":
-        endpoint = `${Server_url}/api/users/add/`;
-       payload = { first_name, last_name, username, email, password};
-        break;
-      case "forgot":
-        endpoint = `${Server_url}/api/users/forgot-password/`;
-        payload = { email };
-        break;
-      default:
-        throw new Error("Invalid form mode.");
-    }
-
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data?.message || `Request failed with status ${response.status}`);
-    }
-
-    if (data.success) {
-      setSuccessMessage(data.message || "Operation successful.");
-      // alert(data.message || "Operation successful.");
-      navigate('/Dashboard');
-
-      if ((formMode === "login" || formMode === "signup") && data.access && data.refresh) {
-        localStorage.setItem("authToken", data.access);
-        localStorage.setItem("refreshToken", data.refresh);
-        // Add post-login behavior here
+    if (isSignup) {
+      if (!first_name.trim()) {
+        toast.error("First Name is required.");
+        return;
       }
-    } else {
-      setError(data.message || "Something went wrong.");
+      if (!last_name.trim()) {
+        toast.error("Last Name is required.");
+        return;
+      }
+      if (!normalizedUsername) {
+        toast.error("Username is required.");
+        return;
+      }
+      if (!normalizedEmail) {
+        toast.error("Email is required.");
+        return;
+      }
+      if (!password) {
+        toast.error("Password is required.");
+        return;
+      }
+      if (!confirmPassword) {
+        toast.error("Confirm Password is required.");
+        return;
+      }
+      if (password !== confirmPassword) {
+        toast.error("Passwords do not match.");
+        return;
+      }
+    } else if (!normalizedEmail) {
+      toast.error("Email is required.");
+      return;
     }
-  } catch (err: any) {
-    setError(err.message || "Unexpected error occurred.");
-  } finally {
-    setLoading(false);
-  }
-}; // ✅ Correctly ends the async function
+
+    if (!isForgot && !password) {
+      toast.error("Password is required.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      let endpoint = "";
+      let payload: any = {};
+
+      switch (formMode) {
+        case "login":
+          endpoint = `${Server_url}/api/users/login/`;
+          payload = { email: normalizedEmail, password };
+          break;
+        case "signup":
+          endpoint = `${Server_url}/api/users/add/`;
+          payload = { 
+            first_name, 
+            last_name, 
+            username: normalizedUsername, 
+            email: normalizedEmail, 
+            password 
+          };
+          break;
+        case "forgot":
+          endpoint = `${Server_url}/api/users/forgot-password/`;
+          payload = { email: normalizedEmail };
+          break;
+        default:
+          throw new Error("Invalid form mode.");
+      }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data?.message || `Request failed with status ${response.status}`);
+        throw new Error(data?.message || `Request failed with status ${response.status}`);
+      }
+
+      if (data.success) {
+        setSuccessMessage(data.message || "Operation successful.");
+        navigate('/Dashboard');
+        if ((formMode === "login" || formMode === "signup") && data.access && data.refresh) {
+          localStorage.setItem("authToken", data.access);
+          localStorage.setItem("refreshToken", data.refresh);
+        }
+      } else {
+        toast.error(data.message || "Something went wrong.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  }; // ✅ Correctly ends the async function
 
   return (
     <div className="w-full max-md:mt-6">
@@ -318,6 +343,16 @@ const LoginForm: React.FC = () => {
             />
           </>
         )}
+        {isSignup && (
+          <InputField
+            label="Confirm Password"
+            type="password"
+            placeholder="Confirm your password"
+            showPasswordToggle
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        )}
 
         <button
           className={`w-full px-6 py-3 text-white text-base font-semibold rounded-lg mt-2 ${
@@ -371,7 +406,6 @@ const LoginForm: React.FC = () => {
     </div>
   );
 };
-// ...existing code...
 
 // LeftPanel Component
 const LeftPanel: React.FC = () => (
@@ -404,8 +438,9 @@ const LeftPanel: React.FC = () => (
 // AuthenticationScreen (main component)
 const AuthenticationScreen: React.FC = () => {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="flex w-full max-w-4xl h-[650px] rounded-lg shadow-lg overflow-hidden bg-white">
+    <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
+      <Toaster position="top-center" />
+      <div className="flex w-full max-w-4xl rounded-lg shadow-lg overflow-hidden bg-white">
         <section className="w-[55%] hidden md:block">
           <LeftPanel />
         </section>
