@@ -117,8 +117,6 @@ const Header = () => {
         {/* Profile Avatar with Modal */}
         <div
           className="flex items-center gap-1 relative"
-          onMouseEnter={() => setShowProfileModal(true)}
-          onMouseLeave={() => setShowProfileModal(false)}
           ref={profileRef}
         >
           <div

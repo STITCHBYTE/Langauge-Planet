@@ -169,6 +169,12 @@ const LoginForm: React.FC = () => {
         toast.error("Password is required.");
         return;
       }
+      if (!isStrongPassword(password)) {
+        toast.error(
+          "Password must be at least 8 characters, include 1 uppercase, 1 lowercase, 1 number, and 1 special character."
+        );
+        return;
+      }
       if (!confirmPassword) {
         toast.error("Confirm Password is required.");
         return;
@@ -451,5 +457,10 @@ const AuthenticationScreen: React.FC = () => {
     </main>
   );
 };
+
+function isStrongPassword(password: string): boolean {
+  // At least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(password);
+}
 
 export default AuthenticationScreen;

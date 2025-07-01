@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Learning.css'; // Shared CSS file
 import Header from '../Home/Header.tsx';     // Header component
 import Sidebar from '../Home/Sidebar.tsx';   // Sidebar component
 import LessonCard from './lesson.tsx'; // LessonCard component
+import Server_url from '../../config.js'; // Make sure this is your API base URL
 
 // --- Child Components defined within the main page ---
 
@@ -37,51 +38,75 @@ const StatusFilter: React.FC = () => (
     </div>
 );
 
-// Define a type for a single lesson's data
+// Update Lesson type to match backend
 type Lesson = {
+  id: string;
   title: string;
   description: string;
-  icon: string;
-  progress?: number;
-  timeLeft?: string;
-  isCompleted?: boolean;
+  image?: string;
+  is_private?: boolean;
+  lesson_level?: string;
+  created_at?: string;
+  updated_at?: string;
+  // Add any other fields your backend returns
 };
 
-// Define the props for LessonCard
+// Update LessonCardProps if needed
 export interface LessonCardProps {
-    title: string;
-    description: string;
-    icon: string;
-    progress?: number;
-    timeLeft?: string;
-    isCompleted?: boolean;
+  title: string;
+  description: string;
+  image?: string;
+  lesson_level?: string;
+  is_private?: boolean;
+  // Add other props as needed
 }
 
 // LessonGrid Component
 const LessonGrid: React.FC = () => {
-    const lessons: Lesson[] = [
-        { title: "Basic Spanish", description: "Lorem ipsum dolor sit amet consectetur...", progress: 75, timeLeft: "7 minutes left", icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/c151759922cef12966614a9426cb1233984f82db" },
-        { title: "Food", description: "Lorem ipsum dolor sit amet consectetur...", progress: 50, timeLeft: "15 minutes left", icon: "https://static.vecteezy.com/system/resources/previews/010/851/540/original/3d-fast-food-icon-for-ui-ux-design-free-png.png" },
-        { title: "Fruits", description: "Lorem ipsum dolor sit amet consectetur...", progress: 25, timeLeft: "20 minutes left", icon: "https://static.vecteezy.com/system/resources/previews/019/634/115/original/3d-rendering-of-a-fruit-icon-png.png" },
-        { title: "Colors", description: "Learn the basic colors.", timeLeft: "30 Minutes", icon: "https://static.vecteezy.com/system/resources/previews/019/874/228/original/3d-art-palette-icon-png.png"},
-        { title: "Verb", description: "Understand verb conjugations.", timeLeft: "45 Minutes", icon: "https://cdn3d.iconscout.com/3d/premium/thumb/book-and-pencil-8326799-6635952.png"},
-        { title: "Adjective", description: "Describe nouns effectively.", timeLeft: "30 Minutes", icon: "https://cdn3d.iconscout.com/3d/premium/thumb/book-9749457-7933934.png"},
-    ];
-    return (
-        <div className="lesson-grid">
-            {lessons.map((lesson, index) => (
-                <LessonCard
-                    key={index}
-                    title={lesson.title}
-                    description={lesson.description}
-                    icon={lesson.icon}
-                    progress={lesson.progress}
-                    timeLeft={lesson.timeLeft}
-                    isCompleted={lesson.isCompleted}
-                />
-            ))}
-        </div>
-    );
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLessons = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch(`${Server_url}/api/lessons/lesson/my/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch lessons");
+        const data = await res.json();
+        setLessons(data.results || data);
+      } catch (err) {
+        setLessons([]);
+      }
+      setLoading(false);
+    };
+    fetchLessons();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center py-8 text-gray-500">Loading lessons...</div>;
+  }
+
+  return (
+    <div className="lesson-grid">
+      {lessons.length === 0 ? (
+        <div className="text-center py-8 text-gray-400">No lessons found.</div>
+      ) : (
+        lessons.map((lesson) => (
+          <LessonCard
+            key={lesson.id}
+            title={lesson.title}
+            description={lesson.description}
+            image={lesson.image}
+            lesson_level={lesson.lesson_level}
+            is_private={lesson.is_private}
+          />
+        ))
+      )}
+    </div>
+  );
 };
 
 

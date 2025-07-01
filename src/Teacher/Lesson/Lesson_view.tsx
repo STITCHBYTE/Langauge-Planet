@@ -25,6 +25,15 @@ interface Quiz {
     // Add other quiz fields as needed
 }
 
+// Add Stage interface
+interface Stage {
+    id: number;
+    title: string;
+    description?: string;
+    order?: number;
+    // Add other fields as needed
+}
+
 // --- Reusable Sub-Components (No changes needed) ---
 
 const ActionButton = ({ children, primary = false, destructive = false, onClick = () => {} }) => {
@@ -195,9 +204,11 @@ const LessonDetailsPage: React.FC = () => {
     // State for lesson data, loading, and errors
     const [lesson, setLesson] = useState<Lesson | null>(null);
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+    const [stages, setStages] = useState<Stage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+    const [stageDeleteId, setStageDeleteId] = useState<number | null>(null);
     
     // Add new state for lesson dropdown and delete modal
     const [isLessonDropdownOpen, setIsLessonDropdownOpen] = useState(false);
@@ -211,46 +222,45 @@ const LessonDetailsPage: React.FC = () => {
                 setIsLoading(false);
                 return;
             }
-            
             const token = localStorage.getItem('authToken');
             setIsLoading(true);
-
             try {
                 // Fetch lesson details
                 const lessonResponse = await fetch(`${Server_url}/api/lessons/lesson/${lesson_id}/`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-
                 if (!lessonResponse.ok) {
                     throw new Error('Failed to fetch lesson details.');
                 }
-
                 const lessonData: Lesson = await lessonResponse.json();
                 setLesson(lessonData);
-
-                // Fetch quizzes for this lesson - ADD TOKEN HERE
+                // Fetch quizzes for this lesson
                 const quizResponse = await fetch(`${Server_url}/api/lessons/lesson/${lesson_id}/quizzes/`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-
                 if (quizResponse.ok) {
                     const quizData = await quizResponse.json();
-                    console.log('Quiz data received:', quizData); // Debug log
-                    setQuizzes(quizData.results || quizData || []); // Handle different response formats
-                } else {
-                    console.error('Failed to fetch quizzes:', quizResponse.status, quizResponse.statusText);
+                    setQuizzes(quizData.results || quizData || []);
                 }
-
+                // Fetch stages for this lesson
+                const stageResponse = await fetch(`${Server_url}/api/lessons/lesson/${lesson_id}/stages/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (stageResponse.ok) {
+                    const stageData = await stageResponse.json();
+                    console.log('Stages API response:', stageData); // Log the full API response
+                    const stagesArr = stageData.results || stageData || [];
+                    // console.log('Stages array:', stagesArr); // Log the array that will be set
+                    setStages(stagesArr);
+                }
             } catch (err) {
                 setError(err.message);
-                console.error("Fetch error:", err);
             } finally {
                 setIsLoading(false);
             }
         };
-
         fetchLessonDetails();
-    }, [lesson_id]); // Re-run effect if lesson_id changes
+    }, [lesson_id]);
 
     // Add handlers for quiz actions
     const handleEditQuiz = (quizId: number) => {
@@ -279,7 +289,7 @@ const LessonDetailsPage: React.FC = () => {
 
     // Enhanced function to get full image URL with debugging
     const getImageUrl = (imagePath: string | null | undefined): string | undefined => {
-        console.log('Raw image path from backend:', imagePath); // Debug log
+        // console.log('Raw image path from backend:', imagePath); // Debug log
         
         if (!imagePath) {
             console.log('No image path provided');
@@ -363,6 +373,36 @@ const LessonDetailsPage: React.FC = () => {
         }
     };
 
+    // Handler for editing a stage
+    const handleEditStage = (stageId: number) => {
+        navigate(`/edit-stage/${lesson?.id}/${stageId}`);
+    };
+
+    // Handler for deleting a stage
+    const handleDeleteStage = (stageId: number) => {
+        setStageDeleteId(stageId);
+    };
+
+    // Confirm delete stage
+    const confirmDeleteStage = async () => {
+        if (!stageDeleteId) return;
+        const token = localStorage.getItem('authToken');
+        try {
+            const response = await fetch(`${Server_url}/api/lessons/stage/${stageDeleteId}/delete/`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                setStages(prev => prev.filter(stage => stage.id !== stageDeleteId));
+                setStageDeleteId(null);
+            } else {
+                alert('Failed to delete stage');
+            }
+        } catch (error) {
+            alert('Error deleting stage');
+        }
+    };
+
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen">Loading...</div>;
     }
@@ -401,7 +441,7 @@ const LessonDetailsPage: React.FC = () => {
                   {/* Action Button Bar */}
                   <div className="flex flex-row flex-wrap items-center justify-between gap-2 mb-6">
                     <div className="flex flex-row flex-wrap gap-2">
-                      <ActionButton>View Students</ActionButton>
+                      <ActionButton onClick={() => navigate(`/lesson/${lesson.id}/students`)}>View Students</ActionButton>
                       <ActionButton>View Quiz Report</ActionButton>
                       <ActionButton destructive onClick={handleDeleteLesson}>Delete Lesson</ActionButton>
                       <ActionButton>Student View</ActionButton>
@@ -475,15 +515,59 @@ const LessonDetailsPage: React.FC = () => {
 
                       {/* Lesson Stages Card */}
                       <div className="bg-white p-6 rounded-xl shadow-sm">
-                        <h3 className="text-lg font-semibold text-slate-800">Lesson Stages</h3>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-lg font-semibold text-slate-800">Lesson Stages</h3>
+                          <button
+                            onClick={() => navigate(`/add-stage/${lesson.id}`)}
+                            className="text-sm font-semibold text-blue-600 hover:text-blue-700 px-4 py-2 border border-blue-100 rounded-lg bg-blue-50"
+                          >
+                            + Add Stage
+                          </button>
+                        </div>
                         <p className="text-sm text-slate-500 mt-1">Stages will appear to your students in the same order it appears here. Feel free to drag and move around the order as you please.</p>
-                        <EmptyStateCard 
-                          icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>}
-                          title="No Stage Added"
-                          subtitle='Click "Add Stage" button to create a stage for this lesson'
-                          buttonText="+ Add Stage"
-                          onButtonClick={() => navigate(`/add-stage/${lesson.id}`)}
-                        />
+                        {stages.length > 0 ? (
+                            <div className="mt-4 space-y-3">
+                                {stages.map(stage => (
+                                    <div key={stage.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h4 className="font-medium text-slate-800">{stage.title}</h4>
+                                                {stage.description && <p className="text-sm text-slate-500 mt-1">{stage.description}</p>}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              <button
+                                                onClick={() => handleEditStage(stage.id)}
+                                                className="p-1 text-slate-400 hover:text-blue-600"
+                                                title="Edit Stage"
+                                              >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                              </button>
+                                              <button
+                                                onClick={() => handleDeleteStage(stage.id)}
+                                                className="p-1 text-slate-400 hover:text-red-600"
+                                                title="Delete Stage"
+                                              >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                              </button>
+                                            </div>
+                                        </div>
+                                        <span className="text-xs text-slate-400">{stage.order !== undefined ? `Order: ${stage.order}` : ''}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <EmptyStateCard
+                              icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>}
+                              title="No Stage Added"
+                              subtitle='Click "Add Stage" button to create a stage for this lesson'
+                              buttonText="+ Add Stage"
+                              onButtonClick={() => navigate(`/add-stage/${lesson.id}`)}
+                            />
+                        )}
                       </div>
                     </div>
 
@@ -537,6 +621,16 @@ const LessonDetailsPage: React.FC = () => {
               title="Delete Lesson"
               message={`Are you sure you want to delete "${lesson?.title}"? This action cannot be undone and will also delete all associated quizzes and stages.`}
               confirmText="Delete Lesson"
+              confirmButtonClass="bg-red-600 hover:bg-red-700"
+            />
+            {/* Stage Delete Confirmation Modal */}
+            <ConfirmationModal
+              isOpen={stageDeleteId !== null}
+              onClose={() => setStageDeleteId(null)}
+              onConfirm={confirmDeleteStage}
+              title="Delete Stage"
+              message="Are you sure you want to delete this stage? This action cannot be undone."
+              confirmText="Delete Stage"
               confirmButtonClass="bg-red-600 hover:bg-red-700"
             />
           </div>

@@ -147,15 +147,15 @@ export default function AddDiscussionPage() {
     return (
         <div className="min-h-screen flex flex-col bg-gray-100">
             {/* Header */}
-            <div className="w-full">
-                <Header />
-            </div>
-
+            
             <div className="flex flex-1">
                 {/* Sidebar */}
                 <div>
-                    <Sidebar  isMobileMenuOpen={isSidebarOpen} toggleMobileMenu={() => setIsSidebarOpen(!isSidebarOpen)}/>
+                    <Sidebar />
                 </div>
+<div className="w-full ml-[17%]">
+                <Header />
+  
 
                 {/* Main Content */}
                 <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto">
@@ -278,6 +278,7 @@ export default function AddDiscussionPage() {
                     </main>
                 </div>
             </div>
+                      </div>
         </div>
     );
 }

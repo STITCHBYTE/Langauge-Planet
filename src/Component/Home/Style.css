@@ -37,6 +37,7 @@ body {
   display: flex;
   flex-direction: row;
   gap: 1.5rem;
+  align-items: stretch; /* Ensures children stretch to same height */
 }
 .sidebar-container {
   position: fixed; /* Fixed on desktop */
@@ -163,6 +164,10 @@ body {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   margin-bottom: 2rem;
   width: 100%;
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 .continue-learning-header {
   display: flex;
@@ -542,6 +547,10 @@ body {
   width: 100%;
   max-width: 600px; /* This max-width might be too restrictive on wider screens if it's a main column item */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 .joined-classes-header {
   display: flex;
@@ -702,6 +711,314 @@ body {
   width: 0.75rem;
   height: 0.75rem;
 }
+
+/* --- Responsive Adjustments --- */
+
+/* For tablets and below (≤1024px) */
+@media (max-width: 1024px) {
+  .dashboard-content {
+    margin-left: 0;
+    /* Adjust this padding based on your mobile header's height.
+       If your header is around 60px tall, 4rem (64px) or 4.5rem (72px) is a good start. */
+    padding-top: 4.5rem;
+  }
+
+  .sidebar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    max-width: 80%; /* Good for larger tablets, prevents full-width takeover */
+    height: 100vh;
+    transform: translateX(-100%);
+    background-color: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    /* border-bottom: none; */ /* Already in your snippet, correct */
+    display: flex; /* Ensure flex properties are active */
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 1.5rem;
+    overflow-y: auto; /* Allows scrolling within the sidebar if content overflows */
+    z-index: 1002;    /* Above main content, potentially below modals */
+    transition: transform 0.3s ease-in-out;
+    box-sizing: border-box; /* Important for consistent sizing with padding */
+  }
+
+  .sidebar-container.mobile-menu-open {
+    transform: translateX(0);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Enhanced shadow for better depth */
+  }
+
+  .header-hamburger-button {
+    display: inline-flex; /* Shows the hamburger button */
+    align-items: center;
+    justify-content: center;
+    /* Global styles for padding, margin-left should apply */
+  }
+
+  .mobile-menu-close-button {
+    display: block; /* Show the 'X' button inside the sidebar */
+    position: absolute;
+    top: 1rem;    /* Adjust for visual preference */
+    right: 1.25rem; /* Adjust for visual preference */
+    background: transparent;
+    border: none;
+    font-size: 2rem; /* Larger for easier tapping */
+    font-weight: 300;
+    color: #555;
+    cursor: pointer;
+    padding: 0.25rem; /* Small padding for tap area */
+    line-height: 1;
+    z-index: 1003; /* Above other sidebar content */
+  }
+  .mobile-menu-close-button:hover {
+    color: #000;
+  }
+
+  .header-container {
+    /* If you make the header sticky on mobile: */
+    /* position: sticky; */
+    /* top: 0; */
+    /* background-color: #ffffff; */ /* Necessary for sticky header */
+    /* z-index: 1001; */ /* Below open sidebar (1002), above content */
+    /* box-shadow: 0 2px 4px rgba(0,0,0,0.05); */ /* Optional: adds depth */
+    padding: 0.75rem 1rem; /* Adjust padding for mobile header */
+  }
+
+  .sidebar-menu {
+    flex-direction: column; /* Ensure menu items are stacked vertically */
+    gap: 0.75rem; /* Space between menu items */
+  }
+
+  .user-profile-container {
+    margin-top: auto; /* Pushes user profile to the bottom of the flex column */
+    border-top: 1px solid #e5e7eb; /* Visual separator */
+    padding: 1rem; /* Consistent padding */
+  }
+
+  /* Example: Make dashboard rows stack on tablets */
+  .dashboard-row {
+    flex-direction: column;
+    gap: 1rem; /* Adjust gap for stacked items */
+  }
+  .continue-learning-grid {
+    grid-template-columns: 1fr; /* Single column for cards */
+  }
+}
+
+/* For mobile devices (≤768px) */
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding: 1rem 0.75rem;
+    padding-top: 4.5rem; /* Re-evaluate based on header height at this breakpoint */
+  }
+
+  .header-container {
+    padding: 0.75rem 1rem; /* Consistent padding */
+    flex-wrap: wrap; /* Allow header items to wrap */
+  }
+
+  .header-greeting-wrapper {
+    width: 100%;
+    justify-content: space-between; /* Greeting on left, hamburger on right */
+    margin-bottom: 0.75rem; /* Space if header-actions wrap below */
+  }
+  .header-title {
+    font-size: 1.125rem; /* Adjust for readability */
+  }
+
+  .header-actions {
+    width: 100%; /* Take full width if they wrap */
+    justify-content: flex-end; /* Align to the right */
+    gap: 1rem; /* Adjust gap */
+  }
+
+  /* Optionally hide or shrink less critical header items */
+  .header-actions .language-group,
+  .header-actions .avatar-group {
+    /* display: none; */
+  }
+  .header-actions .view-toggle-wrapper {
+    /* Consider making it smaller or hiding if space is very limited */
+    /* transform: scale(0.9); */
+    /* gap: 4px; */
+  }
+  .label { /* For view toggle */
+    font-size: 12px;
+  }
+
+  .sidebar-container {
+    padding: 1rem; /* Slightly less padding inside the sidebar */
+    width: 260px; /* Can be slightly narrower */
+  }
+
+  .sidebar-menu-label {
+    font-size: 0.9rem;
+  }
+
+  .mobile-menu-close-button {
+    top: 0.75rem;
+    right: 1rem;
+  }
+}
+
+/* For very small mobile devices (≤480px) */
+@media (max-width: 480px) {
+  .dashboard-content {
+    padding: 0.75rem 0.5rem;
+    padding-top: 4rem; /* Re-evaluate based on header height */
+  }
+
+  .header-container {
+    padding: 0.5rem 0.75rem;
+  }
+  .header-title {
+    font-size: 1rem;
+  }
+  .header-hamburger-button svg {
+    width: 20px; /* Smaller hamburger icon */
+    height: 20px;
+  }
+
+  .header-actions {
+    gap: 0.5rem; /* Reduce gap further */
+    /* Consider justify-content: space-around or center if few items remain */
+  }
+  /* Hide more items on very small screens */
+  .header-actions .language-group,
+  .header-actions .avatar-group,
+  .header-actions .student-header-icon {
+     display: none; /* Example: hide more icons */
+  }
+   .header-actions .view-toggle-wrapper {
+     /* display: none; */ /* More likely to hide this on very small screens */
+   }
+
+  .sidebar-container {
+    width: 240px; /* Even narrower sidebar */
+    padding: 0.75rem;
+  }
+  .mobile-menu-close-button {
+    top: 0.5rem;
+    right: 0.75rem;
+    font-size: 1.75rem;
+  }
+  .sidebar-menu-label {
+    font-size: 0.85rem;
+  }
+  .medium-icon { /* General icon size reduction in header */
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+/* Toggle Switch Styles (already provided, generally okay) */
+.view-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: sans-serif;
+}
+
+.label {
+  font-size: 14px;
+  color: #6c757d;
+  transition: color 0.3s;
+}
+
+.label.active {
+  color: #28a745; /* Green */
+  font-weight: 600;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0; /* Prevent switch from shrinking */
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 22px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #28a745;
+}
+
+input:checked + .slider:before {
+  transform: translateX(18px);
+}
+/* ... existing styles ... */
+
+/* Hamburger Button */
+/*
+.hamburger-button {
+  display: none; 
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1001; 
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+*/
+
+/* New styles for hamburger within Header */
+.header-hamburger-button {
+  display: none; /* Hidden by default, shown in mobile media query */
+  background: none;
+  border: none;
+  padding: 0.25rem; /* Make it a bit easier to tap */
+  margin-left: 0.75rem; /* Space from greeting */
+  cursor: pointer;
+}
+.header-hamburger-button svg {
+  display: block; /* Prevents extra space below svg */
+}
+
+.header-greeting-wrapper {
+  display: flex;
+  align-items: center;
+  flex-grow: 1; /* Allow greeting to take space */
+}
+
+.header-container {
+  /* ... existing styles ... */
+  /* Ensure it can accommodate the hamburger on mobile */
+}
+
 
 /* --- Responsive Adjustments --- */
 

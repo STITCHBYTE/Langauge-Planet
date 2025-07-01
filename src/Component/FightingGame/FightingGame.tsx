@@ -1,188 +1,57 @@
-import React, { useEffect, useRef, useState, Suspense } from "react";
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
-import * as THREE from "three";
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import React, { useEffect, useState } from "react";
 import io from "socket.io-client";
+import "./fighting.css"; // Import the new CSS file
 
 const socket = io("http://localhost:8082");
 
 type CharacterType = "player" | "bot";
 type QuizOption = { text: string; isCorrect: boolean };
 
-const animationNames: Record<CharacterType, string[]> = {
-  player: ["Idle", "Attack", "Hit", "Death", "Dodging"],
-  bot: ["Idle", "Boxing", "Hit", "Death", "Ducking"],
-};
-
-const getAnimKey = (char: CharacterType, anim: string) => {
+// Simplified animation key mapping for 2D
+const getAnimKey = (anim: string) => {
   const map: Record<string, string> = {
-    attack1: char === "bot" ? "Boxing" : "Attack",
-    attack2: char === "bot" ? "Boxing" : "Attack",
-    combo: char === "bot" ? "Boxing" : "Attack",
-    hit: "Hit",
-    death: "Death",
-    idle: "Idle",
-    dodge: char === "bot" ? "Ducking" : "Dodging",
-    heal: "Idle",
+    attack1: "attack",
+    attack2: "attack",
+    combo: "attack",
+    hit: "hit",
+    death: "death",
+    idle: "idle",
+    dodge: "dodge",
+    heal: "idle", // Heal can show idle or a specific heal sprite if available
   };
-  return map[anim] || "Idle";
+  return map[anim] || "idle";
 };
-
-const getAnimPositionOffset = (characterType: CharacterType, animKeyInput: string) => {
-  const key = getAnimKey(characterType, animKeyInput);
-  switch (key) {
-    case "Attack":
-    case "Boxing":
-      return new THREE.Vector3(characterType === "player" ? 1.0 : -1.0, 0, 0); // increased from 0.6
-    case "Hit":
-      return new THREE.Vector3(characterType === "player" ? -0.5 : 0.5, 0, 0); // slight recoil
-    case "Dodging":
-    case "Ducking":
-      return new THREE.Vector3(characterType === "player" ? -0.8 : 0.8, 0, 0); // dodge further
-    default:
-      return new THREE.Vector3(0, 0, 0);
-  }
-};
-
 
 const Character = ({
   characterType,
   animationKey,
-  basePosition,
-  rotation,
 }: {
   characterType: CharacterType;
   animationKey: string;
-  basePosition: [number, number, number];
-  rotation?: [number, number, number];
 }) => {
-  const group = useRef<THREE.Group>(null);
-  const mixerRef = useRef<THREE.AnimationMixer | null>(null);
-  const actionMapRef = useRef<Record<string, THREE.AnimationAction>>({});
-  const previousAnimKey = useRef<string>("");
-
-  const targetOffset = useRef<THREE.Vector3>(new THREE.Vector3());
-  const currentOffset = useRef<THREE.Vector3>(new THREE.Vector3());
-
-  const activeFinishListener = useRef<(() => void) | null>(null);
-
-  const { scene } = useGLTF(`/models/${characterType}/Idle.glb`);
-  const [animations, setAnimations] = useState<Record<string, THREE.AnimationClip>>({});
+  const [currentAnim, setCurrentAnim] = useState('idle');
 
   useEffect(() => {
-    const loader = new GLTFLoader();
-    const loadAnimations = async () => {
-      const clips: Record<string, THREE.AnimationClip> = {};
-      for (const name of animationNames[characterType]) {
-        try {
-          const loadedGltf = await loader.loadAsync(`/models/${characterType}/${name}.glb`);
-          if (loadedGltf.animations[0]) clips[name] = loadedGltf.animations[0];
-        } catch (error) {
-          console.error(`Failed to load animation: ${name}`, error);
+    const anim = getAnimKey(animationKey);
+    setCurrentAnim(anim);
+
+    // For non-looping animations, return to idle after a short time
+    if (anim !== 'idle' && anim !== 'death') {
+      const timer = setTimeout(() => {
+        // Only revert to idle if the character is not in a final state like death
+        if (getAnimKey(animationKey) !== 'death') {
+          setCurrentAnim('idle');
         }
-      }
-      setAnimations(clips);
-    };
-    loadAnimations();
-  }, [characterType]);
-
-  useEffect(() => {
-    if (!scene || Object.keys(animations).length === 0) return;
-
-    const mixer = new THREE.AnimationMixer(scene);
-    mixerRef.current = mixer;
-
-    const actions: Record<string, THREE.AnimationAction> = {};
-    for (const [name, clip] of Object.entries(animations)) {
-      const action = mixer.clipAction(clip);
-      action.clampWhenFinished = true;
-      actions[name] = action;
+      }, 500); // Animation duration
+      return () => clearTimeout(timer);
     }
-    actionMapRef.current = actions;
+  }, [animationKey]);
 
-    const idleAction = actions["Idle"];
-    if (idleAction) {
-      idleAction.reset().setLoop(THREE.LoopRepeat, Infinity).play();
-      previousAnimKey.current = "Idle";
-    }
-
-    return () => {
-      mixer.stopAllAction();
-      mixerRef.current = null;
-      actionMapRef.current = {};
-    };
-  }, [animations, scene]);
-
-  useEffect(() => {
-    const mixer = mixerRef.current;
-    const actions = actionMapRef.current;
-    if (!mixer || !actions.Idle) return;
-
-    const mappedKey = getAnimKey(characterType, animationKey);
-    if (previousAnimKey.current === mappedKey && mappedKey !== "Idle") return;
-
-    const current = actions[previousAnimKey.current] || actions.Idle;
-    const next = actions[mappedKey];
-    if (!next) return;
-
-    if (activeFinishListener.current) {
-      mixer.removeEventListener("finished", activeFinishListener.current);
-      activeFinishListener.current = null;
-    }
-
-    targetOffset.current = getAnimPositionOffset(characterType, animationKey);
-
-    next.reset();
-    if (mappedKey === "Idle") {
-      next.setLoop(THREE.LoopRepeat, Infinity);
-    } else {
-      next.setLoop(THREE.LoopOnce, 1);
-    }
-
-    if (current !== next) {
-      current.crossFadeTo(next, 0.3, true);
-    }
-    next.play();
-
-    if (mappedKey !== "Idle" && mappedKey !== "Death") {
-      const onFinish = () => {
-        const idle = actions.Idle;
-        if (idle) {
-          next.crossFadeTo(idle, 0.3, true);
-          idle.reset().play().setLoop(THREE.LoopRepeat, Infinity);
-          targetOffset.current.set(0, 0, 0);
-          previousAnimKey.current = "Idle";
-        }
-        mixer.removeEventListener("finished", onFinish);
-        activeFinishListener.current = null;
-      };
-      activeFinishListener.current = onFinish;
-      mixer.addEventListener("finished", onFinish);
-    }
-
-    previousAnimKey.current = mappedKey;
-  }, [animationKey, characterType]);
-
-  useFrame((_, delta) => {
-    mixerRef.current?.update(delta);
-    if (group.current) {
-      currentOffset.current.lerp(targetOffset.current, 0.2);
-      group.current.position.set(
-        basePosition[0] + currentOffset.current.x,
-        basePosition[1],
-        basePosition[2]
-      );
-    }
-  });
-
-  return (
-    <primitive object={scene} ref={group} rotation={rotation} scale={[1.5, 1.5, 1.5]} />
-  );
+  // Add a key to the div to force a re-render when the animation changes,
+  // which can help reset CSS animations.
+  return <div key={`${characterType}-${currentAnim}`} className={`character ${characterType} ${currentAnim}`} />;
 };
 
-useGLTF.preload(`/models/player/Idle.glb`);
-useGLTF.preload(`/models/bot/Idle.glb`);
 
 export default function FightingGame() {
   const [playerAnim, setPlayerAnim] = useState("idle");
@@ -351,18 +220,12 @@ const handleAction = (action: string) => {
           <div style={{ height: "100%", width: `${botHp}%`, background: "#f00", borderRadius: 4 }} />
         </div>
       </div>
-      <Canvas camera={{ position: [0, 1.5, 6], fov: 50 }} style={{ backgroundImage: `url("/models/arena.jpg")`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",}}>
-        <ambientLight intensity={0.8} />
-        <directionalLight position={[0, 10, 5]} intensity={1.2} />
-        <Suspense fallback={null}>
-          <Character characterType="player" animationKey={playerAnim} basePosition={[-1.5, -2, 0]} rotation={[0, Math.PI / 1.75, 0]} />
-          <Character characterType="bot" animationKey={botAnim} basePosition={[1.5, -2, 0]} rotation={[0, -Math.PI / 1.75, 0]} />
-        </Suspense>
-        <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} />
-      </Canvas>
+      
+      {/* 2D Game Container */}
+      <div className="fighting-game-container">
+        <Character characterType="player" animationKey={playerAnim} />
+        <Character characterType="bot" animationKey={botAnim} />
+      </div>
 
       {/* Action Buttons */}
      <div style={{

@@ -237,7 +237,7 @@ const EditClassForm: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       {/* Header */}
-      <div className="w-full">
+      <div className="w-full lg:ml-[17%]">
         <Header />
       </div>
 

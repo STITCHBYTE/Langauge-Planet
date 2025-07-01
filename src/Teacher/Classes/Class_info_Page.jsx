@@ -11,6 +11,8 @@ import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import { useParams, useNavigate } from 'react-router-dom';
 import Server_url from '../../config.js';
+import { Toaster, toast } from "react-hot-toast";
+import { Dialog } from '@headlessui/react'; // If you use headlessui for modal, otherwise use your own modal
 
 // Dropdown Menu Component
 const DropdownMenu = ({ 
@@ -244,6 +246,53 @@ const AssignmentItem = ({ assignment, onEdit, onDelete }) => {
   );
 };
 
+const LessonMenuItem = ({ lesson, navigate }) => {
+  const [showLessonMenu, setShowLessonMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowLessonMenu(false);
+      }
+    };
+    if (showLessonMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showLessonMenu]);
+
+  return (
+    <div className="flex justify-between items-center bg-gray-50 p-2 md:p-3 rounded-lg relative">
+      <span className="font-medium text-gray-700 text-xs md:text-sm">{lesson.title}</span>
+      <button
+        className="text-gray-500 hover:text-gray-800"
+        onClick={() => setShowLessonMenu((prev) => !prev)}
+      >
+        <FiMoreVertical />
+      </button>
+      {showLessonMenu && (
+        <div
+          ref={menuRef}
+          className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+        >
+          <button
+            className="w-full px-4 py-2 text-left text-sm text-blue-700 hover:bg-blue-50"
+            onClick={() => {
+              setShowLessonMenu(false);
+              navigate(`/lesson-view/${lesson.id}`);
+            }}
+          >
+            Go to Lesson
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ClassPage = () => {
   const { id: classId } = useParams();
   const navigate = useNavigate();
@@ -251,9 +300,15 @@ const ClassPage = () => {
   const [classData, setClassData] = useState(null);
   const [discussions, setDiscussions] = useState([]);
   const [assignments, setAssignments] = useState([]);
+  const [assignedLessons, setAssignedLessons] = useState([]); // <-- NEW
   const [loadingDiscussions, setLoadingDiscussions] = useState(true);
   const [loadingAssignments, setLoadingAssignments] = useState(true);
-  
+
+  // Modal state
+  const [showAssignLessonModal, setShowAssignLessonModal] = useState(false);
+  const [teacherLessons, setTeacherLessons] = useState([]);
+  const [selectedLessonId, setSelectedLessonId] = useState(null);
+
   // State for delete modals
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeleteDiscussionModal, setShowDeleteDiscussionModal] = useState(false);
@@ -274,10 +329,30 @@ const ClassPage = () => {
             },
           }
         );
+
         if (!response.ok) throw new Error('Failed to fetch class data');
         const data = await response.json();
         setClassData(data);
+
+        // Fetch assigned lessons using lesson IDs from class data
+        if (Array.isArray(data.lessons) && data.lessons.length > 0) {
+          const lessonPromises = data.lessons.map(async (lessonId) => {
+            const lessonRes = await fetch(`${Server_url}/api/lessons/lesson/${lessonId}/`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (lessonRes.ok) {
+              return await lessonRes.json();
+            }
+            return null;
+          });
+          const lessons = (await Promise.all(lessonPromises)).filter(Boolean);
+          setAssignedLessons(lessons);
+        } else {
+          setAssignedLessons([]);
+        }
       } catch (error) {
+        setClassData(null);
+        setAssignedLessons([]);
         console.error('Error fetching class data:', error);
       }
     };
@@ -328,6 +403,51 @@ const ClassPage = () => {
       fetchAssignments();
     }
   }, [classId]);
+
+  // Fetch teacher's lessons for modal
+  const openAssignLessonModal = async () => {
+    setShowAssignLessonModal(true);
+    const token = localStorage.getItem('authToken');
+    try {
+      const res = await fetch(`${Server_url}/api/lessons/lesson/my/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTeacherLessons(data.results || data);
+      }
+    } catch (err) {
+      setTeacherLessons([]);
+    }
+  };
+
+  // Assign lesson to class
+  const handleAssignLesson = async () => {
+    if (!selectedLessonId) return;
+    const token = localStorage.getItem('authToken');
+    try {
+      const res = await fetch(`${Server_url}/api/classrooms/classroom/${classId}/assign-lesson/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ lesson_id: selectedLessonId })
+      });
+      if (res.ok) {
+        // Refresh assigned lessons
+        const updated = await res.json();
+        setAssignedLessons(updated.results || updated);
+        setShowAssignLessonModal(false);
+        setSelectedLessonId(null);
+        toast.success('Lesson assigned successfully!');
+      } else {
+        toast.error('Failed to assign lesson.');
+      }
+    } catch (err) {
+      toast.error('Error assigning lesson.');
+    }
+  };
 
   // Handle edit class
   const handleEditClass = () => {
@@ -469,6 +589,33 @@ const ClassPage = () => {
     }
   };
 
+  // Publish class handler
+  const handlePublishClass = async () => {
+    const token = localStorage.getItem('authToken');
+    try {
+      const res = await fetch(
+        `${Server_url}/api/classrooms/classroom/${classId}/toggle-published/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (res.ok) {
+        toast.success("Class published status updated!");
+        // Optionally, refresh class data
+        const updated = await res.json();
+        setClassData((prev) => ({ ...prev, ...updated }));
+      } else {
+        toast.error("Failed to update publish status.");
+      }
+    } catch (err) {
+      toast.error("Error updating publish status.");
+    }
+  };
+
   if (!classData) {
     return (
       <div className="flex h-screen">
@@ -481,34 +628,41 @@ const ClassPage = () => {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="bg-gray-100 min-h-screen lg:ml-[17%]">
+    <Header />
+    <div className="flex">
       {/* Sidebar */}
-      <Sidebar className="hidden lg:block fixed left-0 top-0 h-full w-[17%] z-20" />
-      {/* Main Content */}
-      <div className="flex-1 bg-gray-50/50 p-3 sm:p-4 md:p-6 lg:p-8 text-gray-800 ml-0 lg:ml-[17%] overflow-y-auto min-h-screen">
-        <Header />
+      <Sidebar className="hidden lg:block fixed left-0 top-0 h-full w-[17%] z-10" />
+
+      {/* Main Content - Single scroll container */}
+      <div className="flex-1 bg-gray-50/50 p-3 sm:p-4 md:p-6 lg:p-8 text-gray-800 ml-0 min-h-screen">
 
         {/* Top buttons */}
         <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:justify-between sm:items-center">
           <div className="flex flex-row gap-2 w-full sm:w-auto">
-            <button className="flex-1 min-w-0 bg-white border border-blue-600 text-blue-600 px-2 py-1 rounded-lg font-semibold text-xs sm:text-sm hover:bg-blue-50 transition">
+            <button 
+              onClick={() => navigate(`/class/${classId}/enrolled-students`)}
+              className="flex-1 min-w-[140px] bg-white border border-blue-600 text-blue-600 px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-50 transition"
+            >
               View Students
             </button>
-            <button className="flex-1 min-w-0 bg-white border border-blue-600 text-blue-600 px-2 py-1 rounded-lg font-semibold text-xs sm:text-sm hover:bg-blue-50 transition">
+            <button
+              className="flex-1 min-w-[160px] bg-white border border-blue-600 text-blue-600 px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-50 transition"
+              onClick={() => navigate(`/reports/${classId}`)}
+            >
               View Assignment Report
             </button>
           </div>
           <div className="flex flex-row gap-2 w-full sm:w-auto mt-2 sm:mt-0">
             <button 
               onClick={handleDeleteClass}
-              className="flex-1 min-w-0 bg-red-500 text-white px-2 py-1 rounded-lg font-semibold text-xs sm:text-sm hover:bg-red-600 transition"
+              className="flex-1 min-w-[160px] bg-red-500 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-red-600 transition"
             >
               Delete Class
             </button>
-            <button className="flex-1 min-w-0 bg-white border border-blue-600 text-blue-600 px-2 py-1 rounded-lg font-semibold text-xs sm:text-sm hover:bg-blue-50 transition">
-              Student View
-            </button>
-            <button className="flex-1 min-w-0 bg-blue-600 text-white px-2 py-1 rounded-lg font-semibold text-xs sm:text-sm hover:bg-blue-700 transition">
+            <button className="flex-1 min-w-[160px] bg-blue-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition"
+              onClick={handlePublishClass}
+            >
               Publish Class
             </button>
           </div>
@@ -635,23 +789,67 @@ const ClassPage = () => {
 
             {/* Lessons */}
             <div className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm">
-              <h2 className="text-base md:text-lg font-bold text-gray-900">Lesson Assigned</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-base md:text-lg font-bold text-gray-900">Lesson Assigned</h2>
+                <button
+                  className="bg-blue-600 text-white px-3 py-1.5 rounded-lg font-semibold text-xs md:text-sm hover:bg-blue-700 transition"
+                  onClick={openAssignLessonModal}
+                >
+                  Assign Lesson
+                </button>
+              </div>
               <p className="text-xs md:text-sm text-gray-500 mt-1">
-                All lesson assigned to this class will be displayed here
+                All lessons assigned to this class will be displayed here
               </p>
               <div className="mt-4 space-y-2 md:space-y-3">
-                {["Basic Spanish Culture", "Lorem ipsum dolor sit amet consectetur", "Lorem ipsum dolor sit amet"].map((lesson, idx) => (
-                  <div key={idx} className="flex justify-between items-center bg-gray-50 p-2 md:p-3 rounded-lg">
-                    <span className="font-medium text-gray-700 text-xs md:text-sm">{lesson}</span>
-                    <button className="text-gray-500 hover:text-gray-800">
-                      <FiMoreVertical />
-                    </button>
-                  </div>
-                ))}
+                {Array.isArray(assignedLessons) && assignedLessons.length === 0 ? (
+                  <div className="text-gray-500 text-sm">No lessons assigned yet.</div>
+                ) : (
+                  Array.isArray(assignedLessons) && assignedLessons.map((lesson, idx) => (
+                    <LessonMenuItem key={lesson.id || idx} lesson={lesson} navigate={navigate} />
+                  ))
+                )}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Assign Lesson Modal */}
+        {showAssignLessonModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Assign a Lesson</h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Select Lesson</label>
+                <select
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  value={selectedLessonId || ''}
+                  onChange={e => setSelectedLessonId(e.target.value)}
+                >
+                  <option value="">-- Select a lesson --</option>
+                  {teacherLessons.map(lesson => (
+                    <option key={lesson.id} value={lesson.id}>{lesson.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700"
+                  onClick={() => setShowAssignLessonModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold"
+                  onClick={handleAssignLesson}
+                  disabled={!selectedLessonId}
+                >
+                  Assign
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modals (unchanged) */}
         <ConfirmationModal
@@ -684,7 +882,9 @@ const ClassPage = () => {
           message={`Are you sure you want to delete "${itemToDelete?.title}"? This action cannot be undone.`}
           confirmText={isDeleting ? "Deleting..." : "Delete Assignment"}
         />
+        <Toaster position="top-right" />
       </div>
+    </div>
     </div>
   );
 };

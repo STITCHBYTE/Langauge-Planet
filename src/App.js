@@ -30,6 +30,11 @@ import LessonviewPage from './Teacher/Lesson/Lesson_view.tsx';
 import { ViewProvider } from './Context/ViewContext.tsx'
 import StudentsInfo from "./Student/studentInfoPage.tsx";
 import TeacherDashboard from './Teacher/Dashboard/Dashboard.tsx';
+import EndrolledStudents from './Teacher/Classes/StudentsPage.jsx';
+import StudentClasses from '../src/Component/Class/classes.tsx';
+import StudentDisscussion from '../src/Component/Class/Disscussion-submit.tsx';
+import Reports from './Teacher/Classes/Reports.tsx';
+import ViewStudent from './Teacher/Lesson/View_student.tsx';
 function App() {
   return (
        <ViewProvider>
@@ -63,6 +68,11 @@ function App() {
         <Route path="/add-quiz/:lesson_id" element={<AddQuiz />} />
         <Route path="/lesson-view/:lesson_id" element={<LessonviewPage />} />
         <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+        <Route path="/class/:classId/enrolled-students" element={<EndrolledStudents />} />
+        <Route path="/classes/:classId/students" element={<StudentClasses />} />
+        <Route path="/discussion/:discussionId" element={<StudentDisscussion />} />
+        <Route path="/reports/:classId" element={<Reports />} />
+        <Route path="/lesson/:lesson_id/students" element={<ViewStudent />} />
         {/* Add more routes as needed */}
       </Routes>
     </Router>

@@ -1,8 +1,9 @@
 {
   "name": "learning-plannet",
-  "version": "0.1.0",
+  "version": "0.6.9",
   "private": true,
   "dependencies": {
+    "@headlessui/react": "^2.2.4",
     "@react-three/drei": "^10.1.2",
     "@react-three/fiber": "^9.1.2",
     "@testing-library/dom": "^10.4.0",

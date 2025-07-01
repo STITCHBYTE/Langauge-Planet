@@ -19,6 +19,15 @@ interface Discussion {
   title: string;
 }
 
+// This interface now represents the User object directly from the API
+interface Student {
+  id: string;
+  username: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 // QuestionDisplayCard component remains the same
 const QuestionDisplayCard = ({ question, index, onEdit, onDelete }) => {
   return (
@@ -155,15 +164,39 @@ const EditAssignmentPage = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState(''); // New state for description
   const [discussionId, setDiscussionId] = useState('');
-  const [assignedStudents, setAssignedStudents] = useState([]); // As requested
+  const [assignedStudents, setAssignedStudents] = useState<string[]>([]); // Will hold selected student IDs
   const [dueDate, setDueDate] = useState(''); // Using simple string for date input
 
   const [questions, setQuestions] = useState([]);
   const [discussionOptions, setDiscussionOptions] = useState<Discussion[]>([]);
+  const [enrolledStudents, setEnrolledStudents] = useState<Student[]>([]); // Use the new Student interface
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
   const questionsEndRef = useRef(null);
+
+  // --- New derived state and handlers for student selection ---
+  const isAllStudentsSelected = enrolledStudents.length > 0 && assignedStudents.length === enrolledStudents.length;
+
+  const handleToggleStudent = (studentId: string) => {
+    setAssignedStudents(prev => {
+      const isSelected = prev.includes(studentId);
+      if (isSelected) {
+        return prev.filter(id => id !== studentId);
+      } else {
+        return [...prev, studentId];
+      }
+    });
+  };
+
+  const handleToggleAllStudents = () => {
+    if (isAllStudentsSelected) {
+      setAssignedStudents([]); // Deselect all
+    } else {
+      setAssignedStudents(enrolledStudents.map(s => s.id)); // Select all
+    }
+  };
+  // --- End of new handlers ---
 
   // Scroll to new question form
   const scrollToBottom = () => {
@@ -176,13 +209,14 @@ const EditAssignmentPage = () => {
     }
   }, [questions.length]);
 
-  // Fetch discussions from the backend
+  // Fetch discussions and students from the backend
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (!token) {
         setError("Authentication token not found. Please log in.");
         return;
     }
+
     const fetchDiscussions = async () => {
       try {
         const response = await fetch(`${Server_url}/api/classrooms/classroom/${classroomId}/discussions/`, {
@@ -190,14 +224,33 @@ const EditAssignmentPage = () => {
         });
         if (!response.ok) throw new Error('Failed to fetch discussions');
         const data = await response.json();
+        console.log('Fetched discussions:', data);
         setDiscussionOptions(data);
       } catch (error) {
         console.error('Error fetching discussions:', error);
         setError('Could not load discussion options.');
       }
     };
+
+    const fetchEnrolledStudents = async () => {
+      try {
+        // Fetch students with an 'enrolled' status for this classroom
+        const response = await fetch(`${Server_url}/api/classrooms/classroom/${classroomId}/enrolled-students/`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error('Failed to fetch enrolled students');
+        const data = await response.json();
+        console.log('Fetched enrolled students:', data);
+        setEnrolledStudents(data.results || data); // Handle paginated or direct array response
+      } catch (error) {
+          console.error('Error fetching students:', error);
+          setError(prev => prev + ' Could not load student list.');
+      }
+    };
+
     fetchDiscussions();
-  }, []);
+    fetchEnrolledStudents();
+  }, [classroomId]);
 
   const handleAddQuestion = () => {
     if (questions.some(q => q.isEditing)) {
@@ -264,75 +317,51 @@ const EditAssignmentPage = () => {
     
     setIsSubmitting(true);
     
-    // 2. Prepare the payload for the first API call (create assignment)
-    const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
-    const assignmentData = {
-        classroom:classroomId,
-        title: title,
-        description: description,
-        discussion: discussionId,
-        assigned_students: assignedStudents,
-        due_date: dueDate || null,
-        points: totalPoints,
-    };
-
     try {
         const token = localStorage.getItem('authToken');
         
-        // 3. FIRST API CALL: Create the main assignment entry
-        const assignmentResponse = await fetch(`${Server_url}/api/classrooms/assignments/create/`, {
+        // 2. Prepare the single, nested payload
+        const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
+        
+        // Map the questions from the state to the required payload format
+        const questionsPayload = questions.map(q => ({
+            question_text: q.text,
+            points: q.points,
+            answer_type: q.answer_type,
+        }));
+
+        const submissionPayload = {
+            classroom: classroomId,
+            title: title,
+            description: description,
+            discussion: discussionId,
+            assigned_students: assignedStudents,
+            due_date: dueDate || null,
+            points: totalPoints,
+            questions: questionsPayload, // Nest the questions array
+        };
+
+        console.log("Submitting payload:", JSON.stringify(submissionPayload, null, 2));
+
+        // 3. Make a SINGLE API call to create the assignment and its questions
+        const response = await fetch(`${Server_url}/api/classrooms/assignments/create/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify(assignmentData),
+            body: JSON.stringify(submissionPayload),
         });
 
-        if (!assignmentResponse.ok) {
-            const errData = await assignmentResponse.json();
-            throw new Error(errData.detail || 'Failed to create assignment shell.');
+        if (!response.ok) {
+            const errData = await response.json();
+            const errorMessage = errData.detail || (typeof errData === 'object' ? JSON.stringify(errData) : 'Failed to save assignment.');
+            throw new Error(errorMessage);
         }
         
-        const createdAssignment = await assignmentResponse.json();
-        const newAssignmentId = createdAssignment.id; // Assuming the response contains the new ID
-
-        if (!newAssignmentId) {
-             throw new Error("Did not receive a valid assignment ID from the server.");
-        }
-        
-        // 4. SECOND API CALL (in a loop): Create each question
-        const questionPromises = questions.map((question, index) => {
-            const questionData = {
-                assignment: newAssignmentId,
-                question_text: question.text,
-                points: question.points,
-                order: index + 1, // The order of the question
-                answer_type: question.answer_type,
-            };
-            
-            return fetch(`${Server_url}/api/classrooms/assignment-questions/create/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(questionData),
-            });
-        });
-
-        // Wait for all question creation requests to complete
-        const questionResponses = await Promise.all(questionPromises);
-
-        // Check if any question creation failed
-        const failedResponse = questionResponses.find(res => !res.ok);
-        if (failedResponse) {
-             throw new Error(`Failed to create one or more questions. Status: ${failedResponse.status}`);
-        }
-
-        // 5. Success!
+        // 4. Success!
         alert("Assignment and all questions saved successfully!");
-        navigate(`/Class_info_Page/${classroomId}`); // Optional: redirect on success
+        navigate(`/Class_info_Page/${classroomId}`);
 
     } catch (error) {
         console.error("Error saving assignment:", error);
@@ -343,13 +372,13 @@ const EditAssignmentPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-slate-50 lg:ml-[17%]">
       {/* Header */}
       <Header />
 
       <div className="flex flex-1">
         {/* Sidebar */}
-        <div className="hidden lg:block w-64 bg-white shadow-md">
+        <div className="hidden lg:block bg-white shadow-md">
           <Sidebar />
         </div>
 
@@ -357,7 +386,7 @@ const EditAssignmentPage = () => {
         <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             <header>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Edit Assignment</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Add Assignment</h1>
               <p className="text-xs sm:text-sm text-gray-500 mt-1">For Classroom ID: {classroomId}</p>
             </header>
 
@@ -429,9 +458,50 @@ const EditAssignmentPage = () => {
                       <Calendar className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
                   </div>
+
+                <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
+                      Assign to Students
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">Select students to assign this to. Leave blank to assign to the whole class.</p>
+                    <div className="mt-2 p-2 border border-gray-200 rounded-lg max-h-40 overflow-y-auto flex flex-wrap gap-2 bg-slate-50">
+                      {enrolledStudents.length === 0 ? (
+                        <span className="text-sm text-gray-500 px-2 py-1">Loading or no students enrolled...</span>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleToggleAllStudents}
+                            className={`px-3 py-1.5 rounded-full text-sm font-semibold border-2 transition-colors ${
+                              isAllStudentsSelected
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                            }`}
+                          >
+                            All Students
+                          </button>
+                          {enrolledStudents
+                            .filter(student => student && student.id)
+                            .map((student) => (
+                            <button
+                              key={student.id}
+                              type="button"
+                              onClick={() => handleToggleStudent(student.id)}
+                              className={`px-3 py-1.5 rounded-full text-sm font-medium border-2 transition-colors ${
+                                assignedStudents.includes(student.id)
+                                  ? 'bg-blue-100 text-blue-800 border-blue-500' // This is the "blue line" style
+                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                              }`}
+                            >
+                              {student.username || student.email}
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </form>
               </div>
-
               {/* Questions Section */}
               <div className="lg:col-span-1 flex flex-col">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-800">Questions</h2>

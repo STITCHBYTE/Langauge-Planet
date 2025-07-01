@@ -1,0 +1,62 @@
+/* FightingGame.css */
+
+.game-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-image: url("/models/arena.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+.character {
+  position: absolute;
+  bottom: 10%; /* Adjust as needed */
+  height: 400px; /* Adjust based on sprite size */
+  width: auto;
+  transition: transform 0.2s ease-in-out;
+  image-rendering: pixelated; /* For pixel art sprites */
+}
+
+.character.player {
+  left: 25%;
+  transform: translateX(-50%) scaleX(1); /* Normal facing */
+}
+
+.character.bot {
+  right: 25%;
+  transform: translateX(50%) scaleX(-1); /* Flipped horizontally */
+}
+
+/* Animation-specific transformations */
+.character.attack {
+  transform: translateX(-40%) scaleX(1) translateY(-20px);
+}
+.character.bot.attack {
+  transform: translateX(40%) scaleX(-1) translateY(-20px);
+}
+
+.character.hit {
+  transform: translateX(-55%) scaleX(1);
+}
+.character.bot.hit {
+  transform: translateX(55%) scaleX(-1);
+}
+
+.character.dodge {
+    transform: translateX(-60%) scaleX(1) translateY(20px);
+}
+.character.bot.dodge {
+    transform: translateX(60%) scaleX(-1) translateY(20px);
+}
+
+.character.death {
+  transform: translateY(150px) rotate(90deg);
+  transition: transform 0.5s ease-in;
+}
+.character.bot.death {
+    transform: translateY(150px) rotate(-90deg);
+    transition: transform 0.5s ease-in;
+}

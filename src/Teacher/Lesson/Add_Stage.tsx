@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import { useParams } from 'react-router-dom';
+import Server_url from '../../config.js';
 
 // --- 1. TYPE DEFINITIONS ---
 type ExerciseType = 'multiple-choice' | 'word-match' | 'translate';
 interface BaseExercise { id: string; title: string; type: ExerciseType; }
-interface MultipleChoiceAnswer { id:string; text: string; isCorrect: boolean; imageUrl?: string; }
+interface MultipleChoiceAnswer { id:string; text: string; isCorrect: boolean; imageUrl?: string; imageFile?: File; }
 interface MultipleChoiceExercise extends BaseExercise { type: 'multiple-choice'; prompt: string; wordToLearn: string; answers: MultipleChoiceAnswer[]; }
 interface WordMatchPair { id: string; term: string; definition: string; }
 interface WordMatchExercise extends BaseExercise { type: 'word-match'; prompt: string; matches: WordMatchPair[]; }
@@ -50,7 +51,7 @@ const MultipleChoiceEditor: React.FC<{ exercise: MultipleChoiceExercise, onUpdat
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                const updatedAnswers = exercise.answers.map(ans => ans.id === answerId ? { ...ans, imageUrl: reader.result as string } : ans );
+                const updatedAnswers = exercise.answers.map(ans => ans.id === answerId ? { ...ans, imageUrl: reader.result as string, imageFile: file } : ans );
                 onUpdate({ ...exercise, answers: updatedAnswers });
             };
             reader.readAsDataURL(file);
@@ -79,7 +80,10 @@ const MultipleChoiceEditor: React.FC<{ exercise: MultipleChoiceExercise, onUpdat
                                 {answer.imageUrl ? (<img src={answer.imageUrl} alt="Upload preview" className="h-full w-full object-cover" />) : (<><svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l-1-1m6-5l-1.5 1.5" /></svg><span className="text-xs text-slate-500 mt-1">Drag & drop or click to upload</span></>)}
                             </div>
                         </div>
-                        <input type="text" placeholder="Enter Possible Answer" className="w-full text-center p-2 border border-slate-300 rounded-lg text-sm"/>
+                        <input type="text" placeholder="Enter Possible Answer" className="w-full text-center p-2 border border-slate-300 rounded-lg text-sm" value={answer.text} onChange={e => {
+                            const updatedAnswers = exercise.answers.map(ans => ans.id === answer.id ? { ...ans, text: e.target.value } : ans);
+                            onUpdate({ ...exercise, answers: updatedAnswers });
+                        }}/>
                     </div>
                 ))}
             </div>
@@ -110,24 +114,36 @@ const WordMatchEditor: React.FC<{ exercise: WordMatchExercise, onUpdate: (update
                 <p className="text-sm text-slate-500">Add 3 or more matches and shuffle them.</p>
             </div>
             <div className="space-y-3">
-                {exercise.matches.map(match => (
+                {exercise.matches.map((match, idx) => (
                     <div key={match.id} className="grid grid-cols-12 gap-2 items-center">
                         <div className="col-span-5 flex items-center p-3 bg-blue-100 border border-blue-300 rounded-lg">
                             <button onClick={() => speak(match.term, 'es-ES')} className="text-lg text-slate-600 mr-3 hover:text-blue-600">🔊</button>
-                            <input type="text" value={match.term} onChange={(e) => handleMatchChange(match.id, 'term', e.target.value)} className="w-full bg-transparent font-medium focus:outline-none"/>
+                            <input type="text" value={match.term} onChange={e => {
+                              const updatedMatches = exercise.matches.map((m, i) => i === idx ? { ...m, term: e.target.value } : m);
+                              onUpdate({ ...exercise, matches: updatedMatches });
+                            }} className="w-full bg-transparent font-medium focus:outline-none"/>
                         </div>
                         <div className="col-span-5 flex items-center p-3 bg-slate-100 border border-slate-300 rounded-lg">
-                            <input type="text" value={match.definition} onChange={(e) => handleMatchChange(match.id, 'definition', e.target.value)} className="w-full bg-transparent font-medium focus:outline-none"/>
+                            <input type="text" value={match.definition} onChange={e => {
+                              const updatedMatches = exercise.matches.map((m, i) => i === idx ? { ...m, definition: e.target.value } : m);
+                              onUpdate({ ...exercise, matches: updatedMatches });
+                            }} className="w-full bg-transparent font-medium focus:outline-none"/>
                         </div>
                         <div className="col-span-2 flex justify-center">
-                             <button onClick={() => handleDeleteMatch(match.id)} className="text-slate-400 hover:text-red-500 p-2">🗑️</button>
+                            <button onClick={() => {
+                              const updatedMatches = exercise.matches.filter((_, i) => i !== idx);
+                              onUpdate({ ...exercise, matches: updatedMatches });
+                            }} className="text-slate-400 hover:text-red-500 p-2">🗑️</button>
                         </div>
                     </div>
                 ))}
             </div>
             <div className="flex justify-between items-center">
-                <button onClick={handleAddNewMatch} className="text-sm font-semibold text-blue-600">+ Create New Match</button>
-                <button onClick={handleShuffle} disabled={exercise.matches.length < 2} className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-lg disabled:opacity-50">Shuffle Matches</button>
+                <button onClick={() => {
+                  const newMatch = { id: `m-${Date.now()}`, term: '', definition: ''};
+                  onUpdate({ ...exercise, matches: [...exercise.matches, newMatch] });
+                }} className="text-sm font-semibold text-blue-600">+ Add New Match</button>
+                <button onClick={() => onUpdate({ ...exercise, matches: shuffleArray(exercise.matches) })} disabled={exercise.matches.length < 2} className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-lg disabled:opacity-50">Shuffle Matches</button>
             </div>
         </div>
     );
@@ -138,7 +154,7 @@ const AddWordInput: React.FC<{ onAdd: (word: string) => void, onCancel: () => vo
     const handleAddClick = () => { if (word.trim()) { onAdd(word.trim()); setWord(''); } };
     return (
         <div className="bg-slate-100 border border-blue-500 rounded px-1 py-1 text-sm text-slate-600 flex items-center gap-1 relative">
-            <input type="text" value={word} onChange={(e) => setWord(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddClick()} className="bg-transparent focus:outline-none w-full px-2" autoFocus />
+            <input type="text" value={word} onChange={(e) => setWord(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddClick(); } }} className="bg-transparent focus:outline-none w-full px-2" autoFocus />
             <button onClick={handleAddClick} className="text-green-600 hover:text-green-500 font-bold p-1">✓</button>
             <button onClick={onCancel} className="absolute -top-2 -right-2 bg-white rounded-full text-red-500 text-xs w-4 h-4 flex items-center justify-center border">x</button>
         </div>
@@ -158,20 +174,38 @@ const TranslateEditor: React.FC<{ exercise: TranslateExercise, onUpdate: (update
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const handleAddWord = (type: 'correct' | 'wrong', word: string) => {
-        if (type === 'correct') { onUpdate({...exercise, correctWords: [...exercise.correctWords, word]}); setIsAddingCorrect(false); } 
-        else { onUpdate({...exercise, wrongWords: [...exercise.wrongWords, word]}); setIsAddingWrong(false); }
+        if (type === 'correct') { 
+            const newCorrect = [...exercise.correctWords, word];
+            const newDisplay = shuffleArray([...newCorrect, ...exercise.wrongWords]);
+            onUpdate({...exercise, correctWords: newCorrect, displayWords: newDisplay}); 
+            setIsAddingCorrect(false); 
+        } 
+        else { 
+            const newWrong = [...exercise.wrongWords, word];
+            const newDisplay = shuffleArray([...exercise.correctWords, ...newWrong]);
+            onUpdate({...exercise, wrongWords: newWrong, displayWords: newDisplay}); 
+            setIsAddingWrong(false); 
+        }
     };
 
     const handleRemoveWord = (type: 'correct' | 'wrong', index: number) => {
-        if (type === 'correct') { onUpdate({...exercise, correctWords: exercise.correctWords.filter((_, i) => i !== index)}); } 
-        else { onUpdate({...exercise, wrongWords: exercise.wrongWords.filter((_, i) => i !== index)}); }
+        if (type === 'correct') { 
+            const newCorrect = exercise.correctWords.filter((_, i) => i !== index);
+            const newDisplay = shuffleArray([...newCorrect, ...exercise.wrongWords]);
+            onUpdate({...exercise, correctWords: newCorrect, displayWords: newDisplay}); 
+        } 
+        else { 
+            const newWrong = exercise.wrongWords.filter((_, i) => i !== index);
+            const newDisplay = shuffleArray([...exercise.correctWords, ...newWrong]);
+            onUpdate({...exercise, wrongWords: newWrong, displayWords: newDisplay}); 
+        }
     };
     
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onloadend = () => onUpdate({ ...exercise, imageUrl: reader.result as string });
+            reader.onloadend = () => onUpdate({ ...exercise, imageUrl: reader.result as string, imageFile: file });
             reader.readAsDataURL(file);
         }
     };
@@ -201,7 +235,11 @@ const TranslateEditor: React.FC<{ exercise: TranslateExercise, onUpdate: (update
                      <p className="text-sm text-slate-500">Add the words that form the correct answer.</p>
                      <div className="flex items-center gap-2 mt-2 flex-wrap">
                         {exercise.correctWords.map((word, i) => <WordBlock key={`${word}-${i}`} word={word} onRemove={() => handleRemoveWord('correct', i)} />)}
-                        {isAddingCorrect ? (<AddWordInput onAdd={(word) => handleAddWord('correct', word)} onCancel={() => setIsAddingCorrect(false)} />) : (<button onClick={() => setIsAddingCorrect(true)} className="h-8 w-8 border-2 border-dashed border-slate-400 rounded text-slate-500">+</button>)}
+                        {isAddingCorrect ? (
+                            <AddWordInput onAdd={(word) => handleAddWord('correct', word)} onCancel={() => setIsAddingCorrect(false)} />
+                        ) : (
+                            <button onClick={() => setIsAddingCorrect(true)} className="h-8 w-8 border-2 border-dashed border-slate-400 rounded text-slate-500">+</button>
+                        )}
                      </div>
                 </div>
                  <div>
@@ -209,7 +247,11 @@ const TranslateEditor: React.FC<{ exercise: TranslateExercise, onUpdate: (update
                      <p className="text-sm text-slate-500">Add distractor words.</p>
                      <div className="flex items-center gap-2 mt-2 flex-wrap">
                         {exercise.wrongWords.map((word, i) => <WordBlock key={`${word}-${i}`} word={word} onRemove={() => handleRemoveWord('wrong', i)} />)}
-                         {isAddingWrong ? (<AddWordInput onAdd={(word) => handleAddWord('wrong', word)} onCancel={() => setIsAddingWrong(false)} />) : (<button onClick={() => setIsAddingWrong(true)} className="h-8 w-8 border-2 border-dashed border-slate-400 rounded text-slate-500">+</button>)}
+                        {isAddingWrong ? (
+                            <AddWordInput onAdd={(word) => handleAddWord('wrong', word)} onCancel={() => setIsAddingWrong(false)} />
+                        ) : (
+                            <button onClick={() => setIsAddingWrong(true)} className="h-8 w-8 border-2 border-dashed border-slate-400 rounded text-slate-500">+</button>
+                        )}
                      </div>
                 </div>
                  <div>
@@ -221,7 +263,7 @@ const TranslateEditor: React.FC<{ exercise: TranslateExercise, onUpdate: (update
                 </div>
             </div>
              <div className="text-right">
-                <button onClick={handleShuffle} disabled={exercise.displayWords.length < 2} className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-lg disabled:opacity-50">Shuffle Words</button>
+                <button onClick={() => onUpdate({ ...exercise, displayWords: shuffleArray([...exercise.correctWords, ...exercise.wrongWords]) })} disabled={exercise.displayWords.length < 2} className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-lg disabled:opacity-50">Shuffle Words</button>
             </div>
         </div>
     );
@@ -287,8 +329,11 @@ const AddStagePage: React.FC = () => {
     const [activeExerciseId, setActiveExerciseId] = useState<string | null>(null);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
-    const lesson_id = useParams<{ lesson_id: string }>();
-    console.log('lesson_id', lesson_id);
+    const [stageId, setStageId] = useState<string | null>(null);
+    const [stageSaved, setStageSaved] = useState(false);
+    const lesson_id = useParams<{ lesson_id: string }>().cc;
+
+
     const openCreateExerciseFlow = () => {
         setIsTypeModalOpen(true);
     };
@@ -342,103 +387,458 @@ const AddStagePage: React.FC = () => {
 
     const activeExercise = exercises.find(ex => ex.id === activeExerciseId);
 
+    // Save stage and move to exercises tab
+    const handleSaveStage = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(`${Server_url}/api/lessons/stages/create/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    lesson: lesson_id,
+                    title: stageTitle,
+                    points,
+                }),
+            });
+            if (!response.ok) throw new Error('Failed to save stage');
+            const data = await response.json();
+            setStageId(data.id || data.stage_id); // Use the returned stage id
+            setStageSaved(true);
+            setActiveTab('exercises'); // Move to exercises tab
+        } catch (error) {
+            alert('Error saving stage');
+        }
+    };
+
+    // Save exercises for the stage (call this when user saves exercises)
+    const handleSaveExercises = async () => {
+        if (!stageId) return;
+        const token = localStorage.getItem('authToken');
+        let savedCount = 0;
+        let failedCount = 0;
+        const totalExercises = exercises.length;
+
+        for (const ex of exercises) {
+            let response;
+            const endpoint = `${Server_url}/api/lessons/stage/${stageId}/exercise/add/`;
+            try {
+                if (ex.type === 'multiple-choice') {
+                    const hasImageInAnswers = ex.answers.some(ans => ans.imageFile);
+                    if (hasImageInAnswers) {
+                        // Use FormData for multiple-choice with images
+                        const formData = new FormData();
+                        formData.append('title', ex.title);
+                        formData.append('exercise_type', 'multiple-choice');
+                        formData.append('stage', stageId);
+                        formData.append('multiple_choice', JSON.stringify({
+                            prompt: ex.prompt,
+                            word_to_learn: ex.wordToLearn,
+                        }));
+                        // For answers with images, include image references in the JSON
+                        const answersMetadata = ex.answers.map((ans, idx) => ({
+                            text: ans.text,
+                            is_correct: ans.isCorrect,
+                            image: ans.imageFile ? `answer_${idx}_image` : null,
+                        }));
+                        formData.append('answers', JSON.stringify(answersMetadata));
+                        // Append each image file with the referenced key name
+                        ex.answers.forEach((ans, idx) => {
+                            if (ans.imageFile) {
+                                formData.append(`answer_${idx}_image`, ans.imageFile);
+                            }
+                        });
+                        response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` },
+                            body: formData,
+                        });
+                    } else {
+                        // Use JSON for multiple-choice without images
+                        const exercisePayload = {
+                            title: ex.title,
+                            exercise_type: 'multiple-choice',
+                            stage: stageId,
+                            multiple_choice: {
+                                prompt: ex.prompt,
+                                word_to_learn: ex.wordToLearn,
+                            },
+                            answers: ex.answers.map(ans => ({
+                                text: ans.text,
+                                is_correct: ans.isCorrect,
+                                image: null,
+                            })),
+                        };
+                        response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(exercisePayload),
+                        });
+                    }
+                } else if (ex.type === 'word-match') {
+                    const exercisePayload = {
+                        title: ex.title,
+                        exercise_type: 'word-match',
+                        stage: stageId,
+                        word_match: {
+                            prompt: ex.prompt,
+                        },
+                        word_match_pairs: ex.matches.map(pair => ({
+                            term: pair.term,
+                            definition: pair.definition,
+                        })),
+                    };
+
+                    response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(exercisePayload),
+                    });
+                } else if (ex.type === 'translate') {
+                    if (ex.imageFile) {
+                        // Use FormData for translate with image
+                        const formData = new FormData();
+                        formData.append('title', ex.title);
+                        formData.append('exercise_type', 'translate');
+                        formData.append('stage', stageId);
+                        formData.append('translate', JSON.stringify({
+                            prompt: ex.prompt,
+                            phrase_to_translate: ex.phraseToTranslate,
+                            correct_words: ex.correctWords,
+                            wrong_words: ex.wrongWords,
+                            display_words: ex.displayWords,
+                            image: 'translate_image',
+                        }));
+                        formData.append('translate_image', ex.imageFile);
+                        response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` },
+                            body: formData,
+                        });
+                    } else {
+                        // Use JSON for translate without image
+                        const exercisePayload = {
+                            title: ex.title,
+                            exercise_type: 'translate',
+                            stage: stageId,
+                            translate: {
+                                prompt: ex.prompt,
+                                phrase_to_translate: ex.phraseToTranslate,
+                                correct_words: ex.correctWords,
+                                wrong_words: ex.wrongWords,
+                                display_words: ex.displayWords,
+                                image: null,
+                            },
+                        };
+                        response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(exercisePayload),
+                        });
+                    }
+                }
+
+                if (response && response.ok) {
+                    savedCount++;
+                } else if (response) {
+                    failedCount++;
+                } else {
+                    failedCount++;
+                }
+            } catch (error) {
+                failedCount++;
+            }
+        }
+        if (failedCount === 0 && savedCount === totalExercises) {
+            alert(`All ${savedCount} exercises saved successfully!`);
+        } else if (savedCount > 0) {
+            alert(`${savedCount} exercises saved, ${failedCount} failed.`);
+        } else if (totalExercises > 0) {
+            alert(`Failed to save any of the ${totalExercises} exercises.`);
+        }
+    };
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
             <div className="flex flex-1">
-              {/* Sidebar */}
-              <div className="hidden lg:block w-64 bg-white border-r border-gray-200">
-                <Sidebar />
-              </div>
-              {/* Main Content */}
-              <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
-                <main className="max-w-6xl mx-auto">
-                  <SelectExerciseTypeModal isOpen={isTypeModalOpen} onClose={() => setIsTypeModalOpen(false)} onSelect={handleSelectExerciseType} />
-                  <EnterTitleModal isOpen={isTitleModalOpen} onClose={() => setIsTitleModalOpen(false)} onCreate={handleCreateExerciseWithTitle} />
-                  <div className="flex items-center text-sm mb-6 text-slate-500 flex-wrap">
-                    <span>Lessons</span>
-                    <span className="mx-2">/</span>
-                    <span>Basic Spanish</span>
-                    <span className="mx-2">/</span>
-                    <span className="text-blue-600 font-medium">Add Stage</span>
-                  </div>
-                  <div className="bg-white p-4 sm:p-8 rounded-xl shadow-sm">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 gap-4">
-                      <nav className="flex items-center gap-6">
-                        <button onClick={() => setActiveTab('details')} className={`text-sm font-semibold pb-4 ${activeTab === 'details' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>Stage Details</button>
-                        <button onClick={() => setActiveTab('exercises')} className={`text-sm font-semibold pb-4 ${activeTab === 'exercises' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>Exercises</button>
-                      </nav>
-                      <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <button className="w-full sm:w-auto px-5 py-2 bg-white border border-slate-300 text-sm font-semibold text-slate-700 rounded-lg hover:bg-slate-50">Cancel</button>
-                        <button className="w-full sm:w-auto flex items-center justify-center px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">Save Stage</button>
-                      </div>
-                    </div>
-                    {activeTab === 'details' && (
-                      <div className="mt-8 max-w-lg">
-                        <h2 className="text-xl font-semibold text-slate-800">Stage Details</h2>
-                        <p className="text-sm text-slate-500 mt-1">Fill out the general details for this stage.</p>
-                        <div className="mt-8 space-y-6">
-                          <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Stage Title*</label>
-                            <input type="text" value={stageTitle} onChange={(e) => setStageTitle(e.target.value)} maxLength={titleCharLimit} className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"/>
-                            <p className="text-right text-xs text-slate-400 mt-1">{titleCharLimit - stageTitle.length} characters</p>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Points Allocated*</label>
-                            <input type="number" value={points} onChange={(e) => setPoints(parseInt(e.target.value))} className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"/>
-                            <p className="text-xs text-slate-400 mt-1">Max. of 16 points</p>
-                          </div>
+                {/* Sidebar */}
+                <div className="hidden lg:block w-64 bg-white border-r border-gray-200">
+                    <Sidebar />
+                </div>
+                {/* Main Content */}
+                <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
+                    <main className="max-w-6xl mx-auto">
+                        <SelectExerciseTypeModal isOpen={isTypeModalOpen} onClose={() => setIsTypeModalOpen(false)} onSelect={handleSelectExerciseType} />
+                        <EnterTitleModal isOpen={isTitleModalOpen} onClose={() => setIsTitleModalOpen(false)} onCreate={handleCreateExerciseWithTitle} />
+                        <div className="flex items-center text-sm mb-6 text-slate-500 flex-wrap">
+                          <span>Lessons</span>
+                          <span className="mx-2">/</span>
+                          <span>Basic Spanish</span>
+                          <span className="mx-2">/</span>
+                          <span className="text-blue-600 font-medium">Add Stage</span>
                         </div>
-                        <div className="mt-8 pt-6">
-                          <button className="flex items-center justify-center w-full max-w-xs mx-auto px-6 py-2.5 border border-blue-600 text-blue-600 text-sm font-semibold rounded-lg hover:bg-blue-50">
-                            Save Details & Continue
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    {activeTab === 'exercises' && (
-                      <div className="flex flex-col lg:flex-row gap-8 mt-6">
-                        {/* Exercise List Panel */}
-                        <div className="lg:w-1/3 w-full mb-8 lg:mb-0">
-                          <h3 className="font-semibold text-slate-800">All Exercises</h3>
-                          <p className="text-sm text-slate-500 mb-4">Create & manage exercises from this panel</p>
-                          <div className="space-y-2">
-                            {exercises.map(ex => (
-                              <div key={ex.id} className="relative">
-                                <div className={`w-full text-left p-3 rounded-lg flex justify-between items-center ${activeExerciseId === ex.id ? 'bg-blue-100' : 'bg-white hover:bg-slate-50'}`}>
-                                  { editingExerciseId === ex.id ? (
-                                    <input type="text" value={ex.title} autoFocus className="font-medium text-sm text-slate-700 bg-transparent focus:outline-none border-b-2 border-blue-500 w-full" onChange={(e) => handleTitleChange(ex.id, e.target.value)} onBlur={() => setEditingExerciseId(null)} onKeyDown={(e) => { if (e.key === 'Enter') setEditingExerciseId(null) }}/>
-                                  ) : (
-                                    <span onClick={() => setActiveExerciseId(ex.id)} className="font-medium text-sm text-slate-700 flex-grow cursor-pointer">{ex.title}</span>
-                                  )}
-                                  <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === ex.id ? null : ex.id); }} className="text-slate-400 p-1 hover:bg-slate-200 rounded-full flex-shrink-0">⋮</button>
+                        <div className="bg-white p-4 sm:p-8 rounded-xl shadow-sm">
+                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 gap-4">
+                            <nav className="flex items-center gap-6">
+                              <button onClick={() => setActiveTab('details')} className={`text-sm font-semibold pb-4 ${activeTab === 'details' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>Stage Details</button>
+                              <button onClick={() => stageSaved && setActiveTab('exercises')} className={`text-sm font-semibold pb-4 ${activeTab === 'exercises' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'} ${!stageSaved ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!stageSaved}>Exercises</button>
+                            </nav>
+                            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                              {activeTab === 'details' && (
+                                <button
+                                    className="w-full sm:w-auto flex items-center justify-center px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700"
+                                    onClick={handleSaveStage}
+                                >
+                                    Save Stage
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {activeTab === 'details' && (
+                            <div className="mt-8 max-w-lg">
+                              <h2 className="text-xl font-semibold text-slate-800">Stage Details</h2>
+                              <p className="text-sm text-slate-500 mt-1">Fill out the general details for this stage.</p>
+                              <div className="mt-8 space-y-6">
+                                <div>
+                                  <label className="block text-sm font-medium text-slate-700 mb-1">Stage Title*</label>
+                                  <input type="text" value={stageTitle} onChange={(e) => setStageTitle(e.target.value)} maxLength={titleCharLimit} className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"/>
+                                  <p className="text-right text-xs text-slate-400 mt-1">{titleCharLimit - stageTitle.length} characters</p>
                                 </div>
-                                {openMenuId === ex.id && (
-                                  <div className="absolute right-0 top-10 bg-white border border-slate-200 rounded-md shadow-lg z-10 py-1 w-28">
-                                    <button onClick={(e) => { e.stopPropagation(); setEditingExerciseId(ex.id); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">Rename</button>
-                                    <button onClick={() => handleDeleteExercise(ex.id)} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-100">Delete</button>
+                                <div>
+                                  <label className="block text-sm font-medium text-slate-700 mb-1">Points Allocated*</label>
+                                  <input type="number" value={points} onChange={(e) => setPoints(parseInt(e.target.value))} className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"/>
+                                  <p className="text-xs text-slate-400 mt-1">Max. of 16 points</p>
+                                </div>
+                              </div>
+                              <div className="mt-8 pt-6">
+                                <button className="flex items-center justify-center w-full max-w-xs mx-auto px-6 py-2.5 border border-blue-600 text-blue-600 text-sm font-semibold rounded-lg hover:bg-blue-50">
+                                  Save Details & Continue
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {activeTab === 'exercises' && (
+                            <div className="flex gap-6">
+                              {/* Sidebar: All Exercises */}
+                              <div className="w-full max-w-xs bg-white border border-slate-200 rounded-xl p-4 flex flex-col" style={{ minHeight: 600 }}>
+                                <h3 className="font-semibold text-slate-700 mb-2">All Exercises</h3>
+                                <p className="text-xs text-slate-500 mb-4">Create & manage exercises from this panel</p>
+                                <div className="flex-1 overflow-y-auto">
+                                  {exercises.map((exercise) => (
+                                    <div
+                                      key={exercise.id}
+                                      className={`flex items-center justify-between px-3 py-2 mb-2 rounded-lg cursor-pointer border ${activeExerciseId === exercise.id ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:bg-slate-50'}`}
+                                      onClick={() => setActiveExerciseId(exercise.id)}
+                                    >
+                                      <span className="truncate text-sm">{exercise.title || 'Untitled Exercise'}</span>
+                                      <span className="text-slate-400 text-lg ml-2 cursor-move">☰</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <button
+                                  className="mt-4 w-full border border-slate-300 rounded-lg py-2 text-sm font-semibold text-slate-700 hover:bg-blue-50 flex items-center justify-center gap-2"
+                                  onClick={openCreateExerciseFlow}
+                                >
+                                  + Create New Exercise
+                                </button>
+                              </div>
+
+                              {/* Main Editor */}
+                              <div className="flex-1 bg-white rounded-xl p-6 border border-slate-200 min-h-[600px]">
+                                {activeExercise ? (
+                                  <>
+                                    {activeExercise?.type === 'multiple-choice' && (
+                                      <div className="flex flex-col gap-6">
+                                        {/* Prompt */}
+                                        <input
+                                          type="text"
+                                          placeholder="Enter the prompt for this exercise here"
+                                          className="w-full p-3 border border-slate-300 rounded-lg text-sm"
+                                          value={activeExercise.prompt}
+                                          onChange={e => handleUpdateExercise({ ...activeExercise, prompt: e.target.value })}
+                                        />
+
+                                        {/* Word to Learn */}
+                                        <div className="w-full flex items-center justify-center mb-2">
+                                          <button
+                                            onClick={() => speak(activeExercise.wordToLearn, 'en-US')}
+                                            className="text-2xl text-slate-500 hover:text-blue-600"
+                                          >
+                                            🔊
+                                          </button>
+                                          <input
+                                            type="text"
+                                            placeholder="Enter the word to learn here"
+                                            className="w-full bg-slate-100 text-center text-lg font-semibold text-slate-700 p-3 rounded-lg ml-2"
+                                            value={activeExercise.wordToLearn}
+                                            onChange={e => handleUpdateExercise({ ...activeExercise, wordToLearn: e.target.value })}
+                                          />
+                                        </div>
+
+                                        {/* Answers */}
+                                        <div className="mt-4">
+                                          <h3 className="font-semibold text-slate-700 mb-1">Answers</h3>
+                                          <p className="text-sm text-slate-500 mb-4">
+                                            Provide the possible answers for this exercise and select one correct answer
+                                          </p>
+                                          <div className="grid grid-cols-3 gap-4">
+                                            {activeExercise.answers.map((answer, idx) => (
+                                              <div key={answer.id} className="bg-white border border-slate-200 rounded-lg flex flex-col items-center p-4 relative">
+                                                <input
+                                                  type="radio"
+                                                  name="correct-answer"
+                                                  checked={answer.isCorrect}
+                                                  onChange={() => {
+                                                    const updatedAnswers = activeExercise.answers.map((ans, i) => ({
+                                                      ...ans,
+                                                      isCorrect: i === idx,
+                                                    }));
+                                                    handleUpdateExercise({ ...activeExercise, answers: updatedAnswers });
+                                                  }}
+                                                  className="absolute top-2 right-2 h-5 w-5"
+                                                />
+                                                <input
+                                                  type="file"
+                                                  accept="image/*"
+                                                  className="hidden"
+                                                  id={`mcq-img-${answer.id}`}
+                                                  onChange={e => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                      const reader = new FileReader();
+                                                      reader.onloadend = () => {
+                                                        const updatedAnswers = activeExercise.answers.map((ans, i) =>
+                                                          i === idx ? { ...ans, imageUrl: reader.result as string, imageFile: file } : ans
+                                                        );
+                                                        handleUpdateExercise({ ...activeExercise, answers: updatedAnswers });
+                                                      };
+                                                      reader.readAsDataURL(file);
+                                                    }
+                                                  }}
+                                                />
+                                                <label
+                                                  htmlFor={`mcq-img-${answer.id}`}
+                                                  className="w-full h-28 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer mb-2 overflow-hidden"
+                                                >
+                                                  {answer.imageUrl ? (
+                                                    <img src={answer.imageUrl} alt="Upload preview" className="h-full w-full object-cover" />
+                                                  ) : (
+                                                    <>
+                                                      <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l-1-1m6-5l-1.5 1.5" />
+                                                      </svg>
+                                                      <span className="text-xs text-slate-500 mt-1">Drag & drop or click to upload files<br />PNG, JPG | 10MB max. each</span>
+                                                    </>
+                                                  )}
+                                                </label>
+                                                <input
+                                                  type="text"
+                                                  placeholder="Enter Possible Answer"
+                                                  className="w-full text-center p-2 border border-slate-300 rounded-lg text-sm"
+                                                  value={answer.text}
+                                                  onChange={e => {
+                                                    const updatedAnswers = activeExercise.answers.map(ans => ans.id === answer.id ? { ...ans, text: e.target.value } : ans);
+                                                    handleUpdateExercise({ ...activeExercise, answers: updatedAnswers });
+                                                  }}
+                                                />
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {activeExercise?.type === 'word-match' && (
+                                      <div className="flex flex-col gap-6">
+                                        {/* Prompt */}
+                                        <input
+                                          type="text"
+                                          placeholder="Match the accurate translation"
+                                          className="w-full text-center p-3 border-b border-slate-300 text-lg font-semibold"
+                                          value={activeExercise.prompt}
+                                          onChange={e => handleUpdateExercise({ ...activeExercise, prompt: e.target.value })}
+                                        />
+                                        <div>
+                                          <h3 className="font-semibold text-slate-700">Matches</h3>
+                                          <p className="text-sm text-slate-500">Add 3 or more matches and shuffle them.</p>
+                                        </div>
+                                        <div className="space-y-3">
+                                          {activeExercise.matches.map((match, idx) => (
+                                            <div key={match.id} className="grid grid-cols-12 gap-2 items-center">
+                                              <div className="col-span-5 flex items-center p-3 bg-blue-100 border border-blue-300 rounded-lg">
+                                                <button onClick={() => speak(match.term, 'es-ES')} className="text-lg text-slate-600 mr-3 hover:text-blue-600">🔊</button>
+                                                <input type="text" value={match.term} onChange={e => {
+                                                  const updatedMatches = activeExercise.matches.map((m, i) => i === idx ? { ...m, term: e.target.value } : m);
+                                                  handleUpdateExercise({ ...activeExercise, matches: updatedMatches });
+                                                }} className="w-full bg-transparent font-medium focus:outline-none"/>
+                                              </div>
+                                              <div className="col-span-5 flex items-center p-3 bg-slate-100 border border-slate-300 rounded-lg">
+                                                <input type="text" value={match.definition} onChange={e => {
+                                                  const updatedMatches = activeExercise.matches.map((m, i) => i === idx ? { ...m, definition: e.target.value } : m);
+                                                  handleUpdateExercise({ ...activeExercise, matches: updatedMatches });
+                                                }} className="w-full bg-transparent font-medium focus:outline-none"/>
+                                              </div>
+                                              <div className="col-span-2 flex justify-center">
+                                                <button onClick={() => {
+                                                  const updatedMatches = activeExercise.matches.filter((_, i) => i !== idx);
+                                                  handleUpdateExercise({ ...activeExercise, matches: updatedMatches });
+                                                }} className="text-slate-400 hover:text-red-500 p-2">🗑️</button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                          <button onClick={() => {
+                                            const newMatch = { id: `m-${Date.now()}`, term: '', definition: ''};
+                                            handleUpdateExercise({ ...activeExercise, matches: [...activeExercise.matches, newMatch] });
+                                          }} className="text-sm font-semibold text-blue-600">+ Add New Match</button>
+                                          <button onClick={() => handleUpdateExercise({ ...activeExercise, matches: shuffleArray(activeExercise.matches) })} disabled={activeExercise.matches.length < 2} className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-lg disabled:opacity-50">Shuffle Matches</button>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {activeExercise?.type === 'translate' && (
+                                      <TranslateEditor exercise={activeExercise} onUpdate={handleUpdateExercise} />
+                                    )}
+                                    <div className="mt-8 flex justify-end">
+                                      <button
+                                        className="bg-blue-600 text-white flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition"
+                                        onClick={handleSaveExercises}
+                                      >
+                                        Save Exercises
+                                      </button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="text-center text-slate-400 py-20">
+                                    <p className="text-sm mb-4">Select an exercise from the left or create a new one.</p>
+                                    <button
+                                      onClick={openCreateExerciseFlow}
+                                      className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700"
+                                    >
+                                      + Create New Exercise
+                                    </button>
                                   </div>
                                 )}
                               </div>
-                            ))}
-                          </div>
-                          <button onClick={openCreateExerciseFlow} className="w-full text-center mt-4 p-3 border-2 border-dashed border-slate-300 rounded-lg text-sm font-semibold text-slate-600 hover:border-blue-500 hover:text-blue-600">+ Create New Exercise</button>
+                            </div>
+                          )}
                         </div>
-                        {/* Editor Panel */}
-                        <div className="lg:w-2/3 w-full bg-slate-50 p-4 sm:p-6 rounded-lg min-h-[300px]">
-                          {activeExercise?.type === 'multiple-choice' && <MultipleChoiceEditor exercise={activeExercise as MultipleChoiceExercise} onUpdate={handleUpdateExercise} />}
-                          {activeExercise?.type === 'word-match' && <WordMatchEditor exercise={activeExercise as WordMatchExercise} onUpdate={handleUpdateExercise} />}
-                          {activeExercise?.type === 'translate' && <TranslateEditor exercise={activeExercise as TranslateExercise} onUpdate={handleUpdateExercise} />}
-                          {!activeExercise && <div className="text-center text-slate-500 h-full flex items-center justify-center">Select an exercise or create a new one to begin.</div>}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </main>
-              </div>
+                    </main>
+                </div>
             </div>
-          </div>
+        </div>
     );
 };
 

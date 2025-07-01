@@ -1,79 +1,53 @@
 import React from 'react';
 
-const styles = {
-  container: {
+const LessonCardButton = ({ variant, label, onClick }) => {
+  const baseStyle = {
     display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    paddingTop: 16,  // pt-4
-    marginTop: 16,   // mt-4
-    width: '100%',
-    fontSize: 14,    // text-sm
-    fontWeight: 500, // font-medium
-    lineHeight: 1,   // leading-none
-    fontFamily: 'inherit',
-  },
-  buttonBase: {
-    display: 'flex',
-    gap: 8,          // gap-2
-    alignSelf: 'stretch',
-    padding: '8px 16px',  // py-2 px-4
-    borderRadius: 12,     // rounded-lg
-    border: 'none',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+    padding: '10px 16px',
+    borderRadius: '8px',
+    border: '1px solid transparent',
+    fontSize: '0.875rem',
+    fontWeight: 500,
     cursor: 'pointer',
-    fontFamily: 'inherit',
-    transition: 'background-color 0.2s ease, color 0.2s ease',
-  },
-  variants: {
+    transition: 'background-color 0.2s, color 0.2s',
+    textAlign: 'center',
+  };
+
+  const variantStyles = {
     blue: {
-      backgroundColor: '#2563eb',
-      color: '#f3f4f6',
-      border: 'none',
-    },
-    gray: {
-      backgroundColor: '#9ca3af',
-      color: '#f3f4f6',
-      border: 'none',
+      backgroundColor: '#2563EB',
+      color: '#FFFFFF',
     },
     outline: {
-      backgroundColor: 'white',
-      color: '#0d74fa',
-      border: '1px solid #0d74fa',
+      backgroundColor: '#FFFFFF',
+      color: '#4B5563',
+      borderColor: '#D1D5DB',
     },
-  },
-  hoverBlue: {
-    backgroundColor: '#1d4ed8',
-  },
-  hoverGray: {
-    backgroundColor: '#6b7280',
-  },
-  hoverOutline: {
-    backgroundColor: '#e0f2ff',
-  },
-};
+    gray: {
+      backgroundColor: '#F3F4F6',
+      color: '#4B5563',
+    },
+    green: {
+      backgroundColor: '#10B981',
+      color: '#FFFFFF',
+    },
+    red: {
+      backgroundColor: '#EF4444',
+      color: '#FFFFFF',
+    },
+  };
 
-const LessonCardButton = ({ variant, label }) => {
-  const [hover, setHover] = React.useState(false);
+  const style = { ...baseStyle, ...variantStyles[variant] };
 
-  const variantStyle = styles.variants[variant] || styles.variants.blue;
-  let hoverStyle = {};
-
-  if (hover) {
-    if (variant === 'blue') hoverStyle = styles.hoverBlue;
-    else if (variant === 'gray') hoverStyle = styles.hoverGray;
-    else if (variant === 'outline') hoverStyle = styles.hoverOutline;
-  }
-
+  // The onClick prop is applied directly to the button element here
   return (
-    <div style={styles.container}>
-      <button
-        style={{ ...styles.buttonBase, ...variantStyle, ...hoverStyle }}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-      >
-        {label}
-      </button>
-    </div>
+    <button style={style} onClick={onClick}>
+      {label}
+    </button>
   );
 };
+
 export default LessonCardButton;
