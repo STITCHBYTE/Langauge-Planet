@@ -170,6 +170,7 @@ const EditAssignmentPage = () => {
   const [questions, setQuestions] = useState([]);
   const [discussionOptions, setDiscussionOptions] = useState<Discussion[]>([]);
   const [enrolledStudents, setEnrolledStudents] = useState<Student[]>([]); // Use the new Student interface
+  const [classData, setClassData] = useState(null); // NEW: To hold class details
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
@@ -217,6 +218,22 @@ const EditAssignmentPage = () => {
         return;
     }
 
+    // NEW: Fetch class data to get google_classroom_id
+    const fetchClassData = async () => {
+      try {
+        const response = await fetch(`${Server_url}/api/classrooms/classroom/${classroomId}/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error('Failed to fetch class details');
+        const data = await response.json();
+        console.log('Fetched class data:', data);
+        setClassData(data);
+      } catch (error) {
+        console.error('Error fetching class data:', error);
+        setError('Could not load class details.');
+      }
+    };
+
     const fetchDiscussions = async () => {
       try {
         const response = await fetch(`${Server_url}/api/classrooms/classroom/${classroomId}/discussions/`, {
@@ -240,14 +257,19 @@ const EditAssignmentPage = () => {
         });
         if (!response.ok) throw new Error('Failed to fetch enrolled students');
         const data = await response.json();
-        console.log('Fetched enrolled students:', data);
-        setEnrolledStudents(data.results || data); // Handle paginated or direct array response
+        console.log('Fetched enrolled students raw data:', data);
+        
+        // Normalize the data to handle different API response structures
+        const studentList = (data.results || data).map(item => item.student || item);
+
+        setEnrolledStudents(studentList); 
       } catch (error) {
           console.error('Error fetching students:', error);
           setError(prev => prev + ' Could not load student list.');
       }
     };
 
+    fetchClassData(); // Call the new function
     fetchDiscussions();
     fetchEnrolledStudents();
   }, [classroomId]);
@@ -360,7 +382,132 @@ const EditAssignmentPage = () => {
         }
         
         // 4. Success!
-        alert("Assignment and all questions saved successfully!");
+        alert("Assignment saved to Language Planet!");
+
+        // 5. Google Classroom Integration
+        const google_token = localStorage.getItem('google_access_token');
+        let googleClassroomId = classData?.google_classroom_id;
+
+        // If we don't have a Google Classroom ID, try to find it by matching.
+        if (!googleClassroomId && classData) {
+            console.log("google_classroom_id not found in classData. Attempting to find it by matching...");
+            if (google_token) {
+              try {
+                const coursesResponse = await fetch('https://classroom.googleapis.com/v1/courses', {
+                  headers: {
+                    'Authorization': `Bearer ${google_token}`,
+                  },
+                });
+    
+                if (coursesResponse.status === 401) {
+                    // Handle expired token: You would ideally call your backend to refresh the token.
+                    // For now, we will just alert the user. A real implementation
+                    // would get a new token and retry the request.
+                    throw new Error("Google token has expired. Please re-authenticate with Google.");
+                }
+
+                if (coursesResponse.ok) {
+                  const coursesData = await coursesResponse.json();
+                    console.log('Fetched Google Classroom courses:', coursesData);
+                  // Match using the 'section' field which should store your app's class ID
+                  const matchingCourse = coursesData.courses?.find(course => course.section === classData.id || course.section === classData._id);
+                  
+                  if (matchingCourse) {
+                    console.log(`Found matching Google Classroom course: ${matchingCourse.name} (ID: ${matchingCourse.id})`);
+                    googleClassroomId = matchingCourse.id;
+                    // TODO: You should consider saving this matched ID to your backend
+                    // to avoid looking it up every time.
+                  } else {
+                    console.warn(`No Google Classroom course found with a matching section ID: "${classData.id || classData._id}"`);
+                  }
+                }
+              } catch (error) {
+                console.error("Error fetching or matching Google Classroom courses:", error);
+              }
+            }
+        }
+
+        if (google_token && googleClassroomId) {
+            console.log("Creating assignment in Google Classroom...");
+            try {
+                const gcPayload: any = { // Use 'any' to dynamically build the payload
+                    title: title,
+                    description: description,
+                    workType: 'ASSIGNMENT',
+                    state: 'PUBLISHED',
+                    maxPoints: totalPoints,
+                    // assigneeMode: assignedStudents.length > 0 ? 'INDIVIDUAL_STUDENTS' : 'ALL_STUDENTS',
+                };
+
+                // More robust due date handling
+                if (dueDate) {
+                    const date = new Date(dueDate);
+                    // Check if the date is valid before adding it to the payload
+                    if (!isNaN(date.getTime())) {
+                        gcPayload.dueDate = {
+                            year: date.getFullYear(),
+                            month: date.getMonth() + 1,
+                            day: date.getDate(),
+                        };
+                        gcPayload.dueTime = {
+                            hours: date.getUTCHours(),
+                            minutes: date.getUTCMinutes(),
+                        };
+                    } else {
+                        console.warn("Invalid due date provided, skipping for Google Classroom.");
+                    }
+                }
+
+                if (gcPayload.assigneeMode === 'INDIVIDUAL_STUDENTS') {
+                    const studentEmails = assignedStudents
+                        .map(id => enrolledStudents.find(s => s.id === id)?.email)
+                        .filter(Boolean); // Filter out any null/undefined emails
+                    
+                    // Only add if we have valid student emails
+                    if (studentEmails.length > 0) {
+                        // DEBUG: Only sending the first selected student for testing
+                        const firstStudentEmail = studentEmails[0];
+                        console.log(`DEBUG: Assigning to the first selected student only: ${firstStudentEmail}`);
+                        gcPayload.individualStudentsOptions = { studentIds: [firstStudentEmail] };
+                    } else {
+                        // If no valid emails found, assign to all students to avoid an error
+                        console.warn("No matching student emails found for individual assignment. Assigning to all students in Google Classroom.");
+                        gcPayload.assigneeMode = 'ALL_STUDENTS';
+                    }
+                }
+
+                console.log("Submitting to Google Classroom:", JSON.stringify(gcPayload, null, 2));
+
+                const gcResponse = await fetch(`https://classroom.googleapis.com/v1/courses/${googleClassroomId}/courseWork`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${google_token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(gcPayload),
+                });
+
+                if (!gcResponse.ok) {
+                    const gcError = await gcResponse.json();
+                    console.error("Google Classroom API Error:", gcError);
+                    
+                    // Provide a more specific error message for this common issue
+                    if (gcError.error?.status === 'FAILED_PRECONDITION') {
+                        alert(`Assignment saved to Language Planet, but failed to post to Google Classroom. Error: One or more selected students are not enrolled in the Google Classroom course. Please check the student list in Google Classroom.`);
+                    } else {
+                        alert(`Assignment saved to Language Planet, but failed to post to Google Classroom: ${gcError.error.message}`);
+                    }
+                } else {
+                    alert("Assignment also posted successfully to Google Classroom!");
+                }
+            } catch (gcError) {
+                console.error("Error posting to Google Classroom:", gcError);
+                alert(`Assignment saved to Language Planet, but an error occurred while posting to Google Classroom.`);
+            }
+        } else {
+            console.log("Skipping Google Classroom post: No token or google_classroom_id found/matched.");
+        }
+
         navigate(`/Class_info_Page/${classroomId}`);
 
     } catch (error) {

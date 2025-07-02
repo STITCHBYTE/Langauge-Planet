@@ -35,6 +35,7 @@ import StudentClasses from '../src/Component/Class/classes.tsx';
 import StudentDisscussion from '../src/Component/Class/Disscussion-submit.tsx';
 import Reports from './Teacher/Classes/Reports.tsx';
 import ViewStudent from './Teacher/Lesson/View_student.tsx';
+import AuthCallback from "./Component/Login/AuthCallback";
 function App() {
   return (
        <ViewProvider>
@@ -73,6 +74,7 @@ function App() {
         <Route path="/discussion/:discussionId" element={<StudentDisscussion />} />
         <Route path="/reports/:classId" element={<Reports />} />
         <Route path="/lesson/:lesson_id/students" element={<ViewStudent />} />
+        <Route path="/auth-callback" element={<AuthCallback />} />
         {/* Add more routes as needed */}
       </Routes>
     </Router>

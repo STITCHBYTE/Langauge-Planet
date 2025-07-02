@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../Home/Sidebar.tsx';
 import Header from '../Home/Header.tsx';
-import Server_url from '../../config';
+import Server_url, { client_id } from '../../config';
 import { FiCopy, FiCheck, FiUploadCloud, FiSearch } from 'react-icons/fi';
+import { useNavigate } from "react-router-dom";
 
 // --- Global Styles for Buttons and Inputs (to match the screenshot) ---
 const GlobalStyles = () => (
@@ -55,7 +56,16 @@ interface User {
 }
 
 // --- Sub-components for better organization ---
-
+//google scopes
+const ADMIN_SCOPES =
+  "openid profile email " +
+  "https://www.googleapis.com/auth/classroom.courses " +
+  "https://www.googleapis.com/auth/classroom.coursework.students " +
+  "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly " +
+  "https://www.googleapis.com/auth/classroom.announcements " +
+  "https://www.googleapis.com/auth/classroom.rosters " +
+  "https://www.googleapis.com/auth/classroom.profile.emails " +
+  "https://www.googleapis.com/auth/classroom.profile.photos";
 // Personal Info Card Component
 const PersonalInfoCard: React.FC<{ user: User | null }> = ({ user }) => {
   const [copied, setCopied] = useState(false);
@@ -234,6 +244,12 @@ const FriendsCard: React.FC = () => {
 
 // Account Settings Section
 const AccountSettings: React.FC<{ user: User | null, onToggle: () => void }> = ({ user, onToggle }) => {
+    const [showGoogleModal, setShowGoogleModal] = useState(false);
+    const [isGoogleConnected, setIsGoogleConnected] = useState(() => {
+      // Check localStorage for Google connection (token)
+      return Boolean(localStorage.getItem('google_access_token'));
+    });
+    
     const teacherFeatures = [
         "Create custom classes for your students",
         "Customize quizzes and assignments for your students",
@@ -246,36 +262,187 @@ const AccountSettings: React.FC<{ user: User | null, onToggle: () => void }> = (
         "Learn at your own pace, no pressure.",
         "Access Language Planet anywhere, anytime."
     ];
+
+    const handleTeacherActivation = () => {
+        if (user?.is_teacher) {
+            if (isGoogleConnected) {
+                // Deactivate Google Classroom connection
+                if (window.confirm('Are you sure you want to disconnect your Google Classroom account?')) {
+                  localStorage.removeItem('google_access_token');
+                  setIsGoogleConnected(false);
+                  alert('Google Classroom disconnected.');
+                }
+            } else {
+                // Deactivate teacher panel
+                onToggle();
+            }
+        } else {
+            // Not a teacher: show modal, but make Google Classroom optional
+            setShowGoogleModal(true);
+        }
+    };
+
+    const GoogleLoginButton = ({ onSuccess, onFailure, onPermissionError }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Starting admin OAuth login...');
+      
+    //   const redirectUri = `${window.location.origin}/auth-callback`;
+    const redirectUri = "http://localhost:3000/auth-callback"; // Use your actual redirect URI here
+      console.log('Redirect URI:', redirectUri);
+      
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${encodeURIComponent(client_id)}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `scope=${encodeURIComponent(ADMIN_SCOPES)}&` +
+        `response_type=token&` +
+        `include_granted_scopes=true&` +
+        `access_type=online&` +
+        `state=admin_login`;
+      
+      console.log('Redirecting to:', authUrl);
+      window.location.href = authUrl;
+
+    } catch (error) {
+      console.error('Admin login error:', error);
+      setIsLoading(false);
+      
+      // Check for ProjectPermissionDenied error
+      if (error.message?.includes('ProjectPermissionDenied') || 
+          error.message?.includes('The Developer Console project is not permitted')) {
+        onPermissionError();
+      } else {
+        onFailure(error);
+        alert(`Login failed: ${error.message}`);
+      }
+    }
+    };
   
     return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-      <h2 className="text-xl font-bold text-gray-800 mb-1">Account Settings</h2>
-      <p className="text-sm text-gray-500 mb-6">Some other perks we have for you</p>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 flex flex-col">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-gray-800 text-lg">Teacher’s Panel</h3>
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-blue-500 shadow-sm text-xl">
-              <span role="img" aria-label="teacher">👩‍🏫</span>
+      <button
+        onClick={handleLogin}
+        className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <>
+            <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+            Connecting...
+          </>
+        ) : (
+          <>
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5 mr-2" />
+            Connect with Google
+          </>
+        )}
+      </button>
+    );
+  };
+  
+      const GoogleConnectionModal = () => (
+          showGoogleModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+                      <div className="text-center mb-6">
+                          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <span className="text-2xl">🎓</span>
+                          </div>
+                          <h3 className="text-xl font-bold text-gray-800 mb-2">Connect Google Classroom (Optional)</h3>
+                          <p className="text-sm text-gray-600">
+                              You can connect your Google account to link with Google Classroom for seamless class management. This step is optional. You can activate your teacher panel without connecting Google Classroom.
+                          </p>
+                      </div>
+  
+                      <div className="space-y-4 mb-6">
+                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                              <FiCheck className="text-green-500" />
+                              <span className="text-sm text-gray-700">Import existing classes from Google Classroom</span>
+                          </div>
+                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                              <FiCheck className="text-green-500" />
+                              <span className="text-sm text-gray-700">Sync student rosters automatically</span>
+                          </div>
+                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                              <FiCheck className="text-green-500" />
+                              <span className="text-sm text-gray-700">Share assignments and resources seamlessly</span>
+                          </div>
+                      </div>
+  
+                      <div className="space-y-3">
+                          <GoogleLoginButton
+                              onSuccess={() => {
+                                setIsGoogleConnected(true);
+                                setShowGoogleModal(false);
+                                alert('Google Classroom connected!');
+                              }}
+                              onFailure={() => {
+                                alert('Google login failed');
+                              }}
+                              onPermissionError={() => {
+                                alert('Google Classroom API permission error. Please check your Google Cloud project.');
+                              }}
+                          />
+                          <button
+                              onClick={() => {
+                                setShowGoogleModal(false);
+                                // Allow teacher activation without Google
+                                onToggle();
+                              }}
+                              className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                          >
+                            Continue without Google
+                          </button>
+                          <button
+                              onClick={() => setShowGoogleModal(false)}
+                              className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                          >
+                              Cancel
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          )
+      );
+    
+      return (
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <h2 className="text-xl font-bold text-gray-800 mb-1">Account Settings</h2>
+        <p className="text-sm text-gray-500 mb-6">Some other perks we have for you</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-gray-800 text-lg">Teacher’s Panel</h3>
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-blue-500 shadow-sm text-xl">
+                <span role="img" aria-label="teacher">👩‍🏫</span>
+              </div>
             </div>
-          </div>
-          <p className="text-sm text-gray-500 font-semibold mb-4">Free</p>
-          <ul className="text-sm list-none text-gray-700 space-y-2 flex-grow">
-            {teacherFeatures.map((feat, i) => (
+            <p className="text-sm text-gray-500 font-semibold mb-4">Free</p>
+            <ul className="text-sm list-none text-gray-700 space-y-2 flex-grow">
+              {teacherFeatures.map((feat, i) => (
                 <li key={i} className="flex items-start gap-2">
-                    <FiCheck className="text-blue-500 mt-1 flex-shrink-0"/>
-                    <span>{feat}</span>
+                  <FiCheck className="text-blue-500 mt-1 flex-shrink-0" />
+                  <span>{feat}</span>
                 </li>
-            ))}
-          </ul>
-          <button onClick={onToggle} className={`w-full mt-6 text-sm font-bold py-3 rounded-lg transition-colors ${user?.is_teacher ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>
-            {user?.is_teacher ? 'Deactivate Teacher Panel' : 'Activate Teacher Panel'}
-          </button>
-        </div>
+              ))}
+            </ul>
+            <button
+              onClick={handleTeacherActivation}
+              className={`w-full mt-6 text-sm font-bold py-3 rounded-lg transition-colors ${user?.is_teacher ? (isGoogleConnected ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300') : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+            >
+              {user?.is_teacher
+                ? (isGoogleConnected ? 'Deactivate Google Classroom' : 'Deactivate Teacher Panel')
+                : 'Activate Teacher Panel'}
+            </button>
+          </div>
 
-        <div className="bg-blue-600 p-6 rounded-2xl text-white flex flex-col">
-           <div className="flex justify-between items-center mb-4">
+          <div className="bg-blue-600 p-6 rounded-2xl text-white flex flex-col">
+             <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-white text-lg">Chrome Extension</h3>
             <div className="w-10 h-10 bg-white/30 rounded-lg flex items-center justify-center text-white text-xl">
                <span role="img" aria-label="extension">🧩</span>
@@ -294,9 +461,10 @@ const AccountSettings: React.FC<{ user: User | null, onToggle: () => void }> = (
             Subscribe For Extension
           </button>
         </div>
+        </div>
+        <GoogleConnectionModal />
       </div>
-    </div>
-  );
+    );
 };
 
 // --- Main Profile Page Component ---
@@ -371,4 +539,26 @@ const ProfilePage: React.FC = () => {
   );
 }
 
+const AuthCallback: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Parse the hash fragment for tokens
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+
+    const accessToken = params.get("access_token");
+    if (accessToken) {
+      localStorage.setItem("google_access_token", accessToken);
+      // You can also store other params if needed
+    }
+
+    // Redirect to profile or dashboard
+    navigate("/profile", { replace: true });
+  }, [navigate]);
+
+  return <div>Authenticating...</div>;
+};
+
 export default ProfilePage;
+export { AuthCallback };

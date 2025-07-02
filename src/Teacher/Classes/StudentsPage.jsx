@@ -206,13 +206,15 @@ const StudentsPage = () => {
     
     setAddingStudents(true);
     const token = localStorage.getItem('authToken');
+    const google_token = localStorage.getItem('google_access_token'); // Assuming you store Google token in localStorage
     
     try {
       // Add each selected student to the class
       const promises = selectedStudents.map(studentId =>
         fetch(`${Server_url}/api/classrooms/classroom/invite/`, {
           method: 'POST',
-          headers: {
+          headers:
+           {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
@@ -230,7 +232,97 @@ const StudentsPage = () => {
         throw new Error(`Failed to add ${failedRequests.length} student(s)`);
       }
 
-      alert(`${selectedStudents.length} student(s) added successfully!`);
+      // Google Classroom Invite Integration
+      console.log('Class Data for Google Classroom check:', classData); // Log classData here
+      
+      let googleClassroomId = classData.google_classroom_id;
+
+      // If we don't have a Google Classroom ID, try to find it by matching the class title.
+      if (!googleClassroomId) {
+        console.log("google_classroom_id not found in classData. Attempting to find it by matching title...");
+        const google_token = localStorage.getItem('google_access_token');
+        if (google_token) {
+          try {
+            const coursesResponse = await fetch('https://classroom.googleapis.com/v1/courses', {
+              headers: {
+                'Authorization': `Bearer ${google_token}`,
+              },
+            });
+
+            if (coursesResponse.ok) {
+              const coursesData = await coursesResponse.json();
+                console.log('Fetched Google Classroom courses:', coursesData);
+              const matchingCourse = coursesData.courses?.find(course => course.section === classData.id || course.section === classData._id);
+              
+              if (matchingCourse) {
+                console.log(`Found matching Google Classroom course: ${matchingCourse.name} (ID: ${matchingCourse.id})`);
+                googleClassroomId = matchingCourse.id;
+                // TODO: You should consider saving this matched ID to your backend
+                // to avoid looking it up every time.
+              } else {
+                console.warn(`No Google Classroom course found with the title: "${classData.title}"`);
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching or matching Google Classroom courses:", error);
+          }
+        }
+      }
+
+      if (googleClassroomId) {
+        for (const studentId of selectedStudents) {
+          const student = allTeacherStudents.find(s => s.id === studentId);
+          if (student && student.email) {
+            try {
+              // Get fresh access token
+              const token = localStorage.getItem('google_access_token');
+              
+              if (!token) {
+                console.warn('No Google access token found. Skipping Google Classroom invite.');
+                continue; // Skip to the next student
+              }
+
+              const response = await fetch('https://classroom.googleapis.com/v1/invitations', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  courseId: googleClassroomId, // Use the found or existing ID
+                  role: 'STUDENT',
+                  userId: student.email
+                })
+              });
+
+              if (!response.ok) {
+                const error = await response.json();
+                // Log the detailed error from Google for better debugging
+                console.error('Google Classroom API error response:', error);
+                throw new Error(error.error.message || 'Failed to send Google Classroom invite');
+              }
+
+              const data = await response.json();
+              console.log('Google Classroom invite sent:', data);
+
+            } catch (error) {
+              console.error(`Google Classroom invite error for ${student.email}:`, error);
+              // Continue with other students even if one fails
+            }
+          }
+        }
+      } else {
+        // Alert the user if the class isn't linked, instead of just logging to console.
+        alert('Student(s) added to Language Planet, but this class is not linked to Google Classroom. No invites were sent.');
+      }
+      // End Google Classroom Invite Integration
+
+      // Show success message only for the platform invite if Google Classroom part is skipped.
+      if (!googleClassroomId) {
+        alert(`${selectedStudents.length} student(s) added successfully to the platform!`);
+      } else {
+        alert(`${selectedStudents.length} student(s) added and invited successfully!`);
+      }
       
       // Reset modal state
       setSelectedStudents([]);

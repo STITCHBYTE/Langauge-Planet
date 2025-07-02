@@ -46,14 +46,99 @@ const ClassForm: React.FC = () => {
       },
       body: formData,
     });
+    console.log('Response status:', response); // log the response status
 
     if (response.ok) {
        const data = await response.json(); // get the response data
-       console.log(
-          'Class created successfully:', data
-       )
-       const classId = data.id; // assuming the response sends `id` field
+       console.log('Class created successfully:', data);
+       const classId = data.id; // use as room id
        alert('Class created successfully!');
+
+       // Google Classroom sync
+       const googleToken = localStorage.getItem('google_access_token');
+       let googleUserId = localStorage.getItem('google_user_id');
+       if (googleToken) {
+         try {
+           console.log('[Google Sync] Checking Google token validity...');
+           // Check token validity by fetching userinfo
+           let tokenValid = false;
+           if (!googleUserId) {
+             const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+               headers: { Authorization: `Bearer ${googleToken}` }
+             });
+             console.log('[Google Sync] User info response:', userInfoRes);
+             if (userInfoRes.ok) {
+               const userInfo = await userInfoRes.json();
+               console.log('[Google Sync] User info:', userInfo);
+               googleUserId = userInfo.sub;
+               if (googleUserId) {
+                 localStorage.setItem('google_user_id', googleUserId);
+                 tokenValid = true;
+               }
+             } else {
+               const errText = await userInfoRes.text();
+               console.error('[Google Sync] Invalid Google token. userinfo error:', errText);
+               alert('Your Google login has expired or is invalid. Please reconnect your Google account.');
+               // Optionally, clear the token and prompt re-login
+              //  localStorage.removeItem('google_access_token');
+              //  localStorage.removeItem('google_user_id');
+               return;
+             }
+           } else {
+             tokenValid = true;
+           }
+
+           if (tokenValid && googleUserId) {
+             console.log('[Google Sync] Creating class in Google Classroom...');
+             const gcRes = await fetch('https://classroom.googleapis.com/v1/courses', {
+               method: 'POST',
+               headers: {
+                 'Content-Type': 'application/json',
+                 'Authorization': `Bearer ${googleToken}`
+               },
+               body: JSON.stringify({
+                 name: title,
+                 description,
+                 ownerId: googleUserId,
+                 section: classId, // use 'section' to store your backend id
+                 courseState: 'PROVISIONED',
+               })
+             });
+             console.log('[Google Sync] Classroom API response:', gcRes);
+
+             if (gcRes.ok) {
+               const gcData = await gcRes.json();
+               alert('Class also created in Google Classroom!');
+               console.log('[Google Sync] Google Classroom class:', gcData);
+             } else {
+               const errData = await gcRes.json();
+               console.error('[Google Sync] Classroom API error:', errData);
+               // Delete the class from backend if Google Classroom creation fails
+               try {
+                 const axios = (await import('axios')).default;
+                 await axios.delete(`${Server_url}/api/classrooms/classroom/${classId}/delete/`, {
+                   headers: { 'Authorization': `Bearer ${token}` }
+                 });
+                 alert(
+                   'Failed to create class in Google Classroom. The class was removed from your database.\n' +
+                   'Google API Error: ' + (errData.error?.message || JSON.stringify(errData))
+                 );
+               } catch (deleteErr) {
+                 console.error('[Google Sync] Failed to delete class from backend:', deleteErr);
+                 alert('Failed to create class in Google Classroom, and failed to delete from database. Please contact support.');
+               }
+               return;
+             }
+           }
+         } catch (gcErr) {
+           console.error('[Google Sync] Unexpected error during Google Classroom sync:', gcErr);
+           alert('Unexpected error syncing with Google Classroom: ' + (gcErr.message || gcErr));
+           return;
+         }
+       } else {
+         console.log('[Google Sync] No Google token found. Skipping Google Classroom sync.');
+       }
+
        setTitle('');
        setDescription('');
        setAccessType('public');
