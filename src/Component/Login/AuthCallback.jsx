@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from "react-toastify";
+import Server_url from '../../config';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -54,7 +56,7 @@ const AuthCallback = () => {
           errorMessage += '\n\nRedirect URI mismatch. Please check your Google Cloud Console configuration.';
         }
         
-        alert(errorMessage);
+        toast.error(errorMessage);
         navigate('/');
         return;
       }
@@ -71,7 +73,7 @@ const AuthCallback = () => {
             console.log('Token appears valid, calling onLoginSuccess...');
             localStorage.setItem('google_access_token', accessToken);
             // Set user as teacher via API
-            fetch(`${process.env.REACT_APP_SERVER_URL || window.Server_url || '/api'}/api/users/update/`, {
+            fetch(`${Server_url}/api/users/update/`, {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
@@ -86,23 +88,23 @@ const AuthCallback = () => {
               })
               .catch(err => {
                 console.error('Failed to update teacher role:', err);
-                alert('Google connected, but failed to activate teacher panel.');
+                toast.error('Google connected, but failed to activate teacher panel.');
                 window.location.href = '/Profile';
               });
             return;
           } else {
             console.error('Invalid token format');
-            alert('Received invalid access token. Please try again.');
+            toast.error('Received invalid access token. Please try again.');
             navigate('/Profile');
           }
         } else {
           console.error('Invalid login state:', state);
-          alert('Invalid login state. Please use the admin login.');
+          toast.error('Invalid login state. Please use the admin login.');
           navigate('/Profile');
         }
       } else {
         console.warn('No access token found in URL');
-        alert('No access token received from Google OAuth. Please try again.');
+        toast.error('No access token received from Google OAuth. Please try again.');
         navigate('/Profile');
       }
     };

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google'; // Import Google Auth components
 import Sidebar from '../Home/Sidebar.tsx';
 import Header from '../Home/Header.tsx';
-import Server_url from '../../config.js';
+import Server_url, { client_id } from '../../config.js'; // Import client_id
 import { useView } from '../../Context/ViewContext.tsx';
-import { FiArrowLeft, FiUpload, FiPlay, FiDownload } from 'react-icons/fi';
-import toast, { Toaster } from 'react-hot-toast';
+import { FiArrowLeft, FiUpload, FiPlay, FiDownload, FiLogIn } from 'react-icons/fi';
+import {toast} from 'react-toastify';
+import axios from 'axios'; // Import axios
 
 interface DiscussionData {
   id: string;
@@ -28,6 +30,8 @@ interface Assignment {
   due_date: string;
   points: number;
   questions: Question[];
+  google_course_id?: string; // The ID of the course in Google Classroom
+  google_classroom_id?: string; // The ID of the assignment (CourseWork) in Google Classroom
 }
 
 interface Question {
@@ -70,7 +74,89 @@ const getFileSize = (url: string) => {
   return 'Unknown size';
 };
 
-const DiscussionSubmitPage: React.FC = () => {
+// --- Google Classroom API Helper ---
+const handleGoogleApiError = (error: any, functionName: string) => {
+  console.error(`Error in Google API function '${functionName}':`, error);
+  const message = error.response?.data?.error?.message || 'An unknown Google Classroom API error occurred.';
+  toast.error(`Google Classroom: ${message}`, { id: 'google-api-error' });
+  throw new Error(message);
+};
+
+/**
+ * Marks an assignment as "Turned In" using the Google API Client Library (gapi).
+ * This is a different approach to avoid CORS issues with axios/fetch.
+ */
+export async function turnInGoogleClassroomAssignment(
+  studentGoogleToken: string,
+  courseId: string,
+  courseWorkId: string
+): Promise<any> {
+  if (!studentGoogleToken) {
+    throw new Error("Student's Google authentication token is missing.");
+  }
+
+  console.log('[DEBUG] Attempting to turn in assignment using GAPI library...');
+
+  return new Promise((resolve, reject) => {
+    const gapi = (window as any).gapi;
+
+    if (!gapi) {
+      const gapiError = new Error("Google API Client Library (gapi) is not loaded.");
+      handleGoogleApiError(gapiError, 'gapi.load');
+      return reject(gapiError);
+    }
+
+    gapi.load('client:auth2', () => {
+      gapi.client.load('classroom', 'v1', () => {
+        gapi.client.setToken({ access_token: studentGoogleToken });
+
+        // Step 1: List submissions for this coursework
+        gapi.client.classroom.courses.courseWork.studentSubmissions.list({
+          courseId: courseId,
+          courseWorkId: courseWorkId,
+          userId: 'me'
+        }).then(
+          (listResponse: any) => {
+            const submissions = listResponse.result.studentSubmissions;
+            if (!submissions || submissions.length === 0) {
+              const err = new Error("No submission found for this coursework.");
+              handleGoogleApiError(err, 'studentSubmissions.list');
+              return reject(err);
+            }
+            const submissionId = submissions[0].id;
+            console.log('[DEBUG] Found submission:', submissionId);
+
+            // Step 2: Turn in the submission
+            gapi.client.classroom.courses.courseWork.studentSubmissions.turnIn({
+              courseId: courseId,
+              courseWorkId: courseWorkId,
+              id: submissionId
+            }).then(
+              (turnInResponse: any) => {
+                console.log('[DEBUG] GAPI Success: Turned in on Google Classroom.', turnInResponse);
+                resolve(turnInResponse);
+              },
+              (turnInError: any) => {
+                console.error('[DEBUG] GAPI Error (turnIn):', turnInError);
+                handleGoogleApiError(turnInError, 'turnInGoogleClassroomAssignment');
+                reject(turnInError);
+              }
+            );
+          },
+          (listError: any) => {
+            console.error('[DEBUG] GAPI Error (list):', listError);
+            handleGoogleApiError(listError, 'studentSubmissions.list');
+            reject(listError);
+          }
+        );
+      });
+    });
+  });
+}
+
+
+// Create a new component for the main page logic so we can use the hook inside the provider
+const DiscussionSubmitContent: React.FC = () => {
   const { discussionId } = useParams<{ discussionId: string }>();
   const navigate = useNavigate();
   const { currentUser } = useView();
@@ -82,6 +168,226 @@ const DiscussionSubmitPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submittedAssignments, setSubmittedAssignments] = useState<string[]>([]);
+  
+  // State for Google Login Modal
+  const [showGoogleLoginModal, setShowGoogleLoginModal] = useState(false);
+  const [pendingGoogleAssignment, setPendingGoogleAssignment] = useState<Assignment | null>(null);
+
+  // --- REAL Google Login Handler ---
+  const login = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      console.log('[DEBUG] Google Login Success:', tokenResponse);
+      const accessToken = tokenResponse.access_token;
+      localStorage.setItem('googleClassroomToken', accessToken);
+      toast.success('Google Login Successful!', { id: 'google-login' });
+
+      // NOW, resume the submission process for the pending assignment
+      if (pendingGoogleAssignment) {
+        // We call handleAssignmentSubmit which contains the full logic,
+        // rather than proceeding directly. This is safer.
+        await handleAssignmentSubmit(pendingGoogleAssignment, -1);
+      }
+      setShowGoogleLoginModal(false);
+    },
+    onError: (error) => {
+      console.error('Google Login Failed:', error);
+      toast.error('Google Login Failed. Please try again.', { id: 'google-login' });
+      setShowGoogleLoginModal(false);
+    },
+    // This scope is correct. It allows reading courses and modifying submissions.
+    scope: 'openid https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.me',
+  });
+
+  const handleGoogleLogin = () => {
+    console.log("Initiating Google Login...");
+    toast.loading('Waiting for Google Login...', { id: 'google-login' });
+    login(); // This will open the Google login popup
+  };
+
+  // --- NEW HELPER FUNCTION ---
+  // This function tries to find the Google IDs on-the-fly.
+  const findGoogleIdsAndCreateSubmission = async (assignment: Assignment, studentGoogleToken: string) => {
+    // toast.loading('Finding assignment on Google Classroom...', { id: 'google-find' });
+    
+    try {
+      // Step 1: Find the Google Course ID
+      console.log('[DEBUG] Finding Google Course ID...');
+      const coursesResponse = await axios.get('https://classroom.googleapis.com/v1/courses?studentId=me', {
+        headers: { Authorization: `Bearer ${studentGoogleToken}` },
+      });
+      
+      const matchingCourse = coursesResponse.data.courses?.find(
+        (course: any) => course.section === discussionData?.classroom
+      );
+
+      if (!matchingCourse) {
+        throw new Error("Please accept invite if accepted, then contact support");
+      }
+      const googleCourseId = matchingCourse.id;
+      console.log(`[DEBUG] Found matching Google Course ID: ${googleCourseId}`);
+
+      // Step 2: Find the Google CourseWork (Assignment) ID
+      console.log('[DEBUG] Finding Google CourseWork ID...');
+      const courseWorkResponse = await axios.get(`https://classroom.googleapis.com/v1/courses/${googleCourseId}/courseWork`, {
+        headers: { Authorization: `Bearer ${studentGoogleToken}` },
+      });
+
+      const matchingCourseWork = courseWorkResponse.data.courseWork?.find(
+        (work: any) => work.title === assignment.title
+      );
+
+      if (!matchingCourseWork) {
+        throw new Error("Please accept invite if accepted, then contact support");
+      }
+      const googleClassroomId = matchingCourseWork.id;
+      console.log(`[DEBUG] Found matching Google CourseWork ID: ${googleClassroomId}`);
+      
+      toast.success('Found assignment on Google Classroom!', { id: 'google-find' });
+
+      // Step 3: Create a new assignment object with the found IDs and submit
+      const googleReadyAssignment: Assignment = {
+        ...assignment,
+        google_course_id: googleCourseId,
+        google_classroom_id: googleClassroomId,
+      };
+
+      await proceedWithSubmission(googleReadyAssignment);
+
+    } catch (error) {
+      console.error('[DEBUG] Failed to find Google IDs:', error);
+      toast.error(error.message || 'Could not link to Google Classroom.', { id: 'google-find' });
+      // Optionally, you could ask the user if they want to submit to your server anyway.
+      // For now, we stop the process.
+      setSubmitting(false);
+    }
+  };
+
+
+  // This function will contain the actual submission logic
+  const proceedWithSubmission = async (assignmentToSubmit: Assignment) => {
+    console.log(`[DEBUG] --- Starting submission for: "${assignmentToSubmit.title}" ---`);
+    const token = localStorage.getItem('authToken');
+    const studentGoogleToken = localStorage.getItem('googleClassroomToken');
+    setSubmitting(true);
+
+    try {
+      const isGoogleAssignment = assignmentToSubmit.google_course_id && assignmentToSubmit.google_classroom_id;
+      
+      console.log('[DEBUG] Assignment Data:', assignmentToSubmit);
+      console.log('[DEBUG] Is this a Google Classroom assignment?', isGoogleAssignment);
+      console.log('[DEBUG] Does the student have a Google token?', !!studentGoogleToken);
+
+      // 1. Submit to Google Classroom FIRST if applicable
+      if (isGoogleAssignment && studentGoogleToken) {
+        console.log('[DEBUG] Conditions met. Attempting to submit to Google Classroom first.');
+        toast.info('Turning in on Google Classroom...', { id: 'google-turn-in' });
+        try {
+          // The helper function now has its own logs
+          await turnInGoogleClassroomAssignment(
+            studentGoogleToken,
+            assignmentToSubmit.google_course_id,
+            assignmentToSubmit.google_classroom_id
+          );
+          toast.success('Turned in on Google Classroom!', { id: 'google-turn-in' });
+        } catch (googleError) {
+          console.error('[DEBUG] Submission to Google Classroom FAILED. Halting process.', googleError);
+          // The handleGoogleApiError function will show a toast and throw an error.
+          throw googleError;
+        }
+      } else {
+        console.log('[DEBUG] Skipping Google Classroom submission. Conditions not met.');
+      }
+      
+      // 2. Submit to Learning Planet Database
+      console.log('[DEBUG] Proceeding with submission to Language Planet server.');
+      toast.info('Submitting to Language Planet...', { id: 'lp-submit' });
+      
+      // Prepare answers payload
+      const answersPayload = [];
+      for (const question of assignmentToSubmit.questions || []) {
+        const userAnswer = answers.find(answer => answer.question_id === question.id);
+        if (userAnswer && (userAnswer.answer_text || userAnswer.file)) {
+          if (question.question_type === 'file_upload' && userAnswer.file) {
+            const base64File = await toBase64(userAnswer.file);
+            answersPayload.push({ question: question.id, answer_file: base64File });
+          } else if (userAnswer.answer_text) {
+            answersPayload.push({ question: question.id, answer_text: userAnswer.answer_text });
+          }
+        }
+      }
+
+      const submissionBody = {
+        assignment: assignmentToSubmit.id,
+        answers: answersPayload,
+      };
+
+      console.log('[DEBUG] Payload for Language Planet server:', submissionBody);
+
+      const response = await fetch(`${Server_url}/api/classrooms/assignment-submissions/create/`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(submissionBody),
+      });
+
+      const responseData = await response.json(); // Get JSON response regardless of status
+
+      if (!response.ok) {
+        console.error('[DEBUG] FAILED to submit to Language Planet server. Response:', responseData);
+        throw new Error(responseData.detail || `Failed to submit assignment: ${assignmentToSubmit.title}`);
+      }
+
+      console.log('[DEBUG] Successfully submitted to Language Planet server. Response:', responseData);
+      toast.success(`Submitted to Language Planet!`, { id: 'lp-submit' });
+      setSubmittedAssignments(prev => [...prev, assignmentToSubmit.id]);
+
+    } catch (err) {
+      // This will catch errors from both Google and LP submissions.
+      // Specific toasts are handled inside the try block or by the helper.
+      setError(err instanceof Error ? err.message : 'Submission failed');
+    } finally {
+      setSubmitting(false);
+      setPendingGoogleAssignment(null);
+    }
+  };
+
+  // This is the entry point when the user clicks the submit button
+  const handleAssignmentSubmit = async (assignment: Assignment, index: number) => {
+    const isGoogleAssignment = assignment.google_course_id && assignment.google_classroom_id;
+    const studentGoogleToken = localStorage.getItem('googleClassroomToken');
+
+    if (isGoogleAssignment) {
+      // If IDs are already present, the logic is simple.
+      if (!studentGoogleToken) {
+        setPendingGoogleAssignment(assignment);
+        setShowGoogleLoginModal(true); // Open modal for Google login if token is missing
+        return; // Stop further processing until login is complete
+      } else {
+        await proceedWithSubmission(assignment);
+      }
+    } else {
+      // --- MODIFIED LOGIC ---
+      // If IDs are MISSING, we try to find them.
+      console.log('[DEBUG] Google IDs missing. Attempting to find them on-the-fly.');
+      if (!studentGoogleToken) {
+        // We still need the user to log in first.
+        setPendingGoogleAssignment(assignment);
+        setShowGoogleLoginModal(true); // Open modal for Google login if token is missing
+        return; // Stop further processing until login is complete
+      } else {
+        // User is logged in, so let's start the search.
+        await findGoogleIdsAndCreateSubmission(assignment, studentGoogleToken);
+      }
+    }
+  };
+
+  // Function to resume submission after a successful login
+  const resumeGoogleClassroomSubmit = async (token: string, assignment: Assignment) => {
+    if (!assignment.google_course_id || !assignment.google_classroom_id) return;
+    
+    // After login, the main submission function handles the logic.
+    // We just need to call it.
+    await proceedWithSubmission(assignment);
+  };
 
   useEffect(() => {
     if (!discussionId) return;
@@ -129,6 +435,18 @@ const DiscussionSubmitPage: React.FC = () => {
           })));
         }
 
+        // Check for existing submissions to update the UI
+        const submissionsResponse = await fetch(`${Server_url}/api/classrooms/discussion/${discussionId}/my-submissions/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (submissionsResponse.ok) {
+            const submissionsData = await submissionsResponse.json();
+            const submittedIds = submissionsData.map((sub: any) => sub.assignment);
+            setSubmittedAssignments(submittedIds);
+        }
+
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
         console.error('Error fetching data:', err);
@@ -169,62 +487,6 @@ const DiscussionSubmitPage: React.FC = () => {
     if (index === 0) return true;
     // Previous assignment must be in submittedAssignments
     return assignments[index - 1] && submittedAssignments.includes(assignments[index - 1].id);
-  };
-
-  // Submission handler for a single assignment
-  const handleAssignmentSubmit = async (assignment: Assignment, index: number) => {
-    const token = localStorage.getItem('authToken');
-    setSubmitting(true);
-
-    try {
-      // Prepare answers for this assignment
-      const answersPayload = [];
-      for (const question of assignment.questions || []) {
-        const userAnswer = answers.find(answer => answer.question_id === question.id);
-        if (userAnswer && (userAnswer.answer_text || userAnswer.file)) {
-          if (question.question_type === 'file_upload' && userAnswer.file) {
-            const base64File = await toBase64(userAnswer.file);
-            answersPayload.push({
-              question: question.id,
-              answer_file: base64File
-            });
-          } else if (userAnswer.answer_text) {
-            answersPayload.push({
-              question: question.id,
-              answer_text: userAnswer.answer_text
-            });
-          }
-        }
-      }
-
-      const submissionBody = {
-        assignment: assignment.id,
-        answers: answersPayload,
-      };
-
-      const response = await fetch(`${Server_url}/api/classrooms/assignment-submissions/create/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submissionBody),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        toast.error(errorData.detail || `Failed to submit assignment: ${assignment.title}`);
-        throw new Error(errorData.detail || `Failed to submit assignment: ${assignment.title}`);
-      }
-
-      toast.success(`Assignment "${assignment.title}" submitted!`);
-      setSubmittedAssignments(prev => [...prev, assignment.id]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submission failed');
-      toast.error(err instanceof Error ? err.message : 'Submission failed');
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   const handleSubmit = async () => {
@@ -342,7 +604,6 @@ const DiscussionSubmitPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
-      <Toaster position="bottom-center" />
       <div className="flex flex-1">
         {/* Sidebar */}
         <div className="w-64 bg-white shadow-md fixed left-0 top-0 h-full">
@@ -579,7 +840,45 @@ const DiscussionSubmitPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Google Login Modal */}
+      {showGoogleLoginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center">
+            <h2 className="text-2xl font-bold mb-4">Google Classroom Submission</h2>
+            <p className="text-gray-600 mb-6">
+              To turn in this assignment on Google Classroom, please log in with your Google account.
+            </p>
+            <button
+              onClick={handleGoogleLogin}
+              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors"
+            >
+              <FiLogIn />
+              Login with Google to Submit
+            </button>
+            <button
+              onClick={() => {
+                setShowGoogleLoginModal(false);
+                setPendingGoogleAssignment(null);
+                toast.info('You can submit to Google Classroom later.', { icon: 'ℹ️' });
+              }}
+              className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700"
+            >
+              Skip for now
+            </button>
+          </div>
+        </div>
+      )}
     </div>
+  );
+};
+
+// The main exported component will now just be the provider wrapper
+const DiscussionSubmitPage: React.FC = () => {
+  return (
+    <GoogleOAuthProvider clientId={client_id}>
+      <DiscussionSubmitContent />
+    </GoogleOAuthProvider>
   );
 };
 

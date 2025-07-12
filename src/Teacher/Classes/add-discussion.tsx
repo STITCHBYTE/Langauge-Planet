@@ -7,6 +7,7 @@ import Header from '../../Component/Home/Header.tsx';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import Server_url from '../../config';
+import { toast } from 'react-toastify';
 
 export default function AddDiscussionPage() {
     const { classId } = useParams<{ classId: string }>();
@@ -85,12 +86,14 @@ export default function AddDiscussionPage() {
 
         if (!token) {
             setError('Authentication token not found. Please log in again.');
+            toast.error('Authentication token not found. Please log in again.');
             setIsLoading(false);
             return;
         }
 
         if (!title || !description) {
             setError('Title and description are required.');
+            toast.error('Title and description are required.');
             setIsLoading(false);
             return;
         }
@@ -116,8 +119,10 @@ export default function AddDiscussionPage() {
             if (!response.ok) {
                 if (response.status === 401 || response.status === 403) {
                      setError("Authorization failed. Please log in again.");
+                     toast.error("Authorization failed. Please log in again.");
                 } else {
                     const errorData = await response.json();
+                    toast.error(errorData.message || 'Something went wrong');
                     throw new Error(errorData.message || 'Something went wrong');
                 }
                 return;
@@ -125,9 +130,8 @@ export default function AddDiscussionPage() {
 
             const result = await response.json();
             console.log('Success:', result);
-            alert('Discussion added successfully!');
+            toast.success('Discussion added successfully!');
             navigate(`/Class_info_Page/${classId}`);
-            
             // Clear the form
             setTitle('');
             setDescription('');
@@ -137,8 +141,8 @@ export default function AddDiscussionPage() {
             console.error('Error submitting form:', err);
             if (!error) {
                 setError(err.message);
+                toast.error(err.message);
             }
-            alert(`Error: ${err.message}`);
         } finally {
             setIsLoading(false);
         }

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '../Home/Sidebar.tsx';
 import Header from '../Home/Header.tsx';
 import Server_url, { client_id } from '../../config';
-import { FiCopy, FiCheck, FiUploadCloud, FiSearch } from 'react-icons/fi';
+import { FiCopy, FiCheck, FiUploadCloud, FiSearch, FiBookOpen } from 'react-icons/fi';
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 // --- Global Styles for Buttons and Inputs (to match the screenshot) ---
 const GlobalStyles = () => (
@@ -67,7 +68,12 @@ const ADMIN_SCOPES =
   "https://www.googleapis.com/auth/classroom.profile.emails " +
   "https://www.googleapis.com/auth/classroom.profile.photos";
 // Personal Info Card Component
-const PersonalInfoCard: React.FC<{ user: User | null }> = ({ user }) => {
+const PersonalInfoCard: React.FC<{ 
+  user: User | null, 
+  setShowGoogleModal: (show: boolean) => void,
+  isGoogleConnected: boolean,
+  handleDeactivation: () => void
+}> = ({ user, setShowGoogleModal, isGoogleConnected, handleDeactivation }) => {
   const [copied, setCopied] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -102,8 +108,9 @@ const PersonalInfoCard: React.FC<{ user: User | null }> = ({ user }) => {
       });
       if (!res.ok) throw new Error('Failed to upload profile picture');
       // Optionally update user state here
+      toast.success('Profile picture uploaded successfully!');
     } catch (err) {
-      alert('Failed to upload profile picture');
+      toast.error('Failed to upload profile picture');
     }
     setUploading(false);
   };
@@ -182,6 +189,38 @@ const PersonalInfoCard: React.FC<{ user: User | null }> = ({ user }) => {
               <img src="https://flagcdn.com/fr.svg" alt="French" title="French" className="w-10 h-7 object-cover rounded-sm shadow-md" />
             </div>
         </div>
+
+        {user?.is_teacher && (
+          <div>
+            <label className="text-sm font-medium text-gray-600 block mb-1">Platform Integrations</label>
+            <p className="text-xs text-gray-400 mb-2">Connect your account to other learning platforms.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+              <button 
+                className={`btn-secondary flex items-center justify-center gap-2 w-full py-3 ${isGoogleConnected ? 'text-red-500 border-red-300 hover:bg-red-50' : ''}`}
+                onClick={() => isGoogleConnected ? handleDeactivation() : setShowGoogleModal(true)}
+              >
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                {isGoogleConnected ? 'Deactivate Google Classroom' : 'Connect Google Classroom'}
+              </button>
+              <button className="btn-secondary flex items-center justify-center gap-2 w-full py-3"
+              onClick={()=>{
+                toast.info('This feature is coming soon! Stay tuned!')
+              }}>
+                <FiBookOpen className="text-red-500" />
+                Connect Canvas
+              </button>
+              <button className="btn-secondary flex items-center justify-center gap-2 w-full py-3"
+               onClick={()=>{
+                toast.info('This feature is coming soon! Stay tuned!')
+               }}>
+                <span className="font-bold text-lg text-blue-800 bg-white border-2 border-blue-800 rounded-full w-6 h-6 flex items-center justify-center">
+                  <FiBookOpen className="text-blue-800" />
+                </span>
+                Connect Schoology
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -243,12 +282,14 @@ const FriendsCard: React.FC = () => {
 };
 
 // Account Settings Section
-const AccountSettings: React.FC<{ user: User | null, onToggle: () => void }> = ({ user, onToggle }) => {
-    const [showGoogleModal, setShowGoogleModal] = useState(false);
-    const [isGoogleConnected, setIsGoogleConnected] = useState(() => {
-      // Check localStorage for Google connection (token)
-      return Boolean(localStorage.getItem('google_access_token'));
-    });
+const AccountSettings: React.FC<{ 
+  user: User | null, 
+  onToggle: () => void,
+  showGoogleModal: boolean,
+  setShowGoogleModal: (show: boolean) => void,
+  isGoogleConnected: boolean,
+  handleTeacherActivation: () => void
+}> = ({ user, onToggle, showGoogleModal, setShowGoogleModal, isGoogleConnected, handleTeacherActivation }) => {
     
     const teacherFeatures = [
         "Create custom classes for your students",
@@ -263,24 +304,11 @@ const AccountSettings: React.FC<{ user: User | null, onToggle: () => void }> = (
         "Access Language Planet anywhere, anytime."
     ];
 
-    const handleTeacherActivation = () => {
-        if (user?.is_teacher) {
-            if (isGoogleConnected) {
-                // Deactivate Google Classroom connection
-                if (window.confirm('Are you sure you want to disconnect your Google Classroom account?')) {
-                  localStorage.removeItem('google_access_token');
-                  setIsGoogleConnected(false);
-                  alert('Google Classroom disconnected.');
-                }
-            } else {
-                // Deactivate teacher panel
-                onToggle();
-            }
-        } else {
-            // Not a teacher: show modal, but make Google Classroom optional
-            setShowGoogleModal(true);
-        }
-    };
+    /* 
+      This local function is removed because it redeclares the 'handleTeacherActivation'
+      prop passed from the parent component. We will use the prop directly.
+    */
+    // const handleTeacherActivation = () => { ... };
 
     const GoogleLoginButton = ({ onSuccess, onFailure, onPermissionError }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -316,7 +344,7 @@ const AccountSettings: React.FC<{ user: User | null, onToggle: () => void }> = (
         onPermissionError();
       } else {
         onFailure(error);
-        alert(`Login failed: ${error.message}`);
+        toast.error(`Login failed: ${error.message}`);
       }
     }
     };
@@ -376,28 +404,25 @@ const AccountSettings: React.FC<{ user: User | null, onToggle: () => void }> = (
   
                       <div className="space-y-3">
                           <GoogleLoginButton
-                              onSuccess={() => {
-                                setIsGoogleConnected(true);
-                                setShowGoogleModal(false);
-                                alert('Google Classroom connected!');
+                              onSuccess={async () => {
+                                try {
+                                  await activateTeacherPanelOnServer();
+                                  setIsGoogleConnected(true);
+                                  setShowGoogleModal(false);
+                                  toast.success('Google Classroom connected and Teacher Panel activated!');
+                                } catch (err: any) {
+                                  localStorage.removeItem('google_access_token');
+                                  setIsGoogleConnected(false);
+                                  toast.error('Google connected, but failed to activate teacher panel. Reason: ' + (err?.message || err));
+                                }
                               }}
                               onFailure={() => {
-                                alert('Google login failed');
+                                toast.error('Google login failed');
                               }}
                               onPermissionError={() => {
-                                alert('Google Classroom API permission error. Please check your Google Cloud project.');
+                                toast.error('Google Classroom API permission error. Please check your Google Cloud project.');
                               }}
                           />
-                          <button
-                              onClick={() => {
-                                setShowGoogleModal(false);
-                                // Allow teacher activation without Google
-                                onToggle();
-                              }}
-                              className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors"
-                          >
-                            Continue without Google
-                          </button>
                           <button
                               onClick={() => setShowGoogleModal(false)}
                               className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
@@ -433,11 +458,9 @@ const AccountSettings: React.FC<{ user: User | null, onToggle: () => void }> = (
             </ul>
             <button
               onClick={handleTeacherActivation}
-              className={`w-full mt-6 text-sm font-bold py-3 rounded-lg transition-colors ${user?.is_teacher ? (isGoogleConnected ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300') : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+              className={`w-full mt-6 text-sm font-bold py-3 rounded-lg transition-colors ${user?.is_teacher ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
             >
-              {user?.is_teacher
-                ? (isGoogleConnected ? 'Deactivate Google Classroom' : 'Deactivate Teacher Panel')
-                : 'Activate Teacher Panel'}
+              {user?.is_teacher ? 'Deactivate Teacher Panel' : 'Activate Teacher Panel'}
             </button>
           </div>
 
@@ -467,10 +490,53 @@ const AccountSettings: React.FC<{ user: User | null, onToggle: () => void }> = (
     );
 };
 
+// --- Deactivation Confirmation Modal ---
+const DeactivationModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}> = ({ isOpen, onClose, onConfirm }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-2xl" role="img" aria-label="warning">⚠️</span>
+        </div>
+        <h3 className="text-xl font-bold text-gray-800 mb-2">Are you sure?</h3>
+        <p className="text-sm text-gray-600 mb-6">
+          Deactivating your Teacher Panel will also disconnect your Google Classroom integration. You will lose access to teacher-specific features.
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={onClose}
+            className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="w-full bg-red-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-600 transition-colors"
+          >
+            Confirm Deactivation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 // --- Main Profile Page Component ---
 const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [showDeactivationModal, setShowDeactivationModal] = useState(false);
+  const [isGoogleConnected, setIsGoogleConnected] = useState(() => {
+    return Boolean(localStorage.getItem('google_access_token'));
+  });
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -502,8 +568,27 @@ const ProfilePage: React.FC = () => {
       window.location.reload(); // Force full page reload
     } catch (err) {
       console.error('Error updating teacher panel role:', err);
-      alert('Failed to update teacher panel status');
+      toast.error('Failed to update teacher panel status');
     }
+  };
+
+  const handleTeacherActivation = () => {
+    if (user?.is_teacher) {
+      // Show the deactivation confirmation modal instead of window.confirm
+      setShowDeactivationModal(true);
+    } else {
+      // Not a teacher: activate directly without modal
+      handleToggleTeacherPanel();
+      toast.success('Teacher Panel has been activated!');
+    }
+  };
+
+  const handleConfirmDeactivation = () => {
+    localStorage.removeItem('google_access_token');
+    setIsGoogleConnected(false);
+    handleToggleTeacherPanel(); // This will update the server (remove teacher role)
+    toast.success('Teacher Panel and Google Classroom disconnected.');
+    setShowDeactivationModal(false); // Close modal after action
   };
 
   return (
@@ -520,7 +605,12 @@ const ProfilePage: React.FC = () => {
               {/* Top Row */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                  <PersonalInfoCard user={user} />
+                  <PersonalInfoCard 
+                    user={user} 
+                    setShowGoogleModal={setShowGoogleModal} 
+                    isGoogleConnected={isGoogleConnected}
+                    handleDeactivation={handleTeacherActivation}
+                  />
                 </div>
                 <div className="lg:col-span-1">
                   <FriendsCard />
@@ -529,11 +619,16 @@ const ProfilePage: React.FC = () => {
 
               {/* Bottom Row */}
               <div>
-                <AccountSettings user={user} onToggle={handleToggleTeacherPanel} />
+                <AccountSettings user={user} onToggle={handleToggleTeacherPanel} showGoogleModal={showGoogleModal} setShowGoogleModal={setShowGoogleModal} isGoogleConnected={isGoogleConnected} handleTeacherActivation={handleTeacherActivation} />
               </div>
             </div>
           </main>
         </div>
+        <DeactivationModal
+          isOpen={showDeactivationModal}
+          onClose={() => setShowDeactivationModal(false)}
+          onConfirm={handleConfirmDeactivation}
+        />
       </div>
     </>
   );

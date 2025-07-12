@@ -4,6 +4,7 @@ import Header from '../../Component/Home/Header.tsx'; // Assuming Header can acc
 import Sidebar from '../../Component/Home/Sidebar.tsx'; // Assuming Sidebar can be controlled
 import { useNavigate } from 'react-router-dom';
 import Server_url from '../../config';
+import { toast } from 'react-toastify';
 
 // --- Reusable Components (included for completeness) ---
 
@@ -163,8 +164,9 @@ const ClassDashboard: React.FC = () => {
     try {
       await axios.delete(`${Server_url}/api/classrooms/${classToDelete.id}/delete/`, { headers: { 'Authorization': `Bearer ${TOKEN}` } });
       setClasses(prev => prev.filter(classItem => classItem.id !== classToDelete.id));
+      toast.success('Class deleted successfully.');
     } catch (error) {
-      alert('Error deleting class');
+      toast.error('Error deleting class');
     } finally {
         setShowDeleteModal(false);
         setClassToDelete(null);

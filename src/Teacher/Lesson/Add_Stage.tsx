@@ -3,6 +3,7 @@ import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import { useParams } from 'react-router-dom';
 import Server_url from '../../config.js';
+import { toast } from 'react-toastify';
 
 // --- 1. TYPE DEFINITIONS ---
 type ExerciseType = 'multiple-choice' | 'word-match' | 'translate';
@@ -33,7 +34,7 @@ const speak = (text: string, lang: string = 'en-US') => {
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   } else {
-    alert("Sorry, your browser doesn't support text-to-speech.");
+    toast.error("Sorry, your browser doesn't support text-to-speech.");
   }
 };
 
@@ -408,8 +409,9 @@ const AddStagePage: React.FC = () => {
             setStageId(data.id || data.stage_id); // Use the returned stage id
             setStageSaved(true);
             setActiveTab('exercises'); // Move to exercises tab
+            toast.success('Stage saved successfully!');
         } catch (error) {
-            alert('Error saving stage');
+            toast.error('Error saving stage');
         }
     };
 
@@ -561,11 +563,11 @@ const AddStagePage: React.FC = () => {
             }
         }
         if (failedCount === 0 && savedCount === totalExercises) {
-            alert(`All ${savedCount} exercises saved successfully!`);
+            toast.success(`All ${savedCount} exercises saved successfully!`);
         } else if (savedCount > 0) {
-            alert(`${savedCount} exercises saved, ${failedCount} failed.`);
+            toast.warn(`${savedCount} exercises saved, ${failedCount} failed.`);
         } else if (totalExercises > 0) {
-            alert(`Failed to save any of the ${totalExercises} exercises.`);
+            toast.error(`Failed to save any of the ${totalExercises} exercises.`);
         }
     };
 

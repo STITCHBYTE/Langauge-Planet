@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import { Navigate, useParams } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import Server_url from '../../config.js';
 import { useNavigate } from 'react-router-dom';
 
@@ -647,7 +647,6 @@ const AddQuizPage: React.FC = () => {
                     </div>
                   </div>
                 </main>
-                <ToastContainer />
               </div>
             </div>
           </div>

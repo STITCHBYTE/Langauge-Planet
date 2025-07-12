@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'; // <-- Import useNavigate
 import { FiUsers, FiBookOpen, FiClipboard, FiPlus, FiArrowRight, FiTrendingUp, FiMoreVertical } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useView } from '../../Context/ViewContext.tsx'; // For the Student/Teacher view toggle
+import { toast } from 'react-toastify';
 
 // --- Type Definitions ---
 interface Metric {
@@ -123,6 +124,7 @@ const Dashboard: React.FC = () => {
 
             } catch (error) {
                 console.error("Failed to fetch dashboard data:", error);
+                toast.error('Failed to fetch dashboard data. Please try again.');
             } finally {
                 setLoading(false);
             }

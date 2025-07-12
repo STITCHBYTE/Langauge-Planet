@@ -2,7 +2,8 @@ import React, { useState, ChangeEvent, FormEvent } from 'react';
 import Header from '../../Component/Home/Header.tsx';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import { useNavigate } from 'react-router-dom';
-import Server_url from '../../config';   
+import Server_url from '../../config';
+import { toast } from 'react-toastify';
 
 const ClassForm: React.FC = () => {
  const [title, setTitle] = useState('');
@@ -52,7 +53,7 @@ const ClassForm: React.FC = () => {
        const data = await response.json(); // get the response data
        console.log('Class created successfully:', data);
        const classId = data.id; // use as room id
-       alert('Class created successfully!');
+       toast.success('Class created successfully!');
 
        // Google Classroom sync
        const googleToken = localStorage.getItem('google_access_token');
@@ -78,7 +79,7 @@ const ClassForm: React.FC = () => {
              } else {
                const errText = await userInfoRes.text();
                console.error('[Google Sync] Invalid Google token. userinfo error:', errText);
-               alert('Your Google login has expired or is invalid. Please reconnect your Google account.');
+               toast.error('Your Google login has expired or is invalid. Please reconnect your Google account.');
                // Optionally, clear the token and prompt re-login
               //  localStorage.removeItem('google_access_token');
               //  localStorage.removeItem('google_user_id');
@@ -108,7 +109,7 @@ const ClassForm: React.FC = () => {
 
              if (gcRes.ok) {
                const gcData = await gcRes.json();
-               alert('Class also created in Google Classroom!');
+               toast.success('Class also created in Google Classroom!');
                console.log('[Google Sync] Google Classroom class:', gcData);
              } else {
                const errData = await gcRes.json();
@@ -119,20 +120,20 @@ const ClassForm: React.FC = () => {
                  await axios.delete(`${Server_url}/api/classrooms/classroom/${classId}/delete/`, {
                    headers: { 'Authorization': `Bearer ${token}` }
                  });
-                 alert(
+                 toast.error(
                    'Failed to create class in Google Classroom. The class was removed from your database.\n' +
                    'Google API Error: ' + (errData.error?.message || JSON.stringify(errData))
                  );
                } catch (deleteErr) {
                  console.error('[Google Sync] Failed to delete class from backend:', deleteErr);
-                 alert('Failed to create class in Google Classroom, and failed to delete from database. Please contact support.');
+                 toast.error('Failed to create class in Google Classroom, and failed to delete from database. Please contact support.');
                }
                return;
              }
            }
          } catch (gcErr) {
            console.error('[Google Sync] Unexpected error during Google Classroom sync:', gcErr);
-           alert('Unexpected error syncing with Google Classroom: ' + (gcErr.message || gcErr));
+           toast.error('Unexpected error syncing with Google Classroom: ' + (gcErr.message || gcErr));
            return;
          }
        } else {
@@ -148,11 +149,11 @@ const ClassForm: React.FC = () => {
     } else {
       const errorData = await response.json();
       console.error('Server Error:', errorData);
-      alert('Failed to create class.');
+      toast.error('Failed to create class.');
     }
   } catch (error) {
     console.error('Network Error:', error);
-    alert('Something went wrong. Try again.');
+    toast.error('Something went wrong. Try again.');
   }
 };
 

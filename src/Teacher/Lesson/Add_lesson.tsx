@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import Server_url from '../../config'; // Your server URL import
@@ -86,7 +87,7 @@ const CreateLessonComponent: React.FC = () => {
     // Main submit handler
     const handleSave = async () => {
         if (!title.trim() || !description.trim()) {
-            alert('Please fill out all required fields.');
+            toast.error('Please fill out all required fields.');
             return;
         }
 
@@ -130,12 +131,12 @@ const CreateLessonComponent: React.FC = () => {
 
             const result = await response.json();
             console.log('Lesson created successfully:', result);
-            alert('Lesson created successfully!');
+            toast.success('Lesson created successfully!');
             navigate(`/lesson-view/${result.id}`); 
 
         } catch (error) {
             console.error('Error creating lesson:', error);
-            alert(`An error occurred: ${error.message}`);
+            toast.error(`An error occurred: ${error.message}`);
         } finally {
             setIsLoading(false);
         }

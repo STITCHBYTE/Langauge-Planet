@@ -4,6 +4,7 @@ import Sidebar from '../Component/Home/Sidebar.tsx';
 import Header from '../Component/Home/Header.tsx';
 import { useNavigate } from 'react-router-dom';
 import SERVER_URL from '../config.js';
+import { toast } from 'react-toastify';
 
 const StudentTableRow = ({ student }) => {
     const statusClasses = {
@@ -122,6 +123,7 @@ const StudentsPage = () => {
                 setAllStudents(mapped);
             } catch (err) {
                 console.error("Error fetching students:", err.message);
+                toast.error('Error fetching students list.');
             }
         };
 

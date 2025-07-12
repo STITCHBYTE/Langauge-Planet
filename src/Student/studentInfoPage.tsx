@@ -2,9 +2,8 @@ import React ,{ useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import Sidebar from "../Component/Home/Sidebar.tsx"
 import Header from "../Component/Home/Header.tsx"
-import SERVER_URL from "../config.js"
-import { ConstantColorFactor } from "three"
 import Server_url from "../config.js"
+import { toast } from 'react-toastify';
 
 interface Assignment {
   id: string
@@ -182,6 +181,7 @@ export default function StudentProfile() {
         setStudentInfoData(student);
       } catch (err: any) {
         console.error("Error fetching student:", err.message);
+        toast.error('Error fetching student info.');
       }
     };
   

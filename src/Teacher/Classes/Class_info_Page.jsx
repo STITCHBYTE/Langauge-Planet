@@ -11,7 +11,7 @@ import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import { useParams, useNavigate } from 'react-router-dom';
 import Server_url from '../../config.js';
-import { Toaster, toast } from "react-hot-toast";
+import { toast } from "react-toastify";
 import { Dialog } from '@headlessui/react'; // If you use headlessui for modal, otherwise use your own modal
 
 // Dropdown Menu Component
@@ -494,7 +494,7 @@ const ClassPage = () => {
     try {
       console.log(`🗑️ Attempting to delete class: ${classId}`);
       
-      const response = await fetch(`${Server_url}/api/classrooms/${classId}/delete/`, {
+      const response = await fetch(`${Server_url}/api/classrooms/classroom/${classId}/delete/`, {
         method: 'DELETE',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -882,7 +882,6 @@ const ClassPage = () => {
           message={`Are you sure you want to delete "${itemToDelete?.title}"? This action cannot be undone.`}
           confirmText={isDeleting ? "Deleting..." : "Delete Assignment"}
         />
-        <Toaster position="top-right" />
       </div>
     </div>
     </div>

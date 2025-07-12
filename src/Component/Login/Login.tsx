@@ -2,7 +2,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Server_url from "../../config";
-import toast, { Toaster } from "react-hot-toast";
+import { toast , ToastContainer} from "react-toastify";
+// import toast, { Toaster } from "react-hot-toast";
 
 // InputField Component
 const InputField: React.FC<{
@@ -445,7 +446,6 @@ const LeftPanel: React.FC = () => (
 const AuthenticationScreen: React.FC = () => {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
-      <Toaster position="top-center" />
       <div className="flex w-full max-w-4xl rounded-lg shadow-lg overflow-hidden bg-white">
         <section className="w-[55%] hidden md:block">
           <LeftPanel />

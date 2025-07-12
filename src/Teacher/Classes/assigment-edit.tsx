@@ -10,8 +10,8 @@ import {
   Check,
   AlertCircle,
 } from 'lucide-react';
-import { Toaster } from 'react-hot-toast';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
+// import toast from 'react-hot-toast';
 import Header from '../../Component/Home/Header.tsx';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Server_url from '../../config';
@@ -432,7 +432,6 @@ const EditAssignmentPage: React.FC = () => {
           </div>
         </div>
       </div>
-      <Toaster position="bottom-center" />
     </div>
   );
 };

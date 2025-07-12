@@ -10,6 +10,7 @@ import {
   Check,
   AlertCircle,
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import Header from '../../Component/Home/Header.tsx';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Server_url from '../../config';          
@@ -276,7 +277,7 @@ const EditAssignmentPage = () => {
 
   const handleAddQuestion = () => {
     if (questions.some(q => q.isEditing)) {
-        alert("Please save the currently editing question before adding a new one.");
+        toast.error("Please save the currently editing question before adding a new one.");
         return;
     }
     const newQuestion = {
@@ -302,19 +303,20 @@ const EditAssignmentPage = () => {
   const handleSaveQuestion = (id) => {
     const questionToSave = questions.find(q => q.id === id);
     if (!questionToSave?.text?.trim()) {
-        alert("Question text cannot be empty.");
+        toast.error("Question text cannot be empty.");
         return;
     }
     if (questionToSave.points <= 0) {
-        alert("Points must be greater than zero.");
+        toast.error("Points must be greater than zero.");
         return;
     }
     setQuestions(prev => prev.map(q => (q.id === id ? { ...q, isEditing: false } : q)));
+    toast.success("Question saved.");
   };
 
   const handleEditQuestion = (id) => {
     if (questions.some(q => q.isEditing)) {
-        alert("Please save the currently editing question first.");
+        toast.error("Please save the currently editing question first.");
         return;
     }
     setQuestions(prev => prev.map(q => (q.id === id ? { ...q, isEditing: true } : q)));
@@ -378,11 +380,11 @@ const EditAssignmentPage = () => {
         if (!response.ok) {
             const errData = await response.json();
             const errorMessage = errData.detail || (typeof errData === 'object' ? JSON.stringify(errData) : 'Failed to save assignment.');
+            toast.error(errorMessage);
             throw new Error(errorMessage);
         }
-        
         // 4. Success!
-        alert("Assignment saved to Language Planet!");
+        toast.success("Assignment saved to Language Planet!");
 
         // 5. Google Classroom Integration
         const google_token = localStorage.getItem('google_access_token');
@@ -493,16 +495,16 @@ const EditAssignmentPage = () => {
                     
                     // Provide a more specific error message for this common issue
                     if (gcError.error?.status === 'FAILED_PRECONDITION') {
-                        alert(`Assignment saved to Language Planet, but failed to post to Google Classroom. Error: One or more selected students are not enrolled in the Google Classroom course. Please check the student list in Google Classroom.`);
+                        toast.error(`Assignment saved to Language Planet, but failed to post to Google Classroom. Error: One or more selected students are not enrolled in the Google Classroom course. Please check the student list in Google Classroom.`);
                     } else {
-                        alert(`Assignment saved to Language Planet, but failed to post to Google Classroom: ${gcError.error.message}`);
+                        toast.error(`Assignment saved to Language Planet, but failed to post to Google Classroom: ${gcError.error.message}`);
                     }
                 } else {
-                    alert("Assignment also posted successfully to Google Classroom!");
+                    toast.success("Assignment also posted successfully to Google Classroom!");
                 }
             } catch (gcError) {
                 console.error("Error posting to Google Classroom:", gcError);
-                alert(`Assignment saved to Language Planet, but an error occurred while posting to Google Classroom.`);
+                toast.error(`Assignment saved to Language Planet, but an error occurred while posting to Google Classroom.`);
             }
         } else {
             console.log("Skipping Google Classroom post: No token or google_classroom_id found/matched.");
@@ -513,6 +515,7 @@ const EditAssignmentPage = () => {
     } catch (error) {
         console.error("Error saving assignment:", error);
         setError(error.message);
+        toast.error(error.message);
     } finally {
         setIsSubmitting(false);
     }

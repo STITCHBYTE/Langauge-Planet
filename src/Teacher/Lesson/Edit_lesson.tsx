@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from "react-toastify";
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import Server_url from '../../config'; // Your server URL import
@@ -190,7 +191,7 @@ const EditLessonComponent: React.FC = () => {
     // Main submit handler
     const handleUpdate = async () => {
         if (!title.trim() || !description.trim()) {
-            alert('Please fill out all required fields.');
+            toast.error('Please fill out all required fields.');
             return;
         }
 

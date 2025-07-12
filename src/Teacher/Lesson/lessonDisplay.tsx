@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from "react-toastify";
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import Server_url from '../../config.js';
@@ -353,7 +354,7 @@ const LessonsComponent: React.FC = () => {
         const token = localStorage.getItem('authToken');
         
         if (!token) {
-            alert('Authentication token not found. Please login again.');
+            toast.error('Authentication token not found. Please login again.');
             return;
         }
 
@@ -372,34 +373,34 @@ const LessonsComponent: React.FC = () => {
 
             if (response.ok) {
                 // Successfully deleted
-                console.log(`✅ Lesson deleted successfully: ${lessonToDelete.title}`);
+                console.log(`\u2705 Lesson deleted successfully: ${lessonToDelete.title}`);
                 
                 // Remove from local state
                 setLessons(prev => prev.filter(lesson => lesson.id !== lessonToDelete.id));
                 setShowDeleteModal(false);
                 setLessonToDelete(null);
                 
-                // Show success message (you can replace alert with toast)
-                alert(`Lesson "${lessonToDelete.title}" has been deleted successfully.`);
+                // Show success message
+                toast.success(`Lesson "${lessonToDelete.title}" has been deleted successfully.`);
                 
             } else {
                 // Handle different error responses
                 const errorData = await response.text();
-                console.error(`❌ Delete failed with status ${response.status}:`, errorData);
+                console.error(`\u274c Delete failed with status ${response.status}:`, errorData);
                 
                 if (response.status === 404) {
-                    alert('Lesson not found. It may have already been deleted.');
+                    toast.error('Lesson not found. It may have already been deleted.');
                 } else if (response.status === 403) {
-                    alert('You do not have permission to delete this lesson.');
+                    toast.error('You do not have permission to delete this lesson.');
                 } else if (response.status === 401) {
-                    alert('Authentication failed. Please login again.');
+                    toast.error('Authentication failed. Please login again.');
                 } else {
-                    alert(`Failed to delete lesson. Server responded with status: ${response.status}`);
+                    toast.error(`Failed to delete lesson. Server responded with status: ${response.status}`);
                 }
             }
         } catch (error) {
-            console.error('❌ Network error deleting lesson:', error);
-            alert('Network error occurred while deleting the lesson. Please check your connection and try again.');
+            console.error('\u274c Network error deleting lesson:', error);
+            toast.error('Network error occurred while deleting the lesson. Please check your connection and try again.');
         }
     };
 

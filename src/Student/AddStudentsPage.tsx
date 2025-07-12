@@ -5,6 +5,7 @@ import Server_url from '../config.js'; // Assuming your server URL config is her
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../Component/Home/Sidebar.tsx';
 import Header from '../Component/Home/Header.tsx';
+import { toast } from 'react-toastify';
 
 // --- Sub-Components ---
 const goBack = () => {
@@ -159,7 +160,7 @@ const AddStudentsPage = () => {
         try {
             const token = localStorage.getItem('authToken');
             if (!token) {
-                alert('Authentication token not found.');
+                toast.error('Authentication token not found.');
                 return;
             }
 
@@ -174,15 +175,15 @@ const AddStudentsPage = () => {
 
             if (!response.ok) {
                 if (response.status === 409) {
-                    alert('Student already added.');
+                    toast.warn('Student already added.');
                 } else {
-                    throw new Error('Failed to add student');
+                    toast.error('Failed to add student');
                 }
                 return;
             }
 
             const result = await response.json();
-            alert('Student added successfully!');
+            toast.success('Student added successfully!');
 
             // Update the addedStudents state so the UI updates immediately
             const newlyAddedStudent = potentialStudents.find(s => s.id === studentId);
@@ -191,7 +192,7 @@ const AddStudentsPage = () => {
             }
         } catch (err) {
             console.error(err);
-            alert('Error adding student');
+            toast.error('Error adding student');
         }
     };
 

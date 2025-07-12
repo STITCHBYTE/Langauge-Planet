@@ -1,5 +1,6 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import Header from '../../Component/Home/Header.tsx';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Server_url from '../../config';
@@ -143,7 +144,7 @@ const EditClassForm: React.FC = () => {
     e.preventDefault();
 
     if (!title.trim() || !description.trim()) {
-      alert('Please fill out all required fields.');
+      toast.error('Please fill out all required fields.');
       return;
     }
 
@@ -161,7 +162,7 @@ const EditClassForm: React.FC = () => {
 
     const token = localStorage.getItem('authToken');
     if (!token) {
-      alert('Authentication token not found. Please login again.');
+      toast.error('Authentication token not found. Please login again.');
       setIsLoading(false);
       return;
     }
@@ -187,16 +188,16 @@ const EditClassForm: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         console.log('Class updated successfully:', data);
-        alert('Class updated successfully!');
+        toast.success('Class updated successfully!');
         navigate(`/Class_info_Page/${classId}`);
       } else {
         const errorData = await response.text();
         console.error('Server Error:', errorData);
-        alert(`Failed to update class: ${response.status}`);
+        toast.error(`Failed to update class: ${response.status}`);
       }
     } catch (error) {
       console.error('Network Error:', error);
-      alert(`An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(`An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }

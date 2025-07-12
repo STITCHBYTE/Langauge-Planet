@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiUsers, FiArrowLeft, FiFilter, FiCopy, FiPlus, FiMoreHorizontal, FiChevronLeft, FiChevronRight, FiX, FiSearch } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import Server_url from '../../config.js';
@@ -279,6 +280,7 @@ const StudentsPage = () => {
               
               if (!token) {
                 console.warn('No Google access token found. Skipping Google Classroom invite.');
+                toast.warn('No Google access token found. Skipping Google Classroom invite.');
                 continue; // Skip to the next student
               }
 
@@ -299,6 +301,7 @@ const StudentsPage = () => {
                 const error = await response.json();
                 // Log the detailed error from Google for better debugging
                 console.error('Google Classroom API error response:', error);
+                toast.error(error.error.message || 'Failed to send Google Classroom invite');
                 throw new Error(error.error.message || 'Failed to send Google Classroom invite');
               }
 
@@ -307,21 +310,21 @@ const StudentsPage = () => {
 
             } catch (error) {
               console.error(`Google Classroom invite error for ${student.email}:`, error);
+              toast.error(`Google Classroom invite error for ${student.email}: ${error.message}`);
               // Continue with other students even if one fails
             }
           }
         }
       } else {
-        // Alert the user if the class isn't linked, instead of just logging to console.
-        alert('Student(s) added to Language Planet, but this class is not linked to Google Classroom. No invites were sent.');
+        toast.info('Student(s) added to Language Planet, but this class is not linked to Google Classroom. No invites were sent.');
       }
       // End Google Classroom Invite Integration
 
       // Show success message only for the platform invite if Google Classroom part is skipped.
       if (!googleClassroomId) {
-        alert(`${selectedStudents.length} student(s) added successfully to the platform!`);
+        toast.success(`${selectedStudents.length} student(s) added successfully to the platform!`);
       } else {
-        alert(`${selectedStudents.length} student(s) added and invited successfully!`);
+        toast.success(`${selectedStudents.length} student(s) added and invited successfully!`);
       }
       
       // Reset modal state
@@ -334,7 +337,7 @@ const StudentsPage = () => {
       
     } catch (error) {
       console.error('Error adding students:', error);
-      alert(`Failed to add students: ${error.message}`);
+      toast.error(`Failed to add students: ${error.message}`);
     } finally {
       setAddingStudents(false);
     }
@@ -372,10 +375,11 @@ const StudentsPage = () => {
     });
 
     if (!response.ok) {
+      toast.error(`Failed to ${action} request`);
       throw new Error(`Failed to ${action} request`);
     }
 
-    alert(`Student request ${action === 'accept' ? 'accepted' : 'rejected'} successfully!`);
+    toast.success(`Student request ${action === 'accept' ? 'accepted' : 'rejected'} successfully!`);
     fetchEnrolledStudents(); // Refresh the lists
     
     // Close modal if no more requests
@@ -384,7 +388,7 @@ const StudentsPage = () => {
     }
   } catch (error) {
     console.error(`Error handling request:`, error);
-    alert(`Failed to ${action} student request.`);
+    toast.error(`Failed to ${action} student request.`);
   }
 };
   // Get IDs of all students already associated with the class (enrolled, requested, invited)

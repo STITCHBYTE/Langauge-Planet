@@ -6,6 +6,7 @@ import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import { useParams, useNavigate } from 'react-router-dom';
 import Server_url from '../../config';
+import { toast } from 'react-toastify';
 
 // Interface for discussion data
 interface Discussion {
@@ -222,7 +223,8 @@ export default function EditDiscussionPage() {
 
       const response = await fetch(`${Server_url}/api/classrooms/discussions/${discussionId}/`, {
         method: 'PUT',
-        headers: {
+        headers:
+         {
           'Authorization': `Bearer ${token}`,
         },
         body: formData,
@@ -231,8 +233,10 @@ export default function EditDiscussionPage() {
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           setError("Authorization failed. Please log in again.");
+          toast.error("Authorization failed. Please log in again.");
         } else {
           const errorData = await response.json();
+          toast.error(errorData.message || 'Something went wrong');
           throw new Error(errorData.message || 'Something went wrong');
         }
         return;
@@ -240,15 +244,15 @@ export default function EditDiscussionPage() {
 
       const result = await response.json();
       console.log('Success:', result);
-      alert('Discussion updated successfully!');
+      toast.success('Discussion updated successfully!');
       navigate(`/Class_info_Page/${classroomId}`);
 
     } catch (err: any) {
       console.error('Error submitting form:', err);
       if (!error) {
         setError(err.message);
+        toast.error(err.message);
       }
-      alert(`Error: ${err.message}`);
     } finally {
       setIsLoading(false);
     }

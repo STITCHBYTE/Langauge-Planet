@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from "react-toastify";
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import Server_url from '../../config'; // Your server URL import
@@ -279,11 +280,11 @@ const LessonDetailsPage: React.FC = () => {
                 setQuizzes(prev => prev.filter(quiz => quiz.id !== quizId));
                 setDeleteConfirmId(null);
             } else {
-                alert('Failed to delete quiz');
+                toast.error('Failed to delete quiz');
             }
         } catch (error) {
             console.error('Error deleting quiz:', error);
-            alert('Error deleting quiz');
+            toast.error('Error deleting quiz');
         }
     };
 
@@ -360,16 +361,16 @@ const LessonDetailsPage: React.FC = () => {
 
             if (response.ok) {
                 setShowDeleteLessonModal(false);
-                alert('Lesson deleted successfully!');
+                toast.success('Lesson deleted successfully!');
                 navigate('/lessons'); // Redirect to lessons list
             } else {
                 const errorData = await response.text();
                 console.error('Delete failed:', errorData);
-                alert('Failed to delete lesson');
+                toast.error('Failed to delete lesson');
             }
         } catch (error) {
             console.error('Error deleting lesson:', error);
-            alert('Error deleting lesson');
+            toast.error('Error deleting lesson');
         }
     };
 
@@ -396,10 +397,10 @@ const LessonDetailsPage: React.FC = () => {
                 setStages(prev => prev.filter(stage => stage.id !== stageDeleteId));
                 setStageDeleteId(null);
             } else {
-                alert('Failed to delete stage');
+                toast.error('Failed to delete stage');
             }
         } catch (error) {
-            alert('Error deleting stage');
+            toast.error('Error deleting stage');
         }
     };
 
