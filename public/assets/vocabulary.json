@@ -1,0 +1,84 @@
+{
+  "vocabulary": [
+    {
+      "english": "hello",
+      "spanish": "hola",
+      "options": ["hola", "adiós", "gracias", "por favor"]
+    },
+    {
+      "english": "goodbye",
+      "spanish": "adiós",
+      "options": ["adiós", "hola", "buenos días", "buenas noches"]
+    },
+    {
+      "english": "thank you",
+      "spanish": "gracias",
+      "options": ["gracias", "por favor", "de nada", "perdón"]
+    },
+    {
+      "english": "please",
+      "spanish": "por favor",
+      "options": ["por favor", "gracias", "perdón", "disculpe"]
+    },
+    {
+      "english": "yes",
+      "spanish": "sí",
+      "options": ["sí", "no", "tal vez", "quizás"]
+    },
+    {
+      "english": "no",
+      "spanish": "no",
+      "options": ["no", "sí", "tal vez", "quizás"]
+    },
+    {
+      "english": "water",
+      "spanish": "agua",
+      "options": ["agua", "fuego", "tierra", "aire"]
+    },
+    {
+      "english": "food",
+      "spanish": "comida",
+      "options": ["comida", "bebida", "postre", "cena"]
+    },
+    {
+      "english": "friend",
+      "spanish": "amigo",
+      "options": ["amigo", "enemigo", "familia", "extraño"]
+    },
+    {
+      "english": "enemy",
+      "spanish": "enemigo",
+      "options": ["enemigo", "amigo", "compañero", "vecino"]
+    },
+    {
+      "english": "fight",
+      "spanish": "luchar",
+      "options": ["luchar", "correr", "esconder", "saltar"]
+    },
+    {
+      "english": "run",
+      "spanish": "correr",
+      "options": ["correr", "caminar", "saltar", "nadar"]
+    },
+    {
+      "english": "jump",
+      "spanish": "saltar",
+      "options": ["saltar", "correr", "caminar", "nadar"]
+    },
+    {
+      "english": "attack",
+      "spanish": "atacar",
+      "options": ["atacar", "defender", "huir", "esconder"]
+    },
+    {
+      "english": "defend",
+      "spanish": "defender",
+      "options": ["defender", "atacar", "huir", "rendirse"]
+    },
+    {
+      "english": "heal",
+      "spanish": "curar",
+      "options": ["curar", "dañar", "herir", "matar"]
+    }
+  ]
+}

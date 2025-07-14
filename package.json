@@ -24,10 +24,14 @@
     "recharts": "^2.15.3",
     "socket.io-client": "^4.8.1",
     "three": "^0.177.0",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "ws": "^8.18.0",
+    "uuid": "^9.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
+    "server": "node src/Component/FightingGame/server/server.js",
+    "dev": "concurrently \"npm run server\" \"npm start\"",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -52,7 +56,10 @@
   },
   "devDependencies": {
     "@types/three": "^0.176.0",
+    "@types/ws": "^8.5.10",
+    "@types/uuid": "^9.0.8",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^8.2.2",
     "postcss": "^8.5.4",
     "react-scripts": "^5.0.1",
     "tailwindcss": "^3.4.1"

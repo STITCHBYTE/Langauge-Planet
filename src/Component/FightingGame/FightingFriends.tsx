@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Character from './Character.tsx';
 import './FightingGame.css';
 
@@ -28,6 +29,12 @@ interface ReconnectTimeout extends NodeJS.Timeout {
 }
 
 const FightingFriendsOnline: React.FC = () => {
+  const { roomId } = useParams<{ roomId: string }>();
+  const navigate = useNavigate();
+  
+  // Compatibility: isConnected state for legacy code
+  const [isConnected, setIsConnected] = useState(false);
+
   // Image mappings for Player 1 (Ryu-like)
   const character1Images = {
     'idle-left': '/images/idel-left.png',
@@ -83,7 +90,7 @@ const FightingFriendsOnline: React.FC = () => {
   const [gamePaused, setGamePaused] = useState<boolean>(false);
 
   // Network State
-  const [roomId, setRoomId] = useState<string | null>(null);
+  const [roomIdState, setRoomId] = useState<string | null>(roomId || null);
   const [joinRoomId, setJoinRoomId] = useState<string>('');
   const [myPlayerNumber, setMyPlayerNumber] = useState<number | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');
@@ -330,7 +337,7 @@ const FightingFriendsOnline: React.FC = () => {
         handleOpponentHealthUpdate(data);
         break;
       case 'OPPONENT_DISCONNECTED':
-        alert('Opponent has disconnected.');
+        // alert('Opponent has disconnected.');
         setRoomId(null);
         setMyPlayerNumber(null);
         resetGame();
@@ -370,6 +377,11 @@ const FightingFriendsOnline: React.FC = () => {
     };
   }, [connectToWebSocket]);
 
+  // Keep isConnected in sync with connectionStatus
+  useEffect(() => {
+    setIsConnected(connectionStatus === 'connected');
+  }, [connectionStatus]);
+
   useEffect(() => {
     if (myPlayerNumber !== null && messageQueue.length > 0) {
       messageQueue.forEach(handleServerMessage);
@@ -382,7 +394,6 @@ const FightingFriendsOnline: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (gameOver || gamePaused || quizActive || myPlayerNumber === null) return;
-      
       // Both players use the same controls as shown in the UI
       // Movement: A/← for left, D/→ for right
       if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') {
@@ -489,13 +500,12 @@ const FightingFriendsOnline: React.FC = () => {
   return (
     <div className={`game-container ${screenShake > 0 ? 'shake' : ''}`}>
       <h1>Player vs Player (Online)</h1>
-      
       <div className="game-mode-controls">
-        <div className={`bot-connection-status ${connectionStatus}`}>
+        <div className={`bot-connection-status ${connectionStatus}`}> 
           <span className="status-indicator"></span>
           Server: {connectionStatus}
         </div>
-        {connectionStatus === 'connected' && !roomId && (
+        {connectionStatus === 'connected' && !roomIdState && (
           <>
             <button onClick={createRoom}>Create Room</button>
             <div className="join-room-container">
@@ -504,7 +514,20 @@ const FightingFriendsOnline: React.FC = () => {
             </div>
           </>
         )}
-        {roomId && <div className="room-info">Room ID: <span className="room-id-text">{roomId}</span></div>}
+        {roomIdState && (
+          <div className="room-info">
+            Room ID: <span className="room-id-text">{roomIdState}</span>
+            <button
+              style={{ marginLeft: '12px' }}
+              onClick={() => {
+                navigator.clipboard.writeText(roomIdState);
+                window.location.href = `/game/${roomIdState}`;
+              }}
+            >
+              Copy & Start Game
+            </button>
+          </div>
+        )}
       </div>
 
       {quizActive && currentQuestion && (
@@ -523,16 +546,33 @@ const FightingFriendsOnline: React.FC = () => {
 
       {roundStart && <div className="round-start-screen"><div className="round-start-text">FIGHT!</div></div>}
 
+      {/* Health bars and character rendering swapped based on myPlayerNumber */}
       <div className="health-container">
-        <div className="player-health">
-          <div className="player-name">{myPlayerNumber === 1 ? 'You (P1)' : 'Opponent (P1)'}</div>
-          <div className="health-bar-container"><div className="health-bar"><div className="health-fill" style={{ width: `${(player1.health / initialMaxHealth) * 100}%` }}></div></div><div className="health-text">{player1.health}/{initialMaxHealth}</div></div>
-        </div>
-        <div className="vs-text">VS</div>
-        <div className="player-health">
-          <div className="player-name">{myPlayerNumber === 2 ? 'You (P2)' : 'Opponent (P2)'}</div>
-          <div className="health-bar-container"><div className="health-bar"><div className="health-fill" style={{ width: `${(player2.health / initialMaxHealth) * 100}%` }}></div></div><div className="health-text">{player2.health}/{initialMaxHealth}</div></div>
-        </div>
+        {myPlayerNumber === 2 ? (
+          <>
+            <div className="player-health">
+              <div className="player-name">You (P2)</div>
+              <div className="health-bar-container"><div className="health-bar"><div className="health-fill" style={{ width: `${(player2.health / initialMaxHealth) * 100}%` }}></div></div><div className="health-text">{player2.health}/{initialMaxHealth}</div></div>
+            </div>
+            <div className="vs-text">VS</div>
+            <div className="player-health">
+              <div className="player-name">Opponent (P1)</div>
+              <div className="health-bar-container"><div className="health-bar"><div className="health-fill" style={{ width: `${(player1.health / initialMaxHealth) * 100}%` }}></div></div><div className="health-text">{player1.health}/{initialMaxHealth}</div></div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="player-health">
+              <div className="player-name">You (P1)</div>
+              <div className="health-bar-container"><div className="health-bar"><div className="health-fill" style={{ width: `${(player1.health / initialMaxHealth) * 100}%` }}></div></div><div className="health-text">{player1.health}/{initialMaxHealth}</div></div>
+            </div>
+            <div className="vs-text">VS</div>
+            <div className="player-health">
+              <div className="player-name">Opponent (P2)</div>
+              <div className="health-bar-container"><div className="health-bar"><div className="health-fill" style={{ width: `${(player2.health / initialMaxHealth) * 100}%` }}></div></div><div className="health-text">{player2.health}/{initialMaxHealth}</div></div>
+            </div>
+          </>
+        )}
       </div>
 
       {gameOver && (
@@ -543,28 +583,58 @@ const FightingFriendsOnline: React.FC = () => {
         </div>
       )}
 
-      <Character 
-        name="Player 1" 
-        initialX={player1.x} 
-        initialHealth={player1.health}
-        images={character1Images} 
-        direction={player1.direction} 
-        currentAction={player1.action} 
-        onHitEffect={player1.hitEffect} 
-        triggerActionAnimation={player1.triggerActionAnim} 
-        hideHealthBar={true} 
-      />
-      <Character 
-        name="Player 2" 
-        initialX={player2.x} 
-        initialHealth={player2.health}
-        images={character2Images} 
-        direction={player2.direction} 
-        currentAction={player2.action} 
-        onHitEffect={player2.hitEffect} 
-        triggerActionAnimation={player2.triggerActionAnim} 
-        hideHealthBar={true} 
-      />
+      {/* Character rendering swapped based on myPlayerNumber */}
+      {myPlayerNumber === 2 ? (
+        <>
+          <Character 
+            name="Player 2" 
+            initialX={player2.x} 
+            initialHealth={player2.health}
+            images={character2Images} 
+            direction={player2.direction} 
+            currentAction={player2.action} 
+            onHitEffect={player2.hitEffect} 
+            triggerActionAnimation={player2.triggerActionAnim} 
+            hideHealthBar={true} 
+          />
+          <Character 
+            name="Player 1" 
+            initialX={player1.x} 
+            initialHealth={player1.health}
+            images={character1Images} 
+            direction={player1.direction} 
+            currentAction={player1.action} 
+            onHitEffect={player1.hitEffect} 
+            triggerActionAnimation={player1.triggerActionAnim} 
+            hideHealthBar={true} 
+          />
+        </>
+      ) : (
+        <>
+          <Character 
+            name="Player 1" 
+            initialX={player1.x} 
+            initialHealth={player1.health}
+            images={character1Images} 
+            direction={player1.direction} 
+            currentAction={player1.action} 
+            onHitEffect={player1.hitEffect} 
+            triggerActionAnimation={player1.triggerActionAnim} 
+            hideHealthBar={true} 
+          />
+          <Character 
+            name="Player 2" 
+            initialX={player2.x} 
+            initialHealth={player2.health}
+            images={character2Images} 
+            direction={player2.direction} 
+            currentAction={player2.action} 
+            onHitEffect={player2.hitEffect} 
+            triggerActionAnimation={player2.triggerActionAnim} 
+            hideHealthBar={true} 
+          />
+        </>
+      )}
 
       <div className="particles-container">
         {particles.map(p => <div key={p.id} className="particle" style={{ left: `${p.x}px`, top: `${p.y}px`, opacity: p.life / 100 }} />)}

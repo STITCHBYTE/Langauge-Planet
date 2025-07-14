@@ -1,0 +1,155 @@
+/* Base container setup */
+.character-select-container {
+    width: 100%;
+    /* max-width: 1440px; */
+    height: 100%;
+    margin: auto;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(to bottom right, #0a0f1c2f, #1b22384e);
+    color: #ffffff;
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* Title with animated glow */
+.title-container {
+    position: relative;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.main-title {
+    font-size: 3rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #f0f0f0;
+    text-shadow: 0 0 20px #000000, 0 0 30px #007cf0;
+    letter-spacing: 2px;
+}
+
+.title-shine {
+    width: 100px;
+    height: 6px;
+    /* background: linear-gradient(90deg, transparent, #00fff7, transparent); */
+    animation: shine-slide 2.5s infinite linear;
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 10px;
+}
+
+@keyframes shine-slide {
+    0% {
+        transform: translateX(-50%) scaleX(0);
+        opacity: 0;
+    }
+    50% {
+        transform: translateX(-50%) scaleX(1.5);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(-50%) scaleX(0);
+        opacity: 0;
+    }
+}
+
+/* Grid of characters */
+.character-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 30px;
+    width: 100%;
+    max-width: 960px;
+    margin-bottom: 40px;
+}
+
+/* Each character card with 3D hover effect */
+.character-card-select {
+    position: relative;
+    /* background: rgba(255, 255, 255, 0.03); */
+    border: 2px solid transparent;
+    border-radius: 20px;
+    padding: 12px;
+    transition: all 0.3s ease;
+    /* box-shadow: 0 0 10px rgba(0, 255, 255, 0.1); */
+    transform-style: preserve-3d;
+    perspective: 1000px;
+    cursor: pointer;
+}
+
+.character-card-select:hover {
+    border-color: #00fff7;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    transform: scale(1.05) rotateY(2deg);
+}
+
+.character-card.selected {
+    border-color: #ff007a;
+    box-shadow: 0 0 25px rgba(255, 0, 122, 0.6);
+}
+
+/* Card shine overlay */
+.card-shine {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.05), transparent); */
+    pointer-events: none;
+    border-radius: 20px;
+}
+
+/* Sprite container */
+.character-preview-select {
+    width: 100%;
+    height: 150px;
+    border-radius: 70px;
+    overflow: hidden;
+    background: #101522;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Sprite style */
+.character-sprite {
+    width: 210px;
+    height: 210px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    transition: transform 0.3s ease;
+}
+
+.character-card:hover .character-sprite {
+    transform: scale(1.1);
+}
+
+/* Selected character text */
+.selected-fighter-info {
+    text-align: center;
+}
+
+.selected-fighter-name {
+    font-size: 2rem;
+    color: #00fff7;
+    text-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+.selected-fighter-prompt {
+    font-size: 1.5rem;
+    color: #aaa;
+}
+
+.fighter-name {
+    font-size: 1.5rem;
+    color: #000;
+    text-align: center;
+    margin-top: 10px;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&display=swap');

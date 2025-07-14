@@ -1,0 +1,42 @@
+[
+  {
+    "key": "MedievalKingPack",
+    "name": "Medieval King",
+    "scale": 2.2,
+    "offset": 0,
+    "flipX": false,
+    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump", "fall"]
+  },
+  {
+    "key": "medieval_warrior",
+    "name": "Medieval Warrior",
+    "scale": 2.2,
+    "offset": 0,
+    "flipX": false,
+    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump", "fall"]
+  },
+  {
+    "key": "medieval_warrior2",
+    "name": "Royal Knight",
+    "scale": 2.3,
+    "offset": 0,
+    "flipX": false,
+    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump", "fall"]
+  },
+  {
+    "key": "medieval_warrior3",
+    "name": "Shadow Knight",
+    "scale": 2.4,
+    "offset": 0,
+    "flipX": false,
+    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump"]
+  },
+  {
+    "key": "wizard",
+    "name": "Arcane Wizard",
+    "scale": 2.1,
+    "offset": 0,
+    "flipX": false,
+    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "jump", "fall"]
+  }
+]

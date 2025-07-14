@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import FightingGame from '../FightingGame/FightingGame.tsx';
-import FightingFriendsOnline from '../FightingGame/FightingFriends.tsx';
+import { useNavigate } from 'react-router-dom';
+import GameScreen from '../FightingGame/GameScreen.tsx';
 
 interface ModalProps {
   isOpen: boolean;
@@ -36,6 +36,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
 };
 
 const FightGame: React.FC = () => {
+  const navigate = useNavigate();
   const [gameMode, setGameMode] = useState<'menu' | 'bot' | 'player'>('menu');
   const [showRoomModal, setShowRoomModal] = useState<boolean>(false);
   const [showDifficultyModal, setShowDifficultyModal] = useState<boolean>(false);
@@ -68,6 +69,8 @@ const FightGame: React.FC = () => {
     setGeneratedRoomId(newRoomId);
     setRoomId(newRoomId);
     setRoomAction('create');
+    // Navigate to the room page
+    navigate(`/game/${newRoomId}`);
   };
 
   const handleJoinRoom = () => {
@@ -102,6 +105,10 @@ const FightGame: React.FC = () => {
     }
     setShowRoomModal(false);
     setGameMode('player');
+    
+    // Navigate to the appropriate room
+    const finalRoomId = roomAction === 'join' ? joinRoomId : generatedRoomId;
+    navigate(`/game/${finalRoomId}`);
   };
 
   const handleBackToMenu = () => {
@@ -134,12 +141,16 @@ const FightGame: React.FC = () => {
         >
           ← Back to Menu
         </button>
-        <FightingGame initialDifficulty={selectedDifficulty} />
+        <GameScreen 
+          initialDifficulty={selectedDifficulty}
+          isMultiplayer={false}
+        />
       </div>
     );
   }
 
   if (gameMode === 'player') {
+    const finalRoomId = roomAction === 'join' ? joinRoomId : generatedRoomId;
     return (
       <div className="relative w-full h-screen">
         <button 
@@ -148,7 +159,13 @@ const FightGame: React.FC = () => {
         >
           ← Back to Menu
         </button>
-        <FightingFriendsOnline />
+        <GameScreen
+          initialDifficulty={selectedDifficulty}
+          isMultiplayer={true}
+          roomId={finalRoomId}
+          joinRoomId={roomAction === 'join' ? joinRoomId : undefined}
+          roomAction={roomAction}
+        />
       </div>
     );
   }

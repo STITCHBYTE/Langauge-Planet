@@ -27,41 +27,29 @@ wss.on('connection', (ws) => {
       switch (data.type) {
         case 'CREATE_ROOM':
           {
-            console.log(`📝 CREATE_ROOM request from client ${ws.id}`);
+            console.log(`📝 CREATE_ROOM request from client ${ws.id}, data:`, data);
             
-            const newRoomId = uuidv4();
-            const newRoom = {
-              id: newRoomId,
-              players: [{ ws, playerNum: 1 }], // The creator is Player 1
-            };
-            rooms.set(newRoomId, newRoom);
-            clients.set(ws.id, { ws, roomId: newRoomId });
-
-            console.log(`🚪 Room created: ${newRoomId} by client ${ws.id}`);
-            ws.send(JSON.stringify({
-              type: 'ROOM_CREATED',
-              roomId: newRoomId,
-              playerNum: 1,
-              message: `Room created with ID: ${newRoomId}`,
-            }));
-            break;
-          }
-
-        case 'JOIN_ROOM':
-          {
-            const roomToJoin = rooms.get(data.roomId);
-            if (roomToJoin) {
-              if (roomToJoin.players.length < 2) {
-                roomToJoin.players.push({ ws, playerNum: 2 }); // The joiner is Player 2
-                clients.set(ws.id, { ws, roomId: data.roomId });
-
-                console.log(`🤝 Client ${ws.id} joined room ${data.roomId}`);
-
+            // Use the provided roomId or generate a new one
+            let newRoomId = data.roomId || uuidv4();
+            // Ensure the roomId is clean
+            newRoomId = newRoomId.trim();
+            console.log('Creating new room with ID:', newRoomId);
+            
+            // Check if room already exists
+            if (rooms.has(newRoomId)) {
+              console.log(`⚠️  Room ${newRoomId} already exists, joining instead`);
+              const existingRoom = rooms.get(newRoomId);
+              if (existingRoom.players.length < 2) {
+                existingRoom.players.push({ ws, playerNum: 2 });
+                clients.set(ws.id, { ws, roomId: newRoomId });
+                
+                console.log(`🤝 Client ${ws.id} joined existing room ${newRoomId}`);
+                
                 // Notify both players that the game is starting
-                roomToJoin.players.forEach(player => {
+                existingRoom.players.forEach(player => {
                   player.ws.send(JSON.stringify({
                     type: 'GAME_START',
-                    roomId: roomToJoin.id,
+                    roomId: newRoomId,
                     message: 'Both players are connected. The game can start!',
                     playerNum: player.playerNum,
                   }));
@@ -70,6 +58,67 @@ wss.on('connection', (ws) => {
                 ws.send(JSON.stringify({ type: 'ERROR', message: 'Room is full.' }));
               }
             } else {
+              // Create new room
+              const newRoom = {
+                id: newRoomId,
+                players: [{ ws, playerNum: 1 }], // The creator is Player 1
+              };
+              rooms.set(newRoomId, newRoom);
+              clients.set(ws.id, { ws, roomId: newRoomId });
+
+              console.log(`🚪 Room created: ${newRoomId} by client ${ws.id}`);
+              ws.send(JSON.stringify({
+                type: 'ROOM_CREATED',
+                roomId: newRoomId,
+                playerNum: 1,
+                message: `Room created with ID: ${newRoomId}`,
+              }));
+            }
+            break;
+          }
+
+        case 'JOIN_ROOM':
+          {
+            console.log(`🚪 JOIN_ROOM request from client ${ws.id}, roomId: ${data.roomId}`);
+            console.log(`📋 Available rooms:`, Array.from(rooms.keys()));
+            
+            const roomToJoin = rooms.get(data.roomId?.trim()); // Ensure we trim any whitespace
+            console.log('Attempting to join room:', data.roomId, 'Room exists:', !!roomToJoin);
+            if (roomToJoin) {
+              if (roomToJoin.players.length < 2) {
+                // Always assign player 2 to joining player for consistency
+                const newPlayerNum = 2;
+                
+                roomToJoin.players.push({ ws, playerNum: newPlayerNum });
+                clients.set(ws.id, { ws, roomId: data.roomId });
+
+                console.log(`🤝 Client ${ws.id} joined room ${data.roomId} as Player ${newPlayerNum}`);
+
+                // If we now have 2 players, notify both that the game is starting
+                if (roomToJoin.players.length === 2) {
+                  roomToJoin.players.forEach(player => {
+                    player.ws.send(JSON.stringify({
+                      type: 'GAME_START',
+                      roomId: roomToJoin.id,
+                      message: 'Both players are connected. The game can start!',
+                      playerNum: player.playerNum,
+                    }));
+                  });
+                } else {
+                  // Just acknowledge the join
+                  ws.send(JSON.stringify({
+                    type: 'ROOM_JOINED',
+                    roomId: data.roomId,
+                    playerNum: newPlayerNum,
+                    message: 'Waiting for another player to join...',
+                  }));
+                }
+              } else {
+                console.log(`❌ Room ${data.roomId} is full`);
+                ws.send(JSON.stringify({ type: 'ERROR', message: 'Room is full.' }));
+              }
+            } else {
+              console.log(`❌ Room ${data.roomId} not found. Available rooms:`, Array.from(rooms.keys()));
               ws.send(JSON.stringify({ type: 'ERROR', message: 'Room not found.' }));
             }
             break;
@@ -118,6 +167,10 @@ wss.on('connection', (ws) => {
         case 'PING':
           ws.send(JSON.stringify({ type: 'PONG' }));
           break;
+          
+        default:
+          console.log(`❓ Unknown message type: ${data.type}`);
+          break;
       }
     } catch (error) {
       console.error('Error processing message:', error);
@@ -133,8 +186,11 @@ wss.on('connection', (ws) => {
       if (room) {
         console.log(`Client ${ws.id} disconnected from room ${roomId}`);
         
+        // Remove the disconnected player from the room
+        room.players = room.players.filter(p => p.ws.id !== ws.id);
+        
         // Notify the other player about the disconnection
-        const otherPlayer = room.players.find(p => p.ws.id !== ws.id);
+        const otherPlayer = room.players[0]; // Get remaining player
         if (otherPlayer && otherPlayer.ws.readyState === WebSocket.OPEN) {
           otherPlayer.ws.send(JSON.stringify({
             type: 'OPPONENT_DISCONNECTED',
@@ -142,9 +198,21 @@ wss.on('connection', (ws) => {
           }));
         }
         
-        // Clean up the room
-        rooms.delete(roomId);
-        console.log(`🗑️ Room ${roomId} has been deleted.`);
+        // Keep the room alive for 30 seconds to allow reconnection
+        if (room.players.length === 1) {
+          console.log(`⏳ Room ${roomId} now has 1 player, keeping alive for 30 seconds`);
+          setTimeout(() => {
+            const currentRoom = rooms.get(roomId);
+            if (currentRoom && currentRoom.players.length === 1) {
+              rooms.delete(roomId);
+              console.log(`🗑️ Room ${roomId} deleted after timeout`);
+            }
+          }, 30000); // 30 second timeout
+        } else if (room.players.length === 0) {
+          // If no players left, delete immediately
+          rooms.delete(roomId);
+          console.log(`🗑️ Room ${roomId} deleted (no players left)`);
+        }
       }
     } else {
       console.log(`❓ Client ${ws.id} disconnected (was not in a room)`);

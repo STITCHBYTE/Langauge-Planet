@@ -79,13 +79,6 @@ const LessonStudentStage: React.FC = () => {
     setStartTime(Date.now());
   }, []);
 
-  // When user answers, update correctCount
-  useEffect(() => {
-    if (showFeedback === 'correct') {
-      setCorrectCount(prev => prev + 1);
-    }
-    // eslint-disable-next-line
-  }, [showFeedback]);
 
   // When finished, set endTime
   useEffect(() => {
