@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
-
-// --- Server URL Configuration ---
-// In a real application, this would likely be in a .env file
-const Server_url = 'https://api.example.com'; // Replace with your actual server URL
-
-// --- SVG Icon Components ---
+import Sidebar from './Sidebar.tsx';
+import Server_url from '../config.js';
 
 const HomeIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -77,7 +73,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active = false }) => (
 );
 
 const TeacherTableRow: React.FC<{ teacher: Teacher }> = ({ teacher }) => {
-    const initial = teacher.name ? teacher.name.charAt(0).toUpperCase() : '?';
+    const initial = teacher.first_name ? teacher.first_name.charAt(0).toUpperCase() : (teacher.name ? teacher.name.charAt(0).toUpperCase() : '?');
     // Simple logic to cycle through a few colors for variety
     const colors = ['bg-blue-100 text-blue-600', 'bg-green-100 text-green-600', 'bg-purple-100 text-purple-600', 'bg-yellow-100 text-yellow-600'];
     const avatarColor = colors[teacher.id.charCodeAt(0) % colors.length];
@@ -86,11 +82,13 @@ const TeacherTableRow: React.FC<{ teacher: Teacher }> = ({ teacher }) => {
         <tr className="border-b border-gray-200 hover:bg-gray-50">
             <td className="py-3 px-6 text-left whitespace-nowrap">
                 <div className="flex items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm mr-3 ${avatarColor}`}>
-                        {initial}
-                    </div>
+                    {teacher.avatar_url ? (
+                        <img src={teacher.avatar_url} alt={teacher.first_name || teacher.name} className="w-8 h-8 rounded-full mr-3 object-cover" />
+                    ) : (
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm mr-3 ${avatarColor}`}>{initial}</div>
+                    )}
                     <div>
-                        <div className="font-medium text-gray-800">{teacher.name}</div>
+                        <div className="font-medium text-gray-800">{teacher.first_name} {teacher.last_name}</div>
                         <div className="text-sm text-gray-500">@{teacher.email.split('@')[0]}</div>
                     </div>
                 </div>
@@ -130,19 +128,19 @@ const App: React.FC = () => {
             setLoading(true);
             setError(null);
             try {
-                const mockData: Teacher[] = [
-                    { id: '1', name: 'Emery Torff', email: 'emery@example.com', last_login: '16/03/2024 • 15:54', lessons_count: 8, classes_count: 8, languages_count: 2, students_count: 150 },
-                    { id: '2', name: 'Maren Dokidis', email: 'maren@example.com', last_login: '16/03/2024 • 15:54', lessons_count: 10, classes_count: 8, languages_count: 2, students_count: 150 },
-                    { id: '3', name: 'Cooper Siphron', email: 'cooper@example.com', last_login: '16/03/2024 • 15:54', lessons_count: 4, classes_count: 8, languages_count: 2, students_count: 150 },
-                    { id: '4', name: 'Marcus Dias', email: 'marcus@example.com', last_login: '16/03/2024 • 15:54', lessons_count: 2, classes_count: 8, languages_count: 4, students_count: 150 },
-                    { id: '5', name: 'Ahmad Stanton', email: 'ahmad@example.com', last_login: '16/03/2024 • 15:54', lessons_count: 4, classes_count: 8, languages_count: 4, students_count: 150 },
-                    { id: '6', name: 'Giana Carder', email: 'giana@example.com', last_login: '16/03/2024 • 15:54', lessons_count: 7, classes_count: 8, languages_count: 4, students_count: 150 },
-                    { id: '7', name: 'Tiana Curtis', email: 'tiana@example.com', last_login: '16/03/2024 • 15:54', lessons_count: 1, classes_count: 8, languages_count: 4, students_count: 150 },
-                    { id: '8', name: 'Omar Siphron', email: 'omar@example.com', last_login: '16/03/2024 • 15:54', lessons_count: 4, classes_count: 8, languages_count: 4, students_count: 150 },
-                    { id: '9', name: 'Angel Rhiel Madsen', email: 'angel@example.com', last_login: '16/03/2024 • 15:54', lessons_count: 3, classes_count: 8, languages_count: 4, students_count: 150 },
-                ];
-                setTeachers(mockData);
-
+                // Get token from localStorage (adjust if you store it elsewhere)
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`${Server_url}/api/users/teachers/`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                setTeachers(data);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'An unknown error occurred');
                 console.error(err);
@@ -150,38 +148,13 @@ const App: React.FC = () => {
                 setLoading(false);
             }
         };
-
         fetchTeachers();
     }, []);
 
     return (
         <div className="flex h-screen bg-gray-50 font-sans">
             {/* Sidebar */}
-            <aside className="w-64 bg-white flex flex-col border-r">
-                <div className="h-20 flex items-center px-6 border-b">
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">L</div>
-                    <span className="ml-3 text-lg font-bold text-gray-800">Language Planet</span>
-                </div>
-                <nav className="flex-1 p-4 space-y-2">
-                    <NavItem icon={<HomeIcon />} label="Dashboard" />
-                    <NavItem icon={<LanguageIcon />} label="Languages" />
-                    <NavItem icon={<BookOpenIcon />} label="Lessons" />
-                    <NavItem icon={<UsersIcon />} label="Students" />
-                    <NavItem icon={<UsersIcon />} label="Teachers" active />
-                </nav>
-                <div className="p-4 border-t">
-                    <div className="flex items-center">
-                        <img src="https://placehold.co/40x40/E0E7FF/4F46E5?text=VA" alt="Victoria Akudo" className="w-10 h-10 rounded-full" />
-                        <div className="ml-3">
-                            <p className="font-semibold text-sm text-gray-800">Victoria Akudo</p>
-                            <p className="text-xs text-gray-500">victoria@example.com</p>
-                        </div>
-                        <button className="ml-auto text-gray-500 hover:text-gray-700">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                        </button>
-                    </div>
-                </div>
-            </aside>
+            <Sidebar activePage="Teachers" />
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col">

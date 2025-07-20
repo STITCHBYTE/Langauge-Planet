@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import type { Character } from './CharacterSelect';
+import type { Character as CharacterType } from './CharacterSelect';
 import './FightingGame.css';
 import Character from './Character.tsx';
 
 interface PlayerState {
   x: number;
-  health: number;
   action: string;
   direction: string;
   hitEffect: number;
@@ -13,7 +12,8 @@ interface PlayerState {
   cooldowns: PlayerCooldown;
   isDodging: boolean;
   isHealing: boolean;
-  consecutiveAttacks: number; // Track consecutive attacks for progressive cooldown
+  consecutiveAttacks: number;
+  health: number; // Ensure health is included as it's used
 }
 
 interface TranslationQuestion {
@@ -38,1381 +38,516 @@ interface PlayerCooldown {
   wrongAnswer: number;
 }
 
-interface Particle {
-  id: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-}
-
 interface FightingGameProps {
   initialDifficulty?: 'easy' | 'medium' | 'hard';
-  isMultiplayer?: boolean;
-  roomId?: string;
-  joinRoomId?: string;
-  roomAction?: 'create' | 'join';
-  selectedCharacter: Character; // Add this line
+  selectedCharacter: CharacterType | null;
 }
 
-const FightingGame: React.FC<FightingGameProps> = ({ 
-  initialDifficulty = 'medium', 
-  isMultiplayer = false,
-  roomId: propRoomId,
-  joinRoomId: propJoinRoomId,
-  roomAction,
+const FightingGame: React.FC<FightingGameProps> = ({
+  initialDifficulty = 'medium',
   selectedCharacter
 }) => {
-  // Always use Cyber Warrior as the bot/player 2
-  // Bot character is always fighter2
-  const [botCharacter, setBotCharacter] = useState<Character | null>(null);
+  const [botCharacter, setBotCharacter] = useState<CharacterType | null>(null);
 
-  // Load bot character data
   useEffect(() => {
     const loadBotCharacter = async () => {
-      try {
-        const response = await fetch('/assets/data/characters.json');
-        const data = await response.json();
-        const bot = data.find(char => char.key === 'fighter2');
-        if (bot) {
-          setBotCharacter(bot);
+        try {
+            const response = await fetch('/assets/data/characters.json');
+            const data = await response.json();
+            const bot = data.find((char: CharacterType) => char.key === 'medieval_warrior3');
+            setBotCharacter(bot || data[0]);
+        } catch (error) {
+            console.error('Error loading bot character:', error);
         }
-      } catch (error) {
-        console.error('Error loading bot character:', error);
-      }
     };
-    
     loadBotCharacter();
   }, []);
 
-  // Get character sprites based on selection
-  const getCharacterSprites = useCallback((isPlayer1: boolean) => {
-    const character = isPlayer1 ? selectedCharacter : botCharacter;
-    if (!character) return null;
-
+  const getCharacterSprites = useCallback((character: CharacterType | null) => {
+    if (!character) return {};
+    const basePath = `/assets/sprites/${character.key}`;
     return {
-      'idle-left': `/assets/sprites/${character.key}/idle.png`,
-      'idle-right': `/assets/sprites/${character.key}/idle.png`,
-      'walk-left': `/assets/sprites/${character.key}/run.png`,
-      'walk-right': `/assets/sprites/${character.key}/run.png`,
-      'attack1-left': `/assets/sprites/${character.key}/attack1.png`,
-      'attack1-right': `/assets/sprites/${character.key}/attack1.png`,
-      'attack2-left': `/assets/sprites/${character.key}/attack2.png`,
-      'attack2-right': `/assets/sprites/${character.key}/attack2.png`,
-      'dodge-left': `/assets/sprites/${character.key}/jump.png`,
-      'dodge-right': `/assets/sprites/${character.key}/jump.png`,
-      'ko-left': `/assets/sprites/${character.key}/death.png`,
-      'ko-right': `/assets/sprites/${character.key}/death.png`,
+      'idle-left': `${basePath}/idle.png`, 'idle-right': `${basePath}/idle.png`,
+      'walk-left': `${basePath}/run.png`, 'walk-right': `${basePath}/run.png`,
+      'attack1-left': `${basePath}/attack1.png`, 'attack1-right': `${basePath}/attack1.png`,
+      'attack2-left': `${basePath}/attack2.png`, 'attack2-right': `${basePath}/attack2.png`,
+      'dodge-left': `${basePath}/jump.png`, 'dodge-right': `${basePath}/jump.png`,
+      'ko-left': `${basePath}/death.png`, 'ko-right': `${basePath}/death.png`,
+      'hit-left': `${basePath}/take_hit.png`, 'hit-right': `${basePath}/take_hit.png`,
     };
-  }, [selectedCharacter, botCharacter]);
+  }, []);
 
-  // Update player sprites based on selected character
-  const character1Images = getCharacterSprites(true) || {};
-  const character2Images = getCharacterSprites(false) || {};
+  const character1Images = getCharacterSprites(selectedCharacter);
+  const character2Images = getCharacterSprites(botCharacter);
 
   const initialMaxHealth = 100;
   const moveSpeed = 20;
-  const attackRange = 50; // Reduced from 200 to ~2 inches (50px ≈ 2 inches on most screens)
-  const characterWidth = 300;
+  const attackRange = 70;
+  const characterWidth = 200;
   const gapBetweenCharacters = 250;
-  
-  // Difficulty-based settings
-  const getDifficultySettings = useCallback(() => {
+
+  const difficultySettings = useMemo(() => {
     switch (initialDifficulty) {
-      case 'easy':
-        return {
-          botMoveSpeed: 38, // 50% increase from original 25 (25 * 1.5 = 37.5)
-          botActionInterval: 50, // Faster movement decisions (was 65)
-          botAttackDamage: 8, // Less damage
-          playerAttackDamage: 15, // Player does more damage
-        };
-      case 'medium':
-        return {
-          botMoveSpeed: 45, // 50% increase from original 30 (30 * 1.5 = 45)
-          botActionInterval: 45, // Faster movement decisions (was 55)
-          botAttackDamage: 15, // Standard damage
-          playerAttackDamage: 20, // Equal damage
-        };
-      case 'hard':
-        return {
-          botMoveSpeed: 50, // Kept the same as before
-          botActionInterval: 45, // Kept the same as before
-          botAttackDamage: 15, // More damage
-          playerAttackDamage: 12, // Player does less damage
-        };
-        default:
-        return {
-          botMoveSpeed: 30,
-          botActionInterval: 70,
-          botAttackDamage: 15,
-          playerAttackDamage: 15,
-        };
+      case 'easy': return { botMoveSpeed: 38, botActionInterval: 50, botAttackDamage: 8, playerAttackDamage: 15 };
+      case 'medium': return { botMoveSpeed: 45, botActionInterval: 45, botAttackDamage: 15, playerAttackDamage: 20 };
+      case 'hard': return { botMoveSpeed: 50, botActionInterval: 45, botAttackDamage: 15, playerAttackDamage: 12 };
+      default: return { botMoveSpeed: 30, botActionInterval: 70, botAttackDamage: 15, playerAttackDamage: 15 };
     }
   }, [initialDifficulty]);
 
-  const difficultySettings = getDifficultySettings();
-
-  // Calculate progressive attack cooldown based on consecutive attacks (BOT ONLY)
-  const getBotAttackCooldown = useCallback((consecutiveAttacks: number, attackType: 'attack1' | 'attack2') => {
-    const baseCooldown = attackType === 'attack1' ? 1500 : 2500;
-    
-    if (consecutiveAttacks === 0) {
-      return baseCooldown; // First attack uses base cooldown
-    } else if (consecutiveAttacks === 1) {
-      // Second consecutive attack - difficulty-based cooldown
-      switch (initialDifficulty) {
-        case 'easy': return 7000; // 7 seconds
-        case 'medium': return 5000; // 5 seconds  
-        case 'hard': return 3000; // 3 seconds
-        default: return 5000;
-      }
-    } else {
-      // Third+ consecutive attack - even longer cooldown
-      switch (initialDifficulty) {
-        case 'easy': return 10000; // 10 seconds
-        case 'medium': return 8000; // 8 seconds
-        case 'hard': return 6000; // 6 seconds
-        default: return 8000;
-      }
-    }
-  }, [initialDifficulty]);
+  const translationQuestions = useMemo(() => [
+    { word: "Hello", language: "Spanish", options: ["Hola", "Adiós", "Gracias", "Por favor"], correct: 0 },
+    { word: "Water", language: "French", options: ["Feu", "Terre", "Eau", "Air"], correct: 2 },
+    { word: "Book", language: "German", options: ["Stuhl", "Tisch", "Buch", "Fenster"], correct: 2 },
+  ], []);
 
   const calculateInitialPositions = useCallback(() => {
     const screenWidth = window.innerWidth;
-    const totalOccupiedWidth = 2 * characterWidth + gapBetweenCharacters;
-    const leftEdgeOfBlock = (screenWidth - totalOccupiedWidth) / 2;
+    const offsetFromEdge = 50; // Pixels from the edge of the screen
 
     return {
-      player1X: leftEdgeOfBlock,
-      player2X: leftEdgeOfBlock + characterWidth + gapBetweenCharacters,
+      player1X: offsetFromEdge, // Player 1 starts from the left edge
+      player2X: screenWidth - characterWidth - offsetFromEdge, // Player 2 starts from the right edge
     };
-  }, [characterWidth, gapBetweenCharacters]);
+  }, [characterWidth]); // characterWidth is needed for player2X calculation
 
-  const [player1, setPlayer1] = useState<PlayerState>(() => {
-    const { player1X } = calculateInitialPositions();
-    return {
-      x: player1X,
-      health: initialMaxHealth,
-      action: 'idle',
-      direction: 'right',
-      hitEffect: 0,
-      triggerActionAnim: 0,
-      cooldowns: {
-        dodge: 0,
-        attack1: 0,
-        attack2: 0,
-        heal: 0,
-        wrongAnswer: 0,
-      },
-      isDodging: false,
-      isHealing: false,
-      consecutiveAttacks: 0, // Track consecutive attacks for progressive cooldown
-    };
-  });
 
-  const [player2, setPlayer2] = useState<PlayerState>(() => {
-    const { player2X } = calculateInitialPositions();
-    return {
-      x: player2X,
-      health: initialMaxHealth,
-      action: 'idle',
-      direction: 'left',
-      hitEffect: 0,
-      triggerActionAnim: 0,
-      cooldowns: {
-        dodge: 0,
-        attack1: 0,
-        attack2: 0,
-        heal: 0,
-        wrongAnswer: 0,
-      },
-      isDodging: false,
-      isHealing: false,
-      consecutiveAttacks: 0, // Track consecutive attacks for progressive cooldown
-    };
-  });
+  const [player1, setPlayer1] = useState<PlayerState>(() => ({
+    x: calculateInitialPositions().player1X, health: initialMaxHealth, action: 'idle', direction: 'right', hitEffect: 0, triggerActionAnim: 0,
+    cooldowns: { dodge: 0, attack1: 0, attack2: 0, heal: 0, wrongAnswer: 0 },
+    isDodging: false, isHealing: false, consecutiveAttacks: 0,
+  }));
+
+  const [player2, setPlayer2] = useState<PlayerState>(() => ({
+    x: calculateInitialPositions().player2X, health: initialMaxHealth, action: 'idle', direction: 'left', hitEffect: 0, triggerActionAnim: 0,
+    cooldowns: { dodge: 0, attack1: 0, attack2: 0, heal: 0, wrongAnswer: 0 },
+    isDodging: false, isHealing: false, consecutiveAttacks: 0,
+  }));
 
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [winner, setWinner] = useState<string | null>(null);
-  const [screenShake, setScreenShake] = useState<number>(0);
-  const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
-  const [particles, setParticles] = useState<Particle[]>([]);
   const [roundStart, setRoundStart] = useState<boolean>(true);
-  const [botDifficulty] = useState<string>(initialDifficulty);
-
-  // Multiplayer states
-  const [roomId, setRoomId] = useState<string | null>(propRoomId || null);
-  const [myPlayerNumber, setMyPlayerNumber] = useState<number | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');
-
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const messageQueue = useRef<any[]>([]);
-
-  // Legacy compatibility: isConnected state
-  const [isConnected, setIsConnected] = useState(false);
-
-  // Translation system states
   const [quizActive, setQuizActive] = useState<boolean>(false);
   const [currentQuestion, setCurrentQuestion] = useState<TranslationQuestion | null>(null);
   const [gamePaused, setGamePaused] = useState<boolean>(false);
   const [pendingAttack, setPendingAttack] = useState<PendingAttack | null>(null);
 
-  // Sync isConnected with connectionStatus
   useEffect(() => {
-    setIsConnected(connectionStatus === 'connected');
-  }, [connectionStatus]);
-
-  const translationQuestions = useMemo(() => [
-    {
-      word: "Hello",
-      language: "Spanish",
-      options: ["Hola", "Adiós", "Gracias", "Por favor"],
-      correct: 0
-    },
-    {
-      word: "Water",
-      language: "French", 
-      options: ["Feu", "Terre", "Eau", "Air"],
-      correct: 2
-    },
-    {
-      word: "Book",
-      language: "German",
-      options: ["Stuhl", "Tisch", "Buch", "Fenster"],
-      correct: 2
-    },
-    {
-      word: "Cat",
-      language: "Italian",
-      options: ["Cane", "Gatto", "Pesce", "Uccello"],
-      correct: 1
-    },
-    {
-      word: "Good",
-      language: "Portuguese",
-      options: ["Mau", "Bom", "Grande", "Pequeno"],
-      correct: 1
-    },
-  ], []);
-
-  const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
-  const punchSoundRef = useRef<HTMLAudioElement | null>(null);
-  const woahSoundRef = useRef<HTMLAudioElement | null>(null);
-  const fightStartSoundRef = useRef<HTMLAudioElement | null>(null);
-  const koSoundRef = useRef<HTMLAudioElement | null>(null);
-  const gameOverSoundRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    backgroundMusicRef.current = new Audio('/sounds/background.mp3');
-    backgroundMusicRef.current.loop = true;
-    backgroundMusicRef.current.volume = 0.2;
-
-    const playMusic = () => {
-      if (backgroundMusicRef.current) {
-        backgroundMusicRef.current.play().catch(error => {
-          console.log("Autoplay prevented:", error);
-        });
-      }
-    };
-
-    const handleFirstInteraction = () => {
-      setAudioEnabled(true);
-      if (backgroundMusicRef.current && backgroundMusicRef.current.paused) {
-        playMusic();
-      }
-      document.removeEventListener('click', handleFirstInteraction);
-      document.removeEventListener('keydown', handleFirstInteraction);
-    };
-    document.addEventListener('click', handleFirstInteraction);
-    document.addEventListener('keydown', handleFirstInteraction);
-
-    return () => {
-      if (backgroundMusicRef.current) {
-        backgroundMusicRef.current.pause();
-      }
-      document.removeEventListener('click', handleFirstInteraction);
-      document.removeEventListener('keydown', handleFirstInteraction);
-    };
+      const timer = setTimeout(() => setRoundStart(false), 2000);
+      const fightStartSound = new Audio('/sounds/fight-start.mp3');
+      fightStartSound.play().catch(e => console.log(e));
+      return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    punchSoundRef.current = new Audio('/sounds/punch.mp3');
-    woahSoundRef.current = new Audio('/sounds/swoosh.mp3');
-    fightStartSoundRef.current = new Audio('/sounds/fight-start.mp3');
-    koSoundRef.current = new Audio('/sounds/KO.mp3');
-    gameOverSoundRef.current = new Audio('/sounds/game-over.mp3');
-  }, []);
-
-  // WebSocket connection and message handling
-  const handleOpponentAction = useCallback((action: any) => {
-    const opponentSetter = myPlayerNumber === 1 ? setPlayer2 : setPlayer1;
-    const mySetter = myPlayerNumber === 1 ? setPlayer1 : setPlayer2;
-    
-    switch (action.type) {
-      case 'attack1':
-      case 'attack2':
-        // Trigger opponent attack animation
-        opponentSetter(prev => ({
-          ...prev,
-          action: action.type,
-          triggerActionAnim: prev.triggerActionAnim + 1
-        }));
-        
-        // Check if I'm in range and not dodging
-        if (action.hit && !action.dodged) {
-          // Take damage
-          mySetter(prev => {
-            const newHealth = Math.max(0, prev.health - action.damage);
-            return {
-              ...prev,
-              health: newHealth,
-              hitEffect: prev.hitEffect + 1
-            };
-          });
-          
-          // Play hit sound
-          if (punchSoundRef.current) {
-            punchSoundRef.current.play().catch(e => console.log("Punch sound error:", e));
-          }
-          
-          // Create particles - will be called after createParticles is defined
-          const targetX = myPlayerNumber === 1 ? player1.x : player2.x;
-          const newParticles: Particle[] = Array.from({ length: 10 }).map(() => ({
-            id: Math.random(),
-            x: targetX + characterWidth / 2 + (Math.random() - 0.5) * 80,
-            y: window.innerHeight * 0.7 + (Math.random() - 0.5) * 80,
-            vx: (Math.random() - 0.5) * 8,
-            vy: (Math.random() - 0.5) * 8 - Math.random() * 4,
-            life: 100,
-          }));
-          setParticles(prev => [...prev, ...newParticles]);
-          setScreenShake(prev => prev + 1);
-        }
-        break;
-        
-      case 'dodge':
-        opponentSetter(prev => ({
-          ...prev,
-          action: 'dodge',
-          isDodging: true,
-          triggerActionAnim: prev.triggerActionAnim + 1
-        }));
-        
-        // End dodge after duration
-        setTimeout(() => {
-          opponentSetter(prev => ({ ...prev, isDodging: false }));
-        }, 800);
-        break;
-        
-      case 'heal':
-        opponentSetter(prev => ({
-          ...prev,
-          action: 'heal',
-          health: Math.min(initialMaxHealth, prev.health + action.healAmount),
-          isHealing: true,
-          triggerActionAnim: prev.triggerActionAnim + 1
-        }));
-        
-        setTimeout(() => {
-          opponentSetter(prev => ({ ...prev, isHealing: false }));
-        }, 1000);
-        break;
-    }
-  }, [myPlayerNumber, player1.x, player2.x, characterWidth]);
-
-  const handleWebSocketMessage = useCallback((data: any) => {
-    console.log('📨 Received:', data);
-    
-    switch (data.type) {
-      case 'ROOM_CREATED':
-        setRoomId(data.roomId);
-        setMyPlayerNumber(data.playerNum);
-        console.log(`🚪 Room created: ${data.roomId}, Player: ${data.playerNum}`);
-        break;
-        
-      case 'GAME_START':
-        setMyPlayerNumber(data.playerNum);
-        setRoundStart(true);
-        console.log(`🎮 Game starting! You are Player ${data.playerNum}`);
-        break;
-        
-      case 'OPPONENT_MOVE':
-        // Update opponent position and animation
-        const opponentSetter = myPlayerNumber === 1 ? setPlayer2 : setPlayer1;
-        opponentSetter(prev => ({
-          ...prev,
-          x: data.x,
-          action: data.action,
-          direction: data.direction
-        }));
-        break;
-        
-      case 'OPPONENT_ACTION':
-        // Handle opponent combat actions
-        handleOpponentAction(data.action);
-        break;
-        
-      case 'OPPONENT_HEALTH_UPDATE':
-        // Update opponent health
-        const healthSetter = data.playerNum === 1 ? setPlayer1 : setPlayer2;
-        healthSetter(prev => ({
-          ...prev,
-          health: data.health,
-          hitEffect: prev.hitEffect + 1
-        }));
-        
-        if (data.isKO) {
-          setGameOver(true);
-          setWinner(myPlayerNumber === data.playerNum ? 'Opponent' : 'You');
-        }
-        break;
-        
-      case 'OPPONENT_DISCONNECTED':
-        alert('Opponent disconnected');
-        break;
-        
-      case 'ERROR':
-        console.error('Server error:', data.message);
-        alert(data.message);
-        break;
-    }
-  }, [myPlayerNumber, handleOpponentAction]);
-
-  const connectWebSocket = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
-
-    console.log('🔌 Connecting to WebSocket server...');
-    setConnectionStatus('connecting');
-    
-    const ws = new WebSocket('ws://localhost:3001');
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log('✅ WebSocket connected');
-      setConnectionStatus('connected');
-      
-      // Send queued messages
-      messageQueue.current.forEach(message => {
-        ws.send(JSON.stringify(message));
-      });
-      messageQueue.current = [];
-
-      // Handle room creation or joining
-      if (roomAction === 'create') {
-        console.log('Creating room...');
-        ws.send(JSON.stringify({ 
-          type: 'CREATE_ROOM',
-          roomId: propRoomId // Send the room ID if provided
-        }));
-      } else if (roomAction === 'join' && propJoinRoomId) {
-        console.log('Joining room:', propJoinRoomId);
-        ws.send(JSON.stringify({ 
-          type: 'JOIN_ROOM', 
-          roomId: propJoinRoomId.trim() // Ensure no whitespace in room ID
-        }));
-      }
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        handleWebSocketMessage(data);
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    };
-
-    ws.onclose = () => {
-      console.log('❌ WebSocket disconnected');
-      setConnectionStatus('disconnected');
-      
-      // Attempt to reconnect after 3 seconds if in multiplayer mode
-      if (isMultiplayer && !gameOver) {
-        reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setConnectionStatus('error');
-    };
-  }, [isMultiplayer, roomAction, propRoomId, propJoinRoomId, gameOver, handleWebSocketMessage]);
-
-
-
-  // Initialize WebSocket connection for multiplayer
-  useEffect(() => {
-    if (isMultiplayer) {
-      connectWebSocket();
-      
-      return () => {
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-        }
-        if (wsRef.current) {
-          wsRef.current.close();
-        }
-      };
-    }
-  }, [isMultiplayer, connectWebSocket]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setRoundStart(false), 1200); // Faster round start
-    if (fightStartSoundRef.current) {
-      fightStartSoundRef.current.currentTime = 0;
-      fightStartSoundRef.current.play().catch(e => console.log("Fight start sound error:", e));
-    }
-    return () => {
-      clearTimeout(timer);
-    };
-  }, []);
-
-  const createParticles = useCallback((x: number, y: number, count: number = 10) => {
-    const newParticles: Particle[] = Array.from({ length: count }).map(() => ({
-      id: Math.random(),
-      x: x + (Math.random() - 0.5) * 60,
-      y: y + (Math.random() - 0.5) * 60,
-      vx: (Math.random() - 0.5) * 12,
-      vy: (Math.random() - 0.5) * 12 - Math.random() * 6,
-      life: 100,
-    }));
-    setParticles(prev => [...prev, ...newParticles]);
-  }, []);
-
-  useEffect(() => {
-    if (particles.length > 0) {
-      const interval = setInterval(() => {
-        setParticles(prev => prev.map(p => ({
-          ...p,
-          x: p.x + p.vx,
-          y: p.y + p.vy,
-          vy: p.vy + 0.7,
-          life: p.life - 4
-        })).filter(p => p.life > 0));
-      }, 12); // Faster particle animation
-      return () => clearInterval(interval);
-    }
-  }, [particles.length]);
-
-  const handleHit = useCallback((targetPlayerNum: number, damage: number, attackerPlayerNum: number) => {
-    if (punchSoundRef.current) {
-      punchSoundRef.current.currentTime = 0;
-      punchSoundRef.current.play().catch(e => console.log("Punch sound error:", e));
-    }
-    const targetSetter = targetPlayerNum === 1 ? setPlayer1 : setPlayer2;
-    const winnerPlayer = attackerPlayerNum === 1 ? 'Player 1' : 'Player 2';
-
-    targetSetter(prev => {
-      const newHealth = Math.max(0, prev.health - damage);
-      if (newHealth === 0) {
-        if (koSoundRef.current) {
-          koSoundRef.current.currentTime = 0;
-          koSoundRef.current.play().catch(e => console.log("KO sound error:", e));
-        }
-        if (gameOverSoundRef.current) {
-          gameOverSoundRef.current.currentTime = 0;
-          gameOverSoundRef.current.play().catch(e => console.log("Game over sound error:", e));
-        }
-        setGameOver(true);
-        setWinner(winnerPlayer);
-        // Show KO frame and keep it until reset
-        return { ...prev, health: 0, action: 'ko', triggerActionAnim: prev.triggerActionAnim + 1 };
-      }
-      // Show hit frame, then stop at last frame and return to idle
-      return { ...prev, health: newHealth, hitEffect: prev.hitEffect + 1, action: 'hit', triggerActionAnim: prev.triggerActionAnim + 1 };
-    });
-    // After showing hit frame, always return to idle and show full player
-    setTimeout(() => {
-      targetSetter(prev2 => ({ ...prev2, action: 'idle' }));
-    }, 80); // Show hit frame briefly, then idle
-
-    const targetPlayer = targetPlayerNum === 1 ? player1 : player2;
-    createParticles(targetPlayer.x + characterWidth / 2, window.innerHeight * 0.7);
-    setScreenShake(prev => prev + 1);
-  }, [player1, player2, createParticles, gameOverSoundRef, koSoundRef, punchSoundRef]);
-
-  // Cooldown management effect
+  // Re-introduced the useEffect for cooldown reduction
   useEffect(() => {
     const interval = setInterval(() => {
-      setPlayer1(prev => ({
-        ...prev,
-        cooldowns: {
-          dodge: Math.max(0, prev.cooldowns.dodge - 50),
-          attack1: Math.max(0, prev.cooldowns.attack1 - 50),
-          attack2: Math.max(0, prev.cooldowns.attack2 - 50),
-          heal: Math.max(0, prev.cooldowns.heal - 50),
-          wrongAnswer: Math.max(0, prev.cooldowns.wrongAnswer - 50),
-        }
-      }));
-      setPlayer2(prev => ({
-        ...prev,
-        cooldowns: {
-          dodge: Math.max(0, prev.cooldowns.dodge - 50),
-          attack1: Math.max(0, prev.cooldowns.attack1 - 50),
-          attack2: Math.max(0, prev.cooldowns.attack2 - 50),
-          heal: Math.max(0, prev.cooldowns.heal - 50),
-          wrongAnswer: Math.max(0, prev.cooldowns.wrongAnswer - 50),
-        }
-      }));
+      const reduceCooldowns = (setter: React.Dispatch<React.SetStateAction<PlayerState>>) => {
+        setter(prev => ({ ...prev, cooldowns: {
+            dodge: Math.max(0, prev.cooldowns.dodge - 50),
+            attack1: Math.max(0, prev.cooldowns.attack1 - 50),
+            attack2: Math.max(0, prev.cooldowns.attack2 - 50),
+            heal: Math.max(0, prev.cooldowns.heal - 50),
+            wrongAnswer: Math.max(0, prev.cooldowns.wrongAnswer - 50),
+        }}));
+      };
+      reduceCooldowns(setPlayer1);
+      reduceCooldowns(setPlayer2);
     }, 50);
     return () => clearInterval(interval);
   }, []);
 
-  const startTranslationQuiz = useCallback((attackerPlayer: number, targetPlayer: number, damage: number, attackType: 'attack1' | 'attack2') => {
-    setGamePaused(true);
-    const randomQuestion = translationQuestions[Math.floor(Math.random() * translationQuestions.length)];
-    setCurrentQuestion(randomQuestion);
-    setPendingAttack({ attackerPlayer, targetPlayer, damage, attackType });
-    setQuizActive(true);
-    if (backgroundMusicRef.current) {
-      backgroundMusicRef.current.pause();
-    }
-  }, [translationQuestions]);
+  const handleHit = useCallback((targetPlayerNum: number, damage: number, attackerPlayerNum: number) => {
+    const punchSound = new Audio('/sounds/punch.mp3'); // Sound effect
+    punchSound.play().catch(e => console.log(e));
 
-  const handleTranslationAnswer = useCallback((selectedOption: number) => {
-    if (!currentQuestion || !pendingAttack) return;
-    
-    if (selectedOption === currentQuestion.correct) {
-      // Correct answer - execute attack
-      handleHit(pendingAttack.targetPlayer, pendingAttack.damage, pendingAttack.attackerPlayer);
+    const targetSetter = targetPlayerNum === 1 ? setPlayer1 : setPlayer2;
+    const currentTarget = targetPlayerNum === 1 ? player1 : player2;
+    const winnerName = attackerPlayerNum === 1 ? selectedCharacter?.name : botCharacter?.name;
+
+    const newHealth = Math.max(0, currentTarget.health - damage);
+
+    if (newHealth === 0) {
+      setGameOver(true);
+      setWinner(`${winnerName} wins!`);
+      targetSetter(prev => ({ ...prev, health: 0, action: 'ko' }));
     } else {
-      // Wrong answer - apply cooldown penalty
-      const attackerSetter = pendingAttack.attackerPlayer === 1 ? setPlayer1 : setPlayer2;
-      attackerSetter(prev => ({
-        ...prev,
-        cooldowns: {
-          ...prev.cooldowns,
-          wrongAnswer: 1500, // 1.5 second cooldown for wrong answer
-        }
-      }));
-    }
-    
-    setQuizActive(false);
-    setGamePaused(false);
-    setCurrentQuestion(null);
-    setPendingAttack(null);
-    if (audioEnabled && backgroundMusicRef.current) {
-      backgroundMusicRef.current.play().catch(e => console.log("Background music resume error:", e));
-    }
-  }, [currentQuestion, pendingAttack, handleHit, audioEnabled]);
-
-  const resetAction = useCallback((playerNum: number) => {
-    setTimeout(() => {
-      const setter = playerNum === 1 ? setPlayer1 : setPlayer2;
-      setter(prev => ({ ...prev, action: 'idle' }));
-    }, 0.01);
-  }, []);
-
-  const handlePlayer1Action = useCallback((actionType: string) => {
-    if (gameOver || gamePaused || player1.action !== 'idle' || (isMultiplayer && !isConnected)) return;
-    
-    // Check cooldowns and wrong answer penalty
-    if (player1.cooldowns.wrongAnswer > 0) return;
-    
-    if (actionType === 'dodge' && player1.cooldowns.dodge > 0) return;
-    if (actionType === 'attack1' && player1.cooldowns.attack1 > 0) return;
-    if (actionType === 'attack2' && player1.cooldowns.attack2 > 0) return;
-    if (actionType === 'heal' && player1.cooldowns.heal > 0) return;
-    
-    setPlayer1(prev => ({ ...prev, action: actionType, triggerActionAnim: prev.triggerActionAnim + 1 }));
-
-    // Broadcast action to WebSocket if in multiplayer mode
-    if (isMultiplayer && wsRef.current && isConnected) {
-      wsRef.current.send(JSON.stringify({
-        type: 'player-action',
-        roomId: roomId,
-        playerNumber: myPlayerNumber,
-        action: actionType,
-        timestamp: Date.now(),
-        position: { x: player1.x, direction: player1.direction }
-      }));
-    }
-
-    if (actionType === 'dodge') {
-      setPlayer1(prev => ({ 
-        ...prev, 
-        isDodging: true,
-        cooldowns: { ...prev.cooldowns, dodge: 2500 }
-      }));
-      if (woahSoundRef.current) {
-        woahSoundRef.current.currentTime = 0;
-        woahSoundRef.current.play().catch(e => console.log("Woah sound error:", e));
-      }
-      // Dodge lasts 0.01ms
+      targetSetter(prev => ({ ...prev, health: newHealth, action: 'hit' }));
       setTimeout(() => {
-        setPlayer1(prev => ({ ...prev, isDodging: false }));
-      }, 0.01);
-    } else if (actionType === 'attack1') {
-      const distance = Math.abs((player1.x + characterWidth / 2) - (player2.x + characterWidth / 2));
-      const isFacingOpponent = (player1.direction === 'right' && player1.x < player2.x) || (player1.direction === 'left' && player1.x > player2.x);
-      console.log(`Player attack1 attempt: distance=${distance}, facing=${isFacingOpponent}, range=${attackRange + characterWidth / 2}`);
-      if (distance < attackRange + characterWidth / 2 && isFacingOpponent && !player2.isDodging) {
-        if (isMultiplayer) {
-          // In multiplayer, we need to handle damage differently
-          const damage = difficultySettings.playerAttackDamage;
-          setPlayer2(prev => ({ 
-            ...prev, 
-            health: Math.max(0, prev.health - damage),
-            action: 'hit',
-            triggerActionAnim: prev.triggerActionAnim + 1
-          }));
-          
-          // Broadcast hit to opponent
-          if (wsRef.current && isConnected) {
-            wsRef.current.send(JSON.stringify({
-              type: 'hit',
-              roomId: roomId,
-              playerNumber: myPlayerNumber,
-              damage: damage,
-              targetPlayer: myPlayerNumber === 1 ? 2 : 1,
-              timestamp: Date.now()
-            }));
-          }
-        } else {
-          startTranslationQuiz(1, 2, difficultySettings.playerAttackDamage, 'attack1'); // Light attack
-        }
-      }
-      setPlayer1(prev => ({ 
-        ...prev, 
-        cooldowns: { ...prev.cooldowns, attack1: 700 } // Faster attack cooldown
-      }));
-    } else if (actionType === 'attack2') {
-      const distance = Math.abs((player1.x + characterWidth / 2) - (player2.x + characterWidth / 2));
-      const isFacingOpponent = (player1.direction === 'right' && player1.x < player2.x) || (player1.direction === 'left' && player1.x > player2.x);
-      console.log(`Player attack2 attempt: distance=${distance}, facing=${isFacingOpponent}, range=${attackRange + characterWidth / 2}`);
-      if (distance < attackRange + characterWidth / 2 && isFacingOpponent && !player2.isDodging) {
-        if (isMultiplayer) {
-          // In multiplayer, we need to handle damage differently
-          const damage = difficultySettings.playerAttackDamage + 10;
-          setPlayer2(prev => ({ 
-            ...prev, 
-            health: Math.max(0, prev.health - damage),
-            action: 'hit',
-            triggerActionAnim: prev.triggerActionAnim + 1
-          }));
-          
-          // Broadcast hit to opponent
-          if (wsRef.current && isConnected) {
-            wsRef.current.send(JSON.stringify({
-              type: 'hit',
-              roomId: roomId,
-              playerNumber: myPlayerNumber,
-              damage: damage,
-              targetPlayer: myPlayerNumber === 1 ? 2 : 1,
-              timestamp: Date.now()
-            }));
-          }
-        } else {
-          startTranslationQuiz(1, 2, difficultySettings.playerAttackDamage + 10, 'attack2'); // Heavy attack
-        }
-      }
-      setPlayer1(prev => ({ 
-        ...prev, 
-        cooldowns: { ...prev.cooldowns, attack2: 1200 } // Faster heavy attack cooldown
-      }));
-    } else if (actionType === 'heal') {
-      const healAmount = 20;
-      setPlayer1(prev => ({ 
-        ...prev, 
-        health: Math.min(initialMaxHealth, prev.health + healAmount),
-        isHealing: true,
-        cooldowns: { ...prev.cooldowns, heal: 5000 } // 5 second cooldown
-      }));
-      
-      // Broadcast heal to WebSocket
-      if (isMultiplayer && wsRef.current && isConnected) {
-        wsRef.current.send(JSON.stringify({
-          type: 'heal',
-          roomId: roomId,
-          playerNumber: myPlayerNumber,
-          healAmount: healAmount,
-          newHealth: Math.min(initialMaxHealth, player1.health + healAmount),
-          timestamp: Date.now()
-        }));
-      }
-      
-      setTimeout(() => {
-        setPlayer1(prev => ({ ...prev, isHealing: false }));
-      }, 0.01);
+        targetSetter(prev => ({ ...prev, action: 'idle' }));
+      }, 400);
     }
-    resetAction(1);
-  }, [player1, player2, gameOver, gamePaused, resetAction, startTranslationQuiz, difficultySettings.playerAttackDamage, woahSoundRef, isMultiplayer, wsRef, isConnected, roomId, myPlayerNumber]);
+  }, [player1, player2, selectedCharacter, botCharacter]);
 
-  const handlePlayer2Action = useCallback((actionType: string) => {
-    if (gameOver || gamePaused || (isMultiplayer && (!isConnected || myPlayerNumber !== 2))) return;
 
-    // Handle movement actions separately since they don't require idle state
-    if (actionType === 'move-left' || actionType === 'move-right') {
-      if (actionType === 'move-left') {
-        console.log(`Bot moving left: current x=${player2.x}, speed=${difficultySettings.botMoveSpeed}`);
-        setPlayer2(prev => ({ 
-          ...prev, 
-          x: Math.max(0, prev.x - difficultySettings.botMoveSpeed), 
-          action: 'walk', 
-          direction: 'left' 
-        }));
-      } else if (actionType === 'move-right') {
-        console.log(`Bot moving right: current x=${player2.x}, speed=${difficultySettings.botMoveSpeed}, window width=${window.innerWidth}`);
-        setPlayer2(prev => ({ 
-          ...prev, 
-          x: Math.min(window.innerWidth - characterWidth, prev.x + difficultySettings.botMoveSpeed), 
-          action: 'walk', 
-          direction: 'right' 
-        }));
-      }
-      // Reset to idle after movement with shorter delay
-      setTimeout(() => {
-        setPlayer2(prev => ({ ...prev, action: 'idle' }));
-      }, 50);
+  const resetGame = useCallback(() => {
+    const { player1X, player2X } = calculateInitialPositions();
+    setPlayer1(prev => ({...prev, x: player1X, health: initialMaxHealth, action: 'idle', direction: 'right', cooldowns: { dodge: 0, attack1: 0, attack2: 0, heal: 0, wrongAnswer: 0 }}));
+    setPlayer2(prev => ({...prev, x: player2X, health: initialMaxHealth, action: 'idle', direction: 'left', cooldowns: { dodge: 0, attack1: 0, attack2: 0, heal: 0, wrongAnswer: 0 }}));
+    setGameOver(false);
+    setWinner(null);
+    setRoundStart(true);
+
+    // Log all images used for both characters
+    console.log('[resetGame] Character 1 images:', character1Images);
+    console.log('[resetGame] Character 2 images:', character2Images);
+  }, [calculateInitialPositions, initialMaxHealth, character1Images, character2Images]);
+
+  // Optionally, log images every render for debugging
+  useEffect(() => {
+    console.log('[render] Character 1 images:', character1Images);
+    console.log('[render] Character 2 images:', character2Images);
+  }, [character1Images, character2Images]);
+
+  const handleMovement = useCallback((playerNum: number, direction: 'left' | 'right') => {
+    const setter = playerNum === 1 ? setPlayer1 : setPlayer2;
+    const currentPlayer = playerNum === 1 ? player1 : player2;
+    // Keep 'jump' check for movement during dodge/heal animations to prevent visual glitches
+    if (['attack1', 'attack2', 'hit', 'ko', 'jump'].includes(currentPlayer.action)) return;
+    const moveDistance = playerNum === 1 ? moveSpeed : difficultySettings.botMoveSpeed;
+    setter(prev => {
+      const newX = direction === 'left' ? Math.max(0, prev.x - moveDistance) : Math.min(window.innerWidth - characterWidth, prev.x + moveDistance);
+      return { ...prev, x: newX, action: 'walk', direction };
+    });
+  }, [player1, player2, difficultySettings.botMoveSpeed]);
+
+  // Helper to get animation duration based on character's frameCounts
+  const getAnimationDuration = useCallback((playerNum: number, actionType: string) => {
+    const char = playerNum === 1 ? selectedCharacter : botCharacter;
+    // Map 'dodge' and 'heal' to 'jump' for frame counts, as per Character.tsx logic
+    const mappedAction = { 'dodge': 'jump', 'heal': 'jump' }[actionType] || actionType;
+    // Default to idle frames if specific action frames not found, but prefer known action types
+    const frameCount = char?.frameCounts?.[mappedAction] || char?.frameCounts?.[actionType] || char?.frameCounts?.['idle'] || 6;
+    return frameCount * 100; // 0.1s per frame = 100ms per frame
+  }, [selectedCharacter, botCharacter]);
+
+
+  // DEFINE executeAttack, executeDodge, executeHeal HERE (before startTranslationQuiz and handleTranslationAnswer)
+  const executeAttack = useCallback((attackerNum: number, attackType: 'attack1' | 'attack2') => {
+    const attacker = attackerNum === 1 ? player1 : player2;
+    const target = attackerNum === 1 ? player2 : player1;
+    const attackerSetter = attackerNum === 1 ? setPlayer1 : setPlayer2;
+
+    // Define isInRange and isFacingTarget locally within executeAttack
+    const distance = Math.abs((attacker.x + characterWidth / 2) - (target.x + characterWidth / 2));
+    const isInRange = distance <= attackRange + characterWidth / 2;
+    const isFacingTarget = (attacker.direction === 'right' && attacker.x < target.x) || (attacker.direction === 'left' && attacker.x > target.x);
+
+    // Re-added cooldown checks for attacks
+    // These checks should ideally occur BEFORE calling executeAttack
+    // if the intention is to prevent the action entirely if on cooldown.
+    // However, if called from handleTranslationAnswer (which has already bypassed initial input check),
+    // we might allow the animation but still check for hit logic.
+    // For now, we keep the check here for direct calls to executeAttack (e.g., bot)
+    if (attackerNum === 1 && ( (attackType === 'attack1' && attacker.cooldowns.attack1 > 0) || (attackType === 'attack2' && attacker.cooldowns.attack2 > 0) ) ) {
+        console.log(`Attack blocked for player ${attackerNum} due to cooldown.`);
+        return; // Prevent action if player is on cooldown
+    }
+
+
+    attackerSetter(prev => ({ ...prev, action: attackType, triggerActionAnim: prev.triggerActionAnim + 1 })); // Set action and trigger animation
+
+    // IMPORTANT: The actual hit/damage logic should only happen if the attack is meant to connect
+    // This part ensures that only if the quiz was passed AND the conditions (range, facing, not dodging) are met, damage is applied.
+    // This is especially crucial for bot attacks or when re-triggering from quiz.
+    if (isInRange && isFacingTarget && !target.isDodging) {
+      const damage = attackerNum === 1 ? difficultySettings.playerAttackDamage : difficultySettings.botAttackDamage;
+      const finalDamage = attackType === 'attack1' ? damage : damage + 10;
+      handleHit(attackerNum === 1 ? 2 : 1, finalDamage, attackerNum); // Target is opponent, attacker is this player
+    } else {
+        // If attack animation plays but misses (e.g., bot out of range, or player answered quiz correctly but opponent dodged)
+        // No damage, but ensure hitEffect is not triggered for target if no hit
+        console.log(`Attack animation for player ${attackerNum} but no hit registered (out of range/facing wrong way/target dodged).`);
+    }
+
+    // Re-added cooldown application for attacks
+    const cooldownTime = attackType === 'attack1' ? 500 : 900;
+    attackerSetter(prev => ({ ...prev, cooldowns: { ...prev.cooldowns, [attackType]: cooldownTime } }));
+
+    // Use dynamic animation duration for attack reset
+    const animDuration = getAnimationDuration(attackerNum, attackType);
+    setTimeout(() => attackerSetter(prev => ({ ...prev, action: 'idle' })), animDuration); // Reset to idle after animation
+  }, [player1, player2, difficultySettings, handleHit, attackRange, characterWidth, getAnimationDuration]);
+
+  const executeDodge = useCallback((playerNum: number) => {
+    console.log('[executeDodge] Called for player:', playerNum);
+    const setter = playerNum === 1 ? setPlayer1 : setPlayer2;
+    const currentPlayer = playerNum === 1 ? player1 : player2;
+
+    // Re-added cooldown check for dodge, and check if already dodging
+    if (currentPlayer.cooldowns.dodge > 0 || currentPlayer.isDodging) {
+      console.log('[executeDodge] Dodge blocked due to cooldown or already dodging.');
       return;
     }
 
-    // Handle combat actions that require idle state
-    if (player2.action !== 'idle') return;
-    
-    // Check cooldowns
-    if (player2.cooldowns.wrongAnswer > 0) return;
-    if (actionType === 'dodge' && player2.cooldowns.dodge > 0) return;
-    if (actionType === 'attack1' && player2.cooldowns.attack1 > 0) return;
-    if (actionType === 'attack2' && player2.cooldowns.attack2 > 0) return;
-    if (actionType === 'heal' && player2.cooldowns.heal > 0) return;
-    
-    setPlayer2(prev => ({ ...prev, action: actionType, triggerActionAnim: prev.triggerActionAnim + 1 }));
-    // After showing the action frame, always return to idle and show full player
+    console.log('[executeDodge] Dodge allowed, updating state...');
+    setter(prev => ({
+      ...prev,
+      action: 'dodge', // Set action explicitly to 'dodge' for better clarity and consistency
+      isDodging: true,
+      triggerActionAnim: prev.triggerActionAnim + 1, // Trigger animation
+      cooldowns: { ...prev.cooldowns, dodge: 1250 } // Re-added cooldown application for dodge
+    }));
+
+    const woahSound = new Audio('/sounds/swoosh.mp3'); // Sound effect
+    woahSound.play()
+      .then(() => console.log('[executeDodge] Dodge sound played.'))
+      .catch(e => console.log("[executeDodge] Dodge sound error:", e));
+
+    // Reset isDodging and action to 'idle' after the dodge animation duration
+    const animDuration = getAnimationDuration(playerNum, 'dodge');
     setTimeout(() => {
-      setPlayer2(prev2 => ({ ...prev2, action: 'idle' }));
-    }, 80); // Show action frame briefly, then idle
+      console.log('[executeDodge] Dodge duration ended, resetting state.');
+      setter(prev => ({ ...prev, isDodging: false, action: 'idle' }));
+    }, animDuration); // Use dynamic duration for dodge reset
+  }, [player1, player2, getAnimationDuration]);
 
-    if (actionType === 'dodge') {
-      setPlayer2(prev => ({ 
-        ...prev, 
-        isDodging: true,
-        consecutiveAttacks: 0,
-        cooldowns: { ...prev.cooldowns, dodge: 2500 }
-      }));
-      if (woahSoundRef.current) {
-        woahSoundRef.current.currentTime = 0;
-        woahSoundRef.current.play().catch(e => console.log("Woah sound error:", e));
-      }
-      setTimeout(() => {
-        setPlayer2(prev => ({ ...prev, isDodging: false }));
-      }, 0.01);
-    } else if (actionType === 'attack1') {
-      const distance = Math.abs((player1.x + characterWidth / 2) - (player2.x + characterWidth / 2));
-      const isFacingOpponent = (player2.direction === 'left' && player2.x > player1.x) || (player2.direction === 'right' && player2.x < player1.x);
-      console.log(`Bot attack1 attempt: distance=${distance}, facing=${isFacingOpponent}, range=${attackRange + characterWidth / 2}`);
-      if (distance < attackRange + characterWidth / 2 && isFacingOpponent && !player1.isDodging) {
-        // Bot attacks directly without quiz system
-        console.log('Bot executing light attack!');
-        // Play attack sound
-        if (punchSoundRef.current) {
-          punchSoundRef.current.play().catch(e => console.log("Bot punch sound error:", e));
-        }
-        handleHit(1, difficultySettings.botAttackDamage, 2);
-      }
-      const cooldownTime = getBotAttackCooldown(player2.consecutiveAttacks, 'attack1');
-      setPlayer2(prev => ({ 
-        ...prev, 
-        consecutiveAttacks: prev.consecutiveAttacks + 1,
-        cooldowns: { ...prev.cooldowns, attack1: cooldownTime }
-      }));
-    } else if (actionType === 'attack2') {
-      const distance = Math.abs((player1.x + characterWidth / 2) - (player2.x + characterWidth / 2));
-      const isFacingOpponent = (player2.direction === 'left' && player2.x > player1.x) || (player2.direction === 'right' && player2.x < player1.x);
-      console.log(`Bot attack2 attempt: distance=${distance}, facing=${isFacingOpponent}, range=${attackRange + characterWidth / 2}`);
-      if (distance < attackRange + characterWidth / 2 && isFacingOpponent && !player1.isDodging) {
-        // Bot heavy attack directly without quiz system
-        console.log('Bot executing heavy attack!');
-        // Play attack sound
-        if (punchSoundRef.current) {
-          punchSoundRef.current.play().catch(e => console.log("Bot punch sound error:", e));
-        }
-        handleHit(1, difficultySettings.botAttackDamage + 10, 2);
-      }
-      const cooldownTime = getBotAttackCooldown(player2.consecutiveAttacks, 'attack2');
-      setPlayer2(prev => ({ 
-        ...prev, 
-        consecutiveAttacks: prev.consecutiveAttacks + 1,
-        cooldowns: { ...prev.cooldowns, attack2: cooldownTime }
-      }));
-    } else if (actionType === 'heal') {
-      setPlayer2(prev => ({ 
-        ...prev, 
-        health: Math.min(initialMaxHealth, prev.health + 20),
-        isHealing: true,
-        consecutiveAttacks: 0, // Reset consecutive attacks on heal
-        cooldowns: { ...prev.cooldowns, heal: 5000 }
-      }));
-      setTimeout(() => {
-        setPlayer2(prev => ({ ...prev, isHealing: false }));
-      }, 0.01);
+  const executeHeal = useCallback((playerNum: number) => {
+    const setter = playerNum === 1 ? setPlayer1 : setPlayer2;
+    const currentPlayer = playerNum === 1 ? player1 : player2;
+
+    // Re-added cooldown check for heal, and check if already healing or health is full
+    if (currentPlayer.cooldowns.heal > 0 || currentPlayer.health >= initialMaxHealth || currentPlayer.isHealing) {
+        console.log('[executeHeal] Cannot heal: Cooldown, Health full, or already healing.');
+        return;
     }
-    resetAction(2);
-  }, [player1, player2, gameOver, gamePaused, resetAction, handleHit, difficultySettings.botMoveSpeed, difficultySettings.botAttackDamage, characterWidth, woahSoundRef, punchSoundRef, getBotAttackCooldown, isMultiplayer, isConnected, myPlayerNumber]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameOver) return;
-      
-      // Movement controls: A/← for left, D/→ for right (allow during quiz)
-      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') {
-        e.preventDefault();
-        const newX = Math.max(0, player1.x - moveSpeed);
-        setPlayer1(prev => ({ ...prev, x: newX, action: 'walk', direction: 'left' }));
-        
-        // Broadcast movement to WebSocket if in multiplayer mode
-        if (isMultiplayer && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({
-            type: 'movement',
-            roomId: roomId,
-            playerNumber: myPlayerNumber,
-            position: { x: newX, direction: 'left' },
-            action: 'walk',
-            timestamp: Date.now()
-          }));
-        }
-      } else if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') {
-        e.preventDefault();
-        const newX = Math.min(window.innerWidth - characterWidth, player1.x + moveSpeed);
-        setPlayer1(prev => ({ ...prev, x: newX, action: 'walk', direction: 'right' }));
-        
-        // Broadcast movement to WebSocket if in multiplayer mode
-        if (isMultiplayer && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({
-            type: 'movement',
-            roomId: roomId,
-            playerNumber: myPlayerNumber,
-            position: { x: newX, direction: 'right' },
-            action: 'walk',
-            timestamp: Date.now()
-          }));
-        }
-      } 
-      
-      // Combat controls only when not in quiz
-      if (!gamePaused) {
-        // Combat controls: J for light attack, K for heavy attack, S/↓ for dodge, H for heal
-        if (e.key === 'j' || e.key === 'J') {
-          e.preventDefault();
-          handlePlayer1Action('attack1');
-        } else if (e.key === 'k' || e.key === 'K') {
-          e.preventDefault();
-          handlePlayer1Action('attack2');
-        } else if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') {
-          e.preventDefault();
-          handlePlayer1Action('dodge');
-        } else if (e.key === 'h' || e.key === 'H') {
-          e.preventDefault();
-          handlePlayer1Action('heal');
-        }
-      }
-      
-      // Translation quiz controls: 1-4 for answer options
-      if (quizActive && currentQuestion && ['1', '2', '3', '4'].includes(e.key)) {
-        const optionIndex = parseInt(e.key) - 1;
-        if (optionIndex < currentQuestion.options.length) {
-          handleTranslationAnswer(optionIndex);
-        }
-      }
-    };
-    
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (gameOver) return;
-      // Reset to idle when movement keys are released
-      if ((e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') || 
-          (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight')) {
-        setPlayer1(prev => ({ ...prev, action: 'idle' }));
-        
-        // Broadcast idle state to WebSocket if in multiplayer mode
-        if (isMultiplayer && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({
-            type: 'movement',
-            roomId: roomId,
-            playerNumber: myPlayerNumber,
-            position: { x: player1.x, direction: player1.direction },
-            action: 'idle',
-            timestamp: Date.now()
-          }));
-        }
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [gameOver, gamePaused, quizActive, currentQuestion, handlePlayer1Action, handleTranslationAnswer, player1.x, player1.direction, isMultiplayer, roomId, myPlayerNumber]);
+    setter(prev => ({
+      ...prev,
+      action: 'heal', // Set action explicitly to 'heal'
+      health: Math.min(initialMaxHealth, prev.health + 20), // Heal amount
+      isHealing: true,
+      triggerActionAnim: prev.triggerActionAnim + 1, // Trigger animation
+      cooldowns: { ...prev.cooldowns, heal: 5000 } // Re-added cooldown application for heal
+    }));
 
-  useEffect(() => {
-    setPlayer1(prev => ({ ...prev, direction: prev.x < player2.x ? 'right' : 'left' }));
-    setPlayer2(prev => ({ ...prev, direction: prev.x > player1.x ? 'left' : 'right' }));
-  }, [player1.x, player2.x]);
+    // Reset isHealing and action to 'idle' after the heal animation duration
+    const animDuration = getAnimationDuration(playerNum, 'heal');
+    setTimeout(() => {
+        setter(prev => ({ ...prev, isHealing: false, action: 'idle' }));
+    }, animDuration); // Use dynamic duration for heal reset
+  }, [player1, player2, initialMaxHealth, getAnimationDuration]);
+
+
+  const startTranslationQuiz = useCallback((attackerNum: number, targetNum: number, damage: number, attackType: 'attack1' | 'attack2') => {
+    // Only start quiz if game is not already paused by another quiz instance
+    if (gamePaused) {
+        console.log("Quiz already active or game paused. Not starting new quiz.");
+        return;
+    }
+    setGamePaused(true);
+    setQuizActive(true);
+    setCurrentQuestion(translationQuestions[Math.floor(Math.random() * translationQuestions.length)]);
+    setPendingAttack({ attackerPlayer: attackerNum, targetPlayer: targetNum, damage, attackType });
+  }, [translationQuestions, gamePaused]);
+
+
+  const handleTranslationAnswer = useCallback((selectedOption: number) => {
+    if (!currentQuestion || !pendingAttack) return; // Ensure quiz data exists before proceeding
+
+    if (selectedOption === currentQuestion.correct) {
+      // On correct answer, trigger the attack animation and logic for player 1
+      // Use pendingAttack.attackType to re-trigger the correct attack
+      executeAttack(pendingAttack.attackerPlayer, pendingAttack.attackType); // Call executeAttack directly
+    } else {
+      setPlayer1(prev => ({...prev, cooldowns: {...prev.cooldowns, wrongAnswer: 1500}})); // Re-added wrongAnswer cooldown
+    }
+    setGamePaused(false);
+    setQuizActive(false);
+    setCurrentQuestion(null); // Clear current question
+    setPendingAttack(null); // Clear pending attack
+  }, [pendingAttack, currentQuestion, executeAttack]);
+
 
   const getBotAction = useCallback((): string | null => {
     const player1Center = player1.x + characterWidth / 2;
     const player2Center = player2.x + characterWidth / 2;
     const distance = Math.abs(player1Center - player2Center);
-    const playerInRange = distance < attackRange + characterWidth / 2;
+    const inAttackRange = distance <= attackRange + characterWidth / 2;
     const random = Math.random();
-    const optimalDistance = attackRange + characterWidth / 8; // Closer ideal attack distance for shorter range
 
-    console.log(`Bot AI: Distance=${distance.toFixed(0)}, InRange=${playerInRange}, Random=${random.toFixed(2)}, P1Health=${player1.health}, P2Health=${player2.health}`);
-
-    // Check if bot is in cooldown from wrong answer
-    if (player2.cooldowns.wrongAnswer > 0) return null;
-
-    // PRIORITY #1: Emergency heal when health is critically low (below 25%)
-    if (player2.health < 25 && player2.cooldowns.heal === 0) {
-      return 'heal';
-    }
-
-    // PRIORITY #2: Dodge incoming attacks (difficulty-based reaction)
-    if (player1.action === 'attack1' || player1.action === 'attack2') {
-      let dodgeChance = 0;
-      if (botDifficulty === 'easy') dodgeChance = 0.35;
-      else if (botDifficulty === 'medium') dodgeChance = 0.65;
-      else dodgeChance = 0.9;
-      
+    // Re-added bot cooldown checks
+    if ((player1.action === 'attack1' || player1.action === 'attack2') && inAttackRange) {
+      const dodgeChance = initialDifficulty === 'easy' ? 0.3 : initialDifficulty === 'medium' ? 0.6 : 0.8;
       if (random < dodgeChance && player2.cooldowns.dodge === 0) return 'dodge';
     }
-
-    // PRIORITY #3: Strategic healing when health is low but not critical
-    if (player2.health < 50 && player2.cooldowns.heal === 0) {
-      let healChance = 0;
-      if (botDifficulty === 'easy') healChance = 0.3; // Conservative healing
-      else if (botDifficulty === 'medium') healChance = 0.5; // Moderate healing
-      else healChance = 0.7; // Smart healing on hard
-      
-      // Higher chance to heal if player is far away (safer)
-      if (distance > attackRange + 50) healChance += 0.2; // Adjusted for shorter range (was +100)
-      
-      if (random < healChance) return 'heal';
-    }
-
-    // PRIORITY #4: Aggressive attack when in range
-    if (playerInRange) {
-      let attackChance = 0;
-      if (botDifficulty === 'easy') attackChance = 0.5; // Moderate aggression
-      else if (botDifficulty === 'medium') attackChance = 0.75; // High aggression
-      else attackChance = 0.95; // Very aggressive
-
-      if (random < attackChance) {
-        // Smart attack selection based on situation
-        if (player2.cooldowns.attack1 === 0 && player2.cooldowns.attack2 === 0) {
-          // Use heavy attack when enemy health is low for finishing blow
-          if (player1.health < 30 && random < 0.8) {
-            return 'attack2'; // Go for the kill
-          }
-          // Use heavy attack when bot has high health advantage
-          if (player2.health > player1.health + 30 && random < 0.6) {
-            return 'attack2'; // Capitalize on advantage
-          }
-          // Otherwise balance between attacks
-          return random < 0.65 ? 'attack1' : 'attack2';
-        } else if (player2.cooldowns.attack1 === 0) {
-          return 'attack1';
-        } else if (player2.cooldowns.attack2 === 0) {
-          return 'attack2';
-        }
+    if (inAttackRange && player2.cooldowns.wrongAnswer === 0) {
+      const isFacing = (player2.direction === 'left' && player2.x > player1.x) || (player2.direction === 'right' && player2.x < player1.x);
+      if (isFacing) {
+        if (player2.cooldowns.attack2 === 0 && player1.health < 30 && random < 0.7) return 'attack2';
+        if (player2.cooldowns.attack1 === 0 && random < 0.6) return 'attack1';
+        if (player2.cooldowns.attack2 === 0 && random < 0.4) return 'attack2';
       }
     }
-
-    // PRIORITY #5: Intelligent movement based on situation
-    if (distance > optimalDistance + 25) { // Reduced threshold for shorter range (was +50)
-      // Move closer aggressively when far
-      let moveChance = 0;
-      if (botDifficulty === 'easy') moveChance = 0.7; // Good movement
-      else if (botDifficulty === 'medium') moveChance = 0.85; // Better movement
-      else moveChance = 0.95; // Excellent movement
-      
-      if (random < moveChance) {
-        const moveDirection = player2Center < player1Center ? 'move-right' : 'move-left';
-        console.log(`Bot MOVING: ${moveDirection} (too far, distance=${distance.toFixed(0)})`);
-        return moveDirection;
-      }
-    } else if (distance < optimalDistance - 15) { // Reduced threshold for shorter range (was -30)
-      // Back away if too close and vulnerable
-      let backAwayChance = 0;
-      if (player2.health < player1.health) backAwayChance = 0.4; // Back away when losing
-      else backAwayChance = 0.15; // Occasionally back away when winning
-      
-      if (random < backAwayChance) {
-        const moveDirection = player2Center > player1Center ? 'move-right' : 'move-left';
-        console.log(`Bot BACKING AWAY: ${moveDirection} (too close, distance=${distance.toFixed(0)})`);
-        return moveDirection;
-      }
-    }
-
-    // PRIORITY #6: Circle around player for strategic positioning
-    if (distance < attackRange + 75 && distance > attackRange - 25) { // Adjusted for shorter range (was +150 and -50)
-      let circleChance = 0;
-      if (botDifficulty === 'easy') circleChance = 0.2;
-      else if (botDifficulty === 'medium') circleChance = 0.35;
-      else circleChance = 0.5;
-      
-      if (random < circleChance) {
-        // Circle in direction that gives advantage
-        const moveDirection = random < 0.5 ? 'move-left' : 'move-right';
-        console.log(`Bot CIRCLING: ${moveDirection} (strategic positioning, distance=${distance.toFixed(0)})`);
-        return moveDirection;
-      }
-    }
-
-    // PRIORITY #7: Random movement to stay unpredictable
-    let randomMoveChance = 0;
-    if (botDifficulty === 'easy') randomMoveChance = 0.1;
-    else if (botDifficulty === 'medium') randomMoveChance = 0.2;
-    else randomMoveChance = 0.3;
-    
-    if (random < randomMoveChance) {
-      const moveDirection = random < 0.5 ? 'move-left' : 'move-right';
-      console.log(`Bot RANDOM MOVE: ${moveDirection} (unpredictable movement)`);
-      return moveDirection;
-    }
-
+    if (player2.health < 40 && player2.cooldowns.heal === 0 && random < 0.6) return 'heal';
+    const optimalDistance = attackRange + 20;
+    if (distance > optimalDistance + 50) return player2Center < player1Center ? 'move-right' : 'move-left';
+    if (distance < optimalDistance - 20 && player2.health < player1.health) return player2Center > player1Center ? 'move-right' : 'move-left';
     return null;
-  }, [player1, player2, botDifficulty, characterWidth, attackRange]);
+  }, [player1, player2, initialDifficulty, attackRange, characterWidth]);
 
   useEffect(() => {
     if (gameOver || gamePaused) return;
-    const botActionInterval = setInterval(() => {
+    const botInterval = setInterval(() => {
       const action = getBotAction();
       if (action) {
-        console.log(`Bot taking action: ${action}, Distance: ${Math.abs((player1.x + characterWidth / 2) - (player2.x + characterWidth / 2)).toFixed(0)}, Player1 at: ${player1.x}, Player2 at: ${player2.x}`);
-        handlePlayer2Action(action);
-      } else {
-        console.log(`Bot no action - Cooldowns: ${JSON.stringify(player2.cooldowns)}`);
+        if (action.startsWith('move-')) handleMovement(2, action.split('-')[1] as 'left' | 'right');
+        else if (action === 'attack1' || action === 'attack2') executeAttack(2, action);
+        else if (action === 'dodge') executeDodge(2);
+        else if (action === 'heal') executeHeal(2);
       }
     }, difficultySettings.botActionInterval);
-    return () => clearInterval(botActionInterval);
-  }, [gameOver, gamePaused, getBotAction, handlePlayer2Action, difficultySettings.botActionInterval, player1.x, player2.x, player2.cooldowns, characterWidth]);
+    return () => clearInterval(botInterval);
+  }, [gameOver, gamePaused, getBotAction, handleMovement, executeAttack, executeDodge, executeHeal, difficultySettings.botActionInterval]);
 
-  const resetGame = useCallback(() => {
-    const { player1X, player2X } = calculateInitialPositions();
-    setPlayer1({ 
-      x: player1X, 
-      health: initialMaxHealth, 
-      action: 'idle', 
-      direction: 'right', 
-      hitEffect: 0, 
-      triggerActionAnim: 0,
-      cooldowns: {
-        dodge: 0,
-        attack1: 0,
-        attack2: 0,
-        heal: 0,
-        wrongAnswer: 0,
-      },
-      isDodging: false,
-      isHealing: false,
-      consecutiveAttacks: 0, // Keep for interface compatibility but not used for player
-    });
-    setPlayer2({ 
-      x: player2X, 
-      health: initialMaxHealth, 
-      action: 'idle', 
-      direction: 'left', 
-      hitEffect: 0, 
-      triggerActionAnim: 0,
-      cooldowns: {
-        dodge: 0,
-        attack1: 0,
-        attack2: 0,
-        heal: 0,
-        wrongAnswer: 0,
-      },
-      isDodging: false,
-      isHealing: false,
-      consecutiveAttacks: 0, // Reset consecutive attacks
-    });
-    setGameOver(false);
-    setWinner(null);
-    setParticles([]);
-    setRoundStart(true);
-    setTimeout(() => {
-      if (fightStartSoundRef.current) {
-        fightStartSoundRef.current.play().catch(e => console.log("Fight start sound error:", e));
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (gameOver || gamePaused) return;
+      if (quizActive) {
+        // Accept only main keyboard 1-4 and numpad 1-4
+        if (
+          e.code === 'Digit1' || e.code === 'Numpad1' ||
+          e.code === 'Digit2' || e.code === 'Numpad2' ||
+          e.code === 'Digit3' || e.code === 'Numpad3' ||
+          e.code === 'Digit4' || e.code === 'Numpad4'
+        ) {
+          // Map to 0-3 index
+          let idx = -1;
+          switch (e.code) {
+            case 'Digit1': case 'Numpad1': idx = 0; break;
+            case 'Digit2': case 'Numpad2': idx = 1; break;
+            case 'Digit3': case 'Numpad3': idx = 2; break;
+            case 'Digit4': case 'Numpad4': idx = 3; break;
+          }
+          if (idx !== -1) handleTranslationAnswer(idx);
+        }
+        // Ignore all other keys during quiz
+        return;
       }
-    }, 1000);
-  }, [calculateInitialPositions, fightStartSoundRef]);
+      // ...existing code for game controls...
+      const canMove = !['attack1', 'attack2', 'hit', 'ko', 'jump', 'dodge', 'heal'].includes(player1.action);
+      const canAttack = !['hit', 'ko', 'jump', 'dodge', 'heal'].includes(player1.action);
 
-  // Luxury helper function for health bar styling
-  const getHealthBarClass = useCallback((health: number, maxHealth: number) => {
-    const healthPercentage = (health / maxHealth) * 100;
-    if (healthPercentage > 60) return 'high-health';
-    else if (healthPercentage > 30) return 'medium-health';
-    else return 'low-health';
-  }, []);
+      // Determine if player is in range and facing opponent for a potential hit
+      const target = player2;
+      const distance = Math.abs((player1.x + characterWidth / 2) - (target.x + characterWidth / 2));
+      const isInRange = distance <= attackRange + characterWidth / 2;
+      const isFacingTarget = (player1.direction === 'right' && player1.x < target.x) || (player1.direction === 'left' && player1.x > target.x);
+      const willHit = isInRange && isFacingTarget && !target.isDodging;
+
+      switch (e.key.toLowerCase()) {
+        case 'a': case 'arrowleft': if (canMove) handleMovement(1, 'left'); break;
+        case 'd': case 'arrowright': if (canMove) handleMovement(1, 'right'); break;
+        case 'w': case 'arrowup': executeDodge(1); break;
+        case 's': case 'arrowdown': executeDodge(1); break;
+        case 'j':
+          if (canAttack && player1.cooldowns.attack1 === 0) {
+              if (willHit) {
+                  startTranslationQuiz(1, 2, difficultySettings.playerAttackDamage, 'attack1');
+              } else {
+                  executeAttack(1, 'attack1');
+              }
+          }
+          break;
+        case 'k':
+          if (canAttack && player1.cooldowns.attack2 === 0) {
+              if (willHit) {
+                  startTranslationQuiz(1, 2, difficultySettings.playerAttackDamage + 10, 'attack2');
+              } else {
+                  executeAttack(1, 'attack2');
+              }
+          }
+          break;
+        case 'h': if (player1.cooldowns.heal === 0) executeHeal(1); break;
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (gameOver) return;
+      if (['a', 'd', 'arrowleft', 'arrowright'].includes(e.key.toLowerCase()) && player1.action === 'walk') {
+        setPlayer1(prev => ({ ...prev, action: 'idle' }));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [gameOver, gamePaused, player1, quizActive, executeAttack, handleMovement, executeDodge, executeHeal, handleTranslationAnswer, startTranslationQuiz, difficultySettings, attackRange, characterWidth]); // Added necessary dependencies
+
+  if (!selectedCharacter || !botCharacter) {
+    return <div>Loading fighters...</div>;
+  }
 
   return (
-    <div className={`game-container ${screenShake > 0 ? 'shake' : ''}`}>
-      {/* Header - Top Center */}
-      <div className="game-header">
-        <h1>Real-Time Fighter <span style={{fontWeight:400,opacity:0.8}}>({botDifficulty.charAt(0).toUpperCase() + botDifficulty.slice(1)})</span></h1>
-        {/* <div className="difficulty-stats">
-          <span className="stat-item">Luxury Gaming Experience</span>
-          <span className="stat-divider">•</span>
-          <span className="stat-item">Translation Combat</span>
-          <span className="stat-divider">•</span>
-          <span className="stat-item">{botDifficulty.charAt(0).toUpperCase() + botDifficulty.slice(1)} Mode</span>
-        </div> */}
-      </div>
+    <div className={`game-container`}>
+        {/* Dim overlay that appears when quiz is active */}
+        {quizActive && <div className="game-dim-overlay"></div>}
 
-      {/* Health Bars - Luxury glassmorphism design */}
+        {/* Question display area (top) */}
+        {quizActive && currentQuestion && pendingAttack?.attackerPlayer === 1 && (
+            <div className="quiz-top-question-area">
+                <div className="quiz-question-display">
+                    Translate "{currentQuestion.word}" to {currentQuestion.language}
+                </div>
+            </div>
+        )}
+
+        {/* Options display area (bottom) */}
+        {quizActive && currentQuestion && pendingAttack?.attackerPlayer === 1 && (
+            <div className="quiz-options-area">
+                {currentQuestion.options.map((option, index) => (
+                    <button
+                        key={index}
+                        onClick={() => handleTranslationAnswer(index)}
+                        className="quiz-option-button"
+                    >
+                        {index + 1}. {option}
+                    </button>
+                ))}
+                <div>
+                <p className="quiz-instruction-bottom">Press 1-4 or click to answer</p>
+                </div>
+            </div>
+        )}
+
       <div className="health-container">
         <div className="player-health left">
-          <div className="player-name">Player 1</div>
+          <div className="player-name">{selectedCharacter.name}</div>
           <div className="health-bar-container">
-            <div className="health-bar">
-              <div 
-                className={`health-fill ${getHealthBarClass(player1.health, initialMaxHealth)}`}
-                style={{ width: `${(player1.health / initialMaxHealth) * 100}%` }}
-              ></div>
-            </div>
+            <div className="health-bar"><div className="health-fill" style={{ width: `${(player1.health / initialMaxHealth) * 100}%` }}></div></div>
             <div className="health-text">{player1.health}/{initialMaxHealth}</div>
           </div>
-          {player1.cooldowns.wrongAnswer > 0 && (
-            <div className="wrong-answer-penalty">
-              <span className="penalty-text">Wrong Answer Penalty: {(player1.cooldowns.wrongAnswer / 1000).toFixed(1)}s</span>
-            </div>
-          )}
         </div>
-        
         <div className="vs-text">VS</div>
-        
         <div className="player-health right">
-          <div className="player-name">Bot</div>
+          <div className="player-name">{botCharacter.name}</div>
           <div className="health-bar-container">
-            <div className="health-bar">
-              <div 
-                className={`health-fill ${getHealthBarClass(player2.health, initialMaxHealth)}`}
-                style={{ width: `${(player2.health / initialMaxHealth) * 100}%` }}
-              ></div>
-            </div>
+            <div className="health-bar"><div className="health-fill" style={{ width: `${(player2.health / initialMaxHealth) * 100}%` }}></div></div>
             <div className="health-text">{player2.health}/{initialMaxHealth}</div>
           </div>
-          {player2.cooldowns.wrongAnswer > 0 && (
-            <div className="bot-penalty">
-              <span className="penalty-text">Bot Penalty: {(player2.cooldowns.wrongAnswer / 1000).toFixed(1)}s</span>
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Luxury Action Cards at Bottom */}
-      <div className="center-actions">
-        <div className="action-card movement-card">
-          <div className="action-key">A / ←</div>
-          <div className="action-label">Move Left</div>
-        </div>
-        <div className="action-card movement-card">
-          <div className="action-key">D / →</div>
-          <div className="action-label">Move Right</div>
-        </div>
-        <div className={`action-card light-attack ${player1.cooldowns.attack1 > 0 ? 'on-cooldown' : ''}`}>
-          <div className="action-key">J</div>
-          <div className="action-label">Light Attack</div>
-          {player1.cooldowns.attack1 > 0 && <div className="cooldown-time">{(player1.cooldowns.attack1 / 1000).toFixed(1)}s</div>}
-        </div>
-        <div className={`action-card heavy-attack ${player1.cooldowns.attack2 > 0 ? 'on-cooldown' : ''}`}>
-          <div className="action-key">K</div>
-          <div className="action-label">Heavy Attack</div>
-          {player1.cooldowns.attack2 > 0 && <div className="cooldown-time">{(player1.cooldowns.attack2 / 1000).toFixed(1)}s</div>}
-        </div>
-        <div className={`action-card dodge ${player1.cooldowns.dodge > 0 ? 'on-cooldown' : ''}`}>
-          <div className="action-key">S / ↓</div>
-          <div className="action-label">Dodge</div>
-          {player1.cooldowns.dodge > 0 && <div className="cooldown-time">{(player1.cooldowns.dodge / 1000).toFixed(1)}s</div>}
-        </div>
-        <div className={`action-card heal ${player1.cooldowns.heal > 0 ? 'on-cooldown' : ''}`}>
-          <div className="action-key">H</div>
-          <div className="action-label">Heal</div>
-          {player1.cooldowns.heal > 0 && <div className="cooldown-time">{(player1.cooldowns.heal / 1000).toFixed(1)}s</div>}
-        </div>
-      </div>
-
-      {/* Quiz Modal - Only show for player attacks */}
-      {quizActive && currentQuestion && pendingAttack?.attackerPlayer === 1 && (
-        <div className="quiz-modal">
-          <div className="quiz-content">
-            <h2>Translate to Attack!</h2>
-            <p className="quiz-question">
-              Translate "{currentQuestion.word}" to {currentQuestion.language}
-            </p>
-            <div className="quiz-options">
-              {currentQuestion.options.map((option, index) => (
-                <button 
-                  key={index} 
-                  onClick={() => handleTranslationAnswer(index)} 
-                  className="quiz-option"
-                >
-                  {index + 1}. {option}
-                </button>
-              ))}
-            </div>
-            <p className="quiz-instruction">Press 1-4 or click to answer</p>
-          </div>
-        </div>
-      )}
-
-      {/* Round start and Game over screens with luxury styling */}
-      {roundStart && (
-        <div className="round-start-screen">
-          <div className="round-start-text">FIGHT!</div>
-          <div className="round-start-subtitle">Translation Combat Begins</div>
-        </div>
-      )}
 
       {gameOver && (
         <div className="game-over-screen">
           <h2>Game Over!</h2>
-          <p>{winner} wins the translation battle!</p>
+          <p>{winner}</p>
           <button onClick={resetGame}>Play Again</button>
         </div>
       )}
 
-      {/* Add top controls for context */}
-      {/* <div className="top-controls">
-        Movement: A/D or ←/→ • Combat: J (Light) • K (Heavy) • S (Dodge) • H (Heal) • Quiz: 1-4 to answer translation questions
-      </div> */}
+      {roundStart && (
+        <div className="round-start-screen">
+          <div className="round-start-text">FIGHT!</div>
+        </div>
+      )}
 
-      {/* Game Characters */}
-      <Character 
-        name="Player 1" 
-        initialX={player1.x} 
-        initialHealth={player1.health}
-        images={character1Images} 
-        direction={player1.direction} 
-        currentAction={player1.action} 
-        onHitEffect={player1.hitEffect} 
-        triggerActionAnimation={player1.triggerActionAnim} 
-        hideHealthBar={true}
-        isDodging={player1.isDodging}
-        isHealing={player1.isHealing}
-      />
-      <Character 
-        name="Player 2" 
-        initialX={player2.x} 
-        initialHealth={player2.health}
-        images={character2Images} 
-        direction={player2.direction} 
-        currentAction={player2.action} 
-        onHitEffect={player2.hitEffect} 
-        triggerActionAnimation={player2.triggerActionAnim} 
-        hideHealthBar={true}
-        isDodging={player2.isDodging}
-        isHealing={player2.isHealing}
-      />
-
-      <div className="particles-container">
-        {particles.map(p => <div key={p.id} className="particle" style={{ left: `${p.x}px`, top: `${p.y}px`, opacity: p.life / 100 }} />)}
-      </div>
-
-
+      <Character key={selectedCharacter.key} name={selectedCharacter.name} initialX={player1.x} images={character1Images} direction={player1.direction} currentAction={player1.action} onHitEffect={player1.hitEffect} triggerActionAnimation={player1.triggerActionAnim} frameCounts={selectedCharacter.frameCounts} scale={selectedCharacter.scale} />
+      <Character key={botCharacter.key} name={botCharacter.name} initialX={player2.x} images={character2Images} direction={player2.direction} currentAction={player2.action} onHitEffect={player2.hitEffect} triggerActionAnimation={player2.triggerActionAnim} frameCounts={botCharacter.frameCounts} scale={botCharacter.scale} />
     </div>
   );
 };

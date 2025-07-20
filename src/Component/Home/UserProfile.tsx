@@ -44,7 +44,15 @@ const UserProfile = () => {
   return (
     <div className="user-profile-container">
       <div className="user-profile-info">
-        <span className="avatar-text">{initials}</span>
+        {currentUser?.avatar_url ? (
+          <img
+            src={currentUser.avatar_url}
+            alt="Avatar"
+            className="w-10 h-10 rounded-full object-cover"
+          />
+        ) : (
+          <span className="avatar-text">{initials}</span>
+        )}
         <div className="user-profile-text">
           <p className="user-profile-name">{displayName}</p>
           <p className="user-profile-email">{displayEmail}</p>

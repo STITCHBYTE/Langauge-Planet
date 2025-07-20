@@ -2,41 +2,73 @@
   {
     "key": "MedievalKingPack",
     "name": "Medieval King",
-    "scale": 2.2,
+    "scale": 3,
     "offset": 0,
     "flipX": false,
-    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump", "fall"]
+    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump", "fall"],
+    "frameCounts": {
+      "idle": 6,
+      "run": 8,
+      "attack1": 6,
+      "attack2": 6,
+      "jump": 2,
+      "death": 11,
+      "take_hit": 4,
+      "fall": 4
+    }
   },
   {
     "key": "medieval_warrior",
     "name": "Medieval Warrior",
-    "scale": 2.2,
+    "scale": 3,
     "offset": 0,
     "flipX": false,
-    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump", "fall"]
+    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump", "fall"],
+    "frameCounts": {
+      "idle": 6,
+      "run": 8,
+      "attack1": 4,
+      "attack2": 4,
+      "jump": 2,
+      "death": 9,
+      "take_hit": 3,
+      "fall": 2
+    }
   },
   {
     "key": "medieval_warrior2",
     "name": "Royal Knight",
-    "scale": 2.3,
+    "scale": 5.5,
     "offset": 0,
     "flipX": false,
-    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump", "fall"]
+    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump", "fall"],
+    "frameCounts": {
+      "idle": 8,
+      "run": 8,
+      "attack1": 4,
+      "attack2": 4,
+      "jump": 2,
+      "death": 6,
+      "take_hit": 4,
+      "fall": 2
+    }
   },
   {
     "key": "medieval_warrior3",
     "name": "Shadow Knight",
-    "scale": 2.4,
+    "scale": 6,
     "offset": 0,
     "flipX": false,
-    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump"]
-  },
-  {
-    "key": "wizard",
-    "name": "Arcane Wizard",
-    "scale": 2.1,
-    "offset": 0,
-    "flipX": false,
-    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "jump", "fall"]
+    "animations": ["idle", "attack1", "attack2", "take_hit", "death", "run", "jump"],
+    "frameCounts": {
+      "idle": 10,
+      "run": 6,
+      "attack1": 4,
+      "attack2": 4,
+      "jump": 2,
+      "death": 9,
+      "take_hit": 4,
+      "fall": 2
+    }
   }
 ]

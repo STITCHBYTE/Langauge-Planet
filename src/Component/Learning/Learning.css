@@ -34,7 +34,8 @@ body {
   flex-direction: column;
   overflow: hidden;
   margin-left: 17%;
-  padding: 1rem;
+  padding: 0; /* Remove top padding since header is sticky */
+  transition: margin-left 0.3s ease-in-out;
 }
 
 .main-content-wrapper {
@@ -145,6 +146,10 @@ body {
   padding: 1.5rem 2rem;
   background-color: var(--bg-sidebar);
   border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1100; /* Above sidebar */
+  background-color: #ffffff;
 }
 
 .menu-toggle {

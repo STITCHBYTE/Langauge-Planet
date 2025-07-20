@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Server_url from '../../config.js';
 import { FiVolume2 } from 'react-icons/fi';
 import { FaCheckCircle, FaTimesCircle, FaFlag } from 'react-icons/fa';
+import useTrackTime from "../../hooks/useTrackTime.ts"; // Add this import at the top
 
 type MultipleChoiceAnswer = {
   id: string;
@@ -42,6 +43,8 @@ const LessonStudentStage: React.FC = () => {
   const [selected, setSelected] = useState<any>(null);
   const [showFeedback, setShowFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [translateOrder, setTranslateOrder] = useState<string[]>([]);
+  // Buffer for each translate exercise's answer
+  const [translateAnswers, setTranslateAnswers] = useState<{ [idx: number]: string[] }>({});
   const [matchedPairs, setMatchedPairs] = useState<{ [key: number]: boolean }>({});
   const [matchSelections, setMatchSelections] = useState<{ left?: string; right?: string }>({}); // <-- Move here
   const [draggedToken, setDraggedToken] = useState<string | null>(null);
@@ -64,9 +67,10 @@ const LessonStudentStage: React.FC = () => {
         });
         if (!res.ok) throw new Error('Failed to fetch exercises');
         const data = await res.json();
-        console.log(data);
+        console.log("[LessonStudentStage] Exercises fetched:", data);
         setExercises(data);
       } catch (err) {
+        console.error("[LessonStudentStage] Fetch error:", err);
         setExercises([]);
       } finally {
         setLoading(false);
@@ -77,13 +81,21 @@ const LessonStudentStage: React.FC = () => {
 
   useEffect(() => {
     setStartTime(Date.now());
+    console.log("[LessonStudentStage] Stage started at:", Date.now());
   }, []);
 
+  // Add this line after you have access to stageId and userId (studentId)
+  useTrackTime({
+    activityType: "stage",
+    activityId: stageId,
+    userId: localStorage.getItem('userId')
+  });
 
   // When finished, set endTime
   useEffect(() => {
     if (currentIdx === exercises.length) {
       setEndTime(Date.now());
+      console.log("[LessonStudentStage] Stage ended at:", Date.now());
     }
   }, [currentIdx, exercises.length]);
 
@@ -103,6 +115,18 @@ const LessonStudentStage: React.FC = () => {
 console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
   // Completion screen
   if (stageCompleted) {
+    // Format time: mm:ss if < 1 hour, hh:mm:ss if >= 1 hour
+    let formattedTimeDisplay = "00:00";
+    if (timeTaken >= 3600) {
+      const hours = Math.floor(timeTaken / 3600);
+      const mins = Math.floor((timeTaken % 3600) / 60);
+      const secs = timeTaken % 60;
+      formattedTimeDisplay = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    } else {
+      const mins = Math.floor(timeTaken / 60);
+      const secs = timeTaken % 60;
+      formattedTimeDisplay = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return (
       <div className="min-h-screen bg-white flex flex-col justify-center items-center">
         <div className="flex flex-col items-center">
@@ -117,23 +141,17 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
               <span className="text-base text-gray-500">Accuracy</span>
             </div>
             <div className="bg-white border rounded-xl shadow px-8 py-6 flex flex-col items-center">
-              <span className="text-4xl font-bold text-gray-900 mb-2">{formattedTime}</span>
-              <span className="text-base text-gray-500">Time</span>
+              <span className="text-4xl font-bold text-gray-900 mb-2">{formattedTimeDisplay}</span>
+              <span className="text-base text-gray-500">Total Time Taken</span>
             </div>
           </div>
         </div>
         <div className="absolute bottom-8 right-12 flex gap-4">
           <button
             className="border border-blue-600 text-blue-600 font-semibold px-8 py-3 rounded-lg bg-white hover:bg-blue-50 transition"
-            onClick={() => setStageCompleted(false)}
+            onClick={() => navigate(`/learning`)}
           >
             Back to Lesson
-          </button>
-          <button
-            className="bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg hover:bg-blue-700 transition"
-            onClick={() => navigate('/next-stage-url')}
-          >
-            Start Stage 2
           </button>
         </div>
       </div>
@@ -172,6 +190,8 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
     } else {
       setShowFeedback('incorrect');
     }
+    // Buffer the answer for this exercise
+    setTranslateAnswers(prev => ({ ...prev, [currentIdx]: [...translateOrder] }));
   };
 
   // Matchup Handlers
@@ -215,6 +235,10 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
 
   // Next Exercise
   const handleContinue = () => {
+    if (exercise.exercise_type === 'translate') {
+      // Buffer the answer for this exercise before moving on
+      setTranslateAnswers(prev => ({ ...prev, [currentIdx]: [...translateOrder] }));
+    }
     if (showFeedback === 'correct') {
       setCorrectCount(prev => prev + 1);
     }
@@ -226,7 +250,74 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
     if (currentIdx < exercises.length - 1) {
       setCurrentIdx(currentIdx + 1);
     } else {
+      const end = Date.now();
+      setEndTime(end);
       setStageCompleted(true);
+
+      // --- POST SUBMISSION TO BACKEND ---
+      const studentId = localStorage.getItem('userId'); // or get from context
+      const exerciseId = exercises.length > 0 ? exercises[0].id : null;
+      const timeTakenSeconds = Math.floor((end - startTime) / 1000);
+      // ISO 8601 duration string
+      const timeTakenISO = `PT${timeTakenSeconds}S`;
+
+      // Build answers array
+      const answers = exercises.map((ex, idx) => {
+        if (ex.exercise_type === 'multiple-choice') {
+          // selected_option: id of chosen answer
+          return {
+            selected_option: selected || ''
+          };
+        } else if (ex.exercise_type === 'matchup' || ex.exercise_type === 'word-match') {
+          // word_match_pairs: [{ term, definition }]
+          let pairs = [];
+          if (ex.word_match?.matches) {
+            pairs = ex.word_match.matches.map((pair, i) => {
+              // Try to get selected definition for each term
+              // If you store selectedDefs, use that, else fallback to pair.definition
+              return {
+                term: pair.term,
+                definition: pair.definition
+              };
+            });
+          }
+          return {
+            word_match_pairs: pairs
+          };
+        } else if (ex.exercise_type === 'translate') {
+          // Use buffered answer for this exercise
+          const selectedWords = translateAnswers[idx] || [];
+          return {
+            translated_phrase: selectedWords.join(' '),
+            selected_words: selectedWords
+          };
+        }
+        return null;
+      }).filter(Boolean);
+
+      if (exerciseId) {
+        fetch(`${Server_url}/api/lessons/quiz/${exerciseId}/submit/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify({
+            student: studentId,
+            stage_id: stageId,
+            time_taken: timeTakenISO,
+            answers
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          console.log('Quiz submitted:', data);
+        })
+        .catch(err => {
+          console.error('Quiz submit error:', err);
+        });
+      }
+      // --- END POST ---
     }
   };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import './FightingGame.css';
 
 interface CharacterProps {
+  key: string;
   name: string;
   initialX: number;
   images: { [key: string]: string };
@@ -9,74 +9,126 @@ interface CharacterProps {
   currentAction: string;
   onHitEffect: number;
   triggerActionAnimation: number;
-  isDodging?: boolean;
-  isHealing?: boolean;
+  frameCounts: { [key: string]: number };
+  scale?: number;
 }
 
-const FRAME_COUNTS = {
-    idle: 6,
-    run: 6,
-    walk: 6, // Map walk to run
-    attack1: 4,
-    attack2: 4,
-    jump: 8,
-    death: 10,
-    ko: 10, // Map ko to death
-};
-
-const Character: React.FC<CharacterProps> = ({ 
-  initialX, 
-  images, 
-  direction, 
-  currentAction
+const Character: React.FC<CharacterProps> = ({
+  initialX,
+  images,
+  direction,
+  currentAction,
+  frameCounts,
+  scale = 1,
 }) => {
   const [x, setX] = useState<number>(initialX);
-  
+  const [spriteSheetSize, setSpriteSheetSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+
+  // Provide safe default values to prevent crashes on the first render.
+  const safeAction = currentAction || 'idle';
+  const safeDirection = direction || 'right';
+
   useEffect(() => {
     setX(initialX);
   }, [initialX]);
 
-  const { animationName, animationDuration, frameCount } = useMemo(() => {
-    const action = currentAction || 'idle';
-    const count = FRAME_COUNTS[action as keyof typeof FRAME_COUNTS] || FRAME_COUNTS.idle;
+  // This hook determines all animation properties, including looping or one-shot.
+  const { animationName, animationDuration, frameCountValue, iterationCount, fillMode } = useMemo(() => {
+    const action = safeAction;
+    
+    const actionMap: { [key: string]: string } = {
+      'walk': 'run', 'ko': 'death', 'hit': 'take_hit', 'dodge': 'jump', 'heal': 'jump'
+    };
+    
+    const mappedAction = actionMap[action] || action;
+    const count = frameCounts?.[mappedAction] || frameCounts?.idle || 6;
+    
+    // Define which actions should only play once and then stop.
+    const oneShotActions = new Set(['attack1', 'attack2', 'hit', 'ko', 'death', 'jump', 'dodge']);
+    
+    let determinedIterationCount = 'infinite';
+    let determinedFillMode: 'forwards' | 'none' = 'none';
+
+    if (oneShotActions.has(action)) {
+        determinedIterationCount = '1';
+        determinedFillMode = 'forwards';
+    }
     
     return {
-      animationName: `sprite-anim-${action}`,
-      animationDuration: `${count * 0.1}s`, // Animation speed: 0.1s per frame
-      frameCount: count,
+      animationName: `sprite-anim-${mappedAction}-${count}`,
+      animationDuration: `${count * 0.1}s`,
+      frameCountValue: count,
+      iterationCount: determinedIterationCount,
+      fillMode: determinedFillMode,
     };
-  }, [currentAction]);
+  }, [safeAction, frameCounts]);
+
+  useEffect(() => {
+    const img = new window.Image();
+    const spriteUrl = images?.[`${safeAction}-${safeDirection}`] || images?.[`idle-${safeDirection}`];
+    if (spriteUrl) {
+        img.src = spriteUrl;
+        img.onload = () => {
+            setSpriteSheetSize({ width: img.naturalWidth, height: img.naturalHeight });
+        };
+    }
+  }, [images, safeAction, safeDirection]);
+
+  const frameWidth = (spriteSheetSize.width / frameCountValue) * scale;
+  const frameHeight = spriteSheetSize.height * scale;
 
   const characterStyle: React.CSSProperties = {
     position: 'absolute',
     left: `${x}px`,
     bottom: '50px',
-    width: '450px',
-    height: '450px',
+    width: frameWidth ? `${frameWidth}px` : '0px',
+    height: frameHeight ? `${frameHeight}px` : '0px',
     overflow: 'hidden',
-    transform: direction === 'right' ? 'scaleX(1)' : 'scaleX(-1)',
+    transform: safeDirection === 'right' ? 'scaleX(1)' : 'scaleX(-1)',
     transition: 'left 0.1s linear',
     zIndex: 10,
     filter: 'drop-shadow(3px 5px 5px rgba(0,0,0,0.5))',
   };
 
   const spriteStyle: React.CSSProperties = {
-    width: `${frameCount * 100}%`, // Make the sprite container wide enough for all frames
-    height: '100%',
-    backgroundImage: `url(${images[`${currentAction}-${direction}`] || images[`idle-${direction}`]})`,
+    width: `${frameWidth * frameCountValue}px`,
+    height: `${frameHeight}px`,
+    backgroundImage: `url(${images?.[`${safeAction}-${safeDirection}`] || images?.[`idle-${safeDirection}`]})`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: '0% 0%',
-    backgroundSize: '100% 100%',
+    backgroundSize: 'cover',
     animationName: animationName,
     animationDuration: animationDuration,
-    animationIterationCount: 'infinite',
-    animationTimingFunction: `steps(${frameCount})`, // Jumps between frames
+    animationIterationCount: iterationCount,
+    animationFillMode: fillMode,
+    animationTimingFunction: `steps(${frameCountValue})`,
     imageRendering: 'pixelated',
   };
 
+  useEffect(() => {
+    const styleId = `sprite-animation-${animationName}`;
+    if (document.getElementById(styleId)) return;
+    const styleElement = document.createElement('style');
+    styleElement.id = styleId;
+    styleElement.textContent = `
+      @keyframes ${animationName} {
+        to {
+          transform: translateX(-100%);
+        }
+      }
+    `;
+    document.head.appendChild(styleElement);
+    return () => {
+      const element = document.getElementById(styleId);
+      if (element) {
+        element.remove();
+      }
+    };
+  }, [animationName]);
+
   return (
     <div style={characterStyle}>
-        <div style={spriteStyle} />
+      <div style={spriteStyle} />
     </div>
   );
 };

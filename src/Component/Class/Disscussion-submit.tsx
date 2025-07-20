@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, FormEvent, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google'; // Import Google Auth components
 import Sidebar from '../Home/Sidebar.tsx';
 import Header from '../Home/Header.tsx';
 import Server_url, { client_id } from '../../config.js'; // Import client_id
 import { useView } from '../../Context/ViewContext.tsx';
-import { FiArrowLeft, FiUpload, FiPlay, FiDownload, FiLogIn } from 'react-icons/fi';
+import { FiArrowLeft, FiUpload, FiPlay, FiDownload, FiLogIn, FiMessageCircle, FiUser, FiClock, FiSend } from 'react-icons/fi';
 import {toast} from 'react-toastify';
 import axios from 'axios'; // Import axios
+import useTrackTime from "../../hooks/useTrackTime.ts"; // Adjust path as needed
 
 interface DiscussionData {
   id: string;
@@ -38,7 +39,7 @@ interface Question {
   id: string;
   question_text: string;
   points: number;
-  question_type: 'text' | 'file_upload' | 'multiple_choice';
+  answer_type: 'TEXT' | 'FILE' | 'MULTIPLE_CHOICE';
   options?: string[];
 }
 
@@ -46,6 +47,26 @@ interface Answer {
   question_id: string;
   answer_text?: string;
   file?: File;
+}
+
+// --- NEW Interfaces for Forum ---
+interface Reply {
+  id: number;
+  thread: number;
+  parent: number | null;
+  author: { username: string };
+  message: string;
+  created_at: string;
+}
+
+interface Thread {
+  id: number;
+  classroom: string;
+  author: { username: string };
+  title: string;
+  message: string;
+  created_at: string;
+  replies: Reply[];
 }
 
 // Move helper functions here
@@ -169,9 +190,88 @@ const DiscussionSubmitContent: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [submittedAssignments, setSubmittedAssignments] = useState<string[]>([]);
   
+  // --- NEW State for Forum ---
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [newReplyContent, setNewReplyContent] = useState('');
+
   // State for Google Login Modal
   const [showGoogleLoginModal, setShowGoogleLoginModal] = useState(false);
   const [pendingGoogleAssignment, setPendingGoogleAssignment] = useState<Assignment | null>(null);
+
+  const fetchData = useCallback(async () => {
+    const token = localStorage.getItem('authToken');
+    if (!discussionId) {
+        setError("Discussion ID is missing.");
+        setLoading(false);
+        return;
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // 1. Fetch discussion details
+      const discussionResponse = await fetch(`${Server_url}/api/classrooms/discussions/${discussionId}/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!discussionResponse.ok) throw new Error('Failed to fetch discussion data');
+      const discussionData = await discussionResponse.json();
+      setDiscussionData(discussionData);
+
+      // 2. Fetch assignments associated with this discussion
+      const assignmentsResponse = await fetch(`${Server_url}/api/classrooms/discussions/${discussionId}/assignments/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (assignmentsResponse.ok) {
+        const assignmentsData = await assignmentsResponse.json();
+        const assignmentsList = Array.isArray(assignmentsData) ? assignmentsData : assignmentsData.results || [];
+        setAssignments(assignmentsList);
+
+        const allQuestions = assignmentsList.flatMap((assignment: Assignment) => assignment.questions || []);
+        setAnswers(allQuestions.map((q: Question) => ({
+          question_id: q.id,
+          answer_text: '',
+          file: undefined
+        })));
+      }
+
+      // 3. Fetch Forum Threads for this discussion
+      const threadsRes = await fetch(`${Server_url}/api/forums/discussion/${discussionId}/threads/`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (threadsRes.status === 404) {
+          setThreads([]);
+      } else if (threadsRes.ok) {
+          const threadsData = await threadsRes.json();
+          const threadsWithReplies = await Promise.all(threadsData.map(async (thread: Thread) => {
+              const repliesRes = await fetch(`${Server_url}/api/forums/thread/${thread.id}/replies/`, {
+                   headers: { 'Authorization': `Bearer ${token}` }
+              });
+              const repliesData = repliesRes.ok ? await repliesRes.json() : [];
+              return { ...thread, replies: repliesData.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) };
+          }));
+          setThreads(threadsWithReplies);
+      }
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [discussionId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // --- REAL Google Login Handler ---
   const login = useGoogleLogin({
@@ -264,7 +364,7 @@ const DiscussionSubmitContent: React.FC = () => {
 
 
   // This function will contain the actual submission logic
-  const proceedWithSubmission = async (assignmentToSubmit: Assignment) => {
+  const proceedWithSubmission = async (assignmentToSubmit: Assignment, skipGoogle: boolean = false) => {
     console.log(`[DEBUG] --- Starting submission for: "${assignmentToSubmit.title}" ---`);
     const token = localStorage.getItem('authToken');
     const studentGoogleToken = localStorage.getItem('googleClassroomToken');
@@ -276,9 +376,10 @@ const DiscussionSubmitContent: React.FC = () => {
       console.log('[DEBUG] Assignment Data:', assignmentToSubmit);
       console.log('[DEBUG] Is this a Google Classroom assignment?', isGoogleAssignment);
       console.log('[DEBUG] Does the student have a Google token?', !!studentGoogleToken);
+      console.log('[DEBUG] Was Google submission skipped by user?', skipGoogle);
 
-      // 1. Submit to Google Classroom FIRST if applicable
-      if (isGoogleAssignment && studentGoogleToken) {
+      // 1. Submit to Google Classroom FIRST if applicable and not skipped
+      if (isGoogleAssignment && studentGoogleToken && !skipGoogle) {
         console.log('[DEBUG] Conditions met. Attempting to submit to Google Classroom first.');
         toast.info('Turning in on Google Classroom...', { id: 'google-turn-in' });
         try {
@@ -295,38 +396,56 @@ const DiscussionSubmitContent: React.FC = () => {
           throw googleError;
         }
       } else {
-        console.log('[DEBUG] Skipping Google Classroom submission. Conditions not met.');
+        console.log('[DEBUG] Skipping Google Classroom submission. Conditions not met or skip was requested.');
       }
       
       // 2. Submit to Learning Planet Database
       console.log('[DEBUG] Proceeding with submission to Language Planet server.');
       toast.info('Submitting to Language Planet...', { id: 'lp-submit' });
       
-      // Prepare answers payload
-      const answersPayload = [];
+      const formData = new FormData();
+      formData.append('assignment', assignmentToSubmit.id);
+      // Add the skip flag to the payload if true
+      if (skipGoogle) {
+        formData.append('google_submission_skipped', 'true');
+      }
+
+      const textAnswersPayload = [];
+
       for (const question of assignmentToSubmit.questions || []) {
         const userAnswer = answers.find(answer => answer.question_id === question.id);
-        if (userAnswer && (userAnswer.answer_text || userAnswer.file)) {
-          if (question.question_type === 'file_upload' && userAnswer.file) {
-            const base64File = await toBase64(userAnswer.file);
-            answersPayload.push({ question: question.id, answer_file: base64File });
-          } else if (userAnswer.answer_text) {
-            answersPayload.push({ question: question.id, answer_text: userAnswer.answer_text });
-          }
+        if (!userAnswer) continue;
+
+        if (question.answer_type === 'FILE' && userAnswer.file) {
+          // Append the file directly to the form data for this question
+          formData.append(`answer_file_${question.id}`, userAnswer.file);
+        } else if (question.answer_type === 'TEXT' && userAnswer.answer_text) {
+          // Add text answers to a separate array to be JSON stringified
+          textAnswersPayload.push({
+            question: question.id,
+            answer_text: userAnswer.answer_text,
+          });
         }
       }
 
-      const submissionBody = {
-        assignment: assignmentToSubmit.id,
-        answers: answersPayload,
-      };
+      // Append the JSON string of text answers if there are any
+      if (textAnswersPayload.length > 0) {
+        formData.append('answers', JSON.stringify(textAnswersPayload));
+      }
 
-      console.log('[DEBUG] Payload for Language Planet server:', submissionBody);
+      console.log('[DEBUG] Payload for Language Planet server (FormData)');
+      // Log formData entries for debugging
+      for (let [key, value] of formData.entries()) {
+        console.log(`[FormData] ${key}:`, value);
+      }
 
       const response = await fetch(`${Server_url}/api/classrooms/assignment-submissions/create/`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(submissionBody),
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          // 'Content-Type' is intentionally omitted; the browser sets it for FormData
+        },
+        body: formData,
       });
 
       const responseData = await response.json(); // Get JSON response regardless of status
@@ -377,6 +496,16 @@ const DiscussionSubmitContent: React.FC = () => {
         // User is logged in, so let's start the search.
         await findGoogleIdsAndCreateSubmission(assignment, studentGoogleToken);
       }
+    }
+  };
+
+  // Function to handle skipping Google submission from the modal
+  const handleSkipAndSubmit = async () => {
+    if (pendingGoogleAssignment) {
+      console.log('[DEBUG] User chose to skip Google Classroom submission.');
+      setShowGoogleLoginModal(false);
+      // Proceed with submission, passing the 'skipGoogle' flag as true
+      await proceedWithSubmission(pendingGoogleAssignment, true);
     }
   };
 
@@ -435,17 +564,26 @@ const DiscussionSubmitContent: React.FC = () => {
           })));
         }
 
-        // Check for existing submissions to update the UI
-        const submissionsResponse = await fetch(`${Server_url}/api/classrooms/discussion/${discussionId}/my-submissions/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
+        // 3. Fetch Forum Threads for this discussion
+        const threadsRes = await fetch(`${Server_url}/api/forums/discussion/${discussionId}/threads/`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (submissionsResponse.ok) {
-            const submissionsData = await submissionsResponse.json();
-            const submittedIds = submissionsData.map((sub: any) => sub.assignment);
-            setSubmittedAssignments(submittedIds);
+        if (threadsRes.status === 404) {
+            setThreads([]);
+        } else if (threadsRes.ok) {
+            const threadsData = await threadsRes.json();
+            const threadsWithReplies = await Promise.all(threadsData.map(async (thread: Thread) => {
+                const repliesRes = await fetch(`${Server_url}/api/forums/thread/${thread.id}/replies/`, {
+                     headers: { 'Authorization': `Bearer ${token}` }
+              });
+              const repliesData = repliesRes.ok ? await repliesRes.json() : [];
+              return { ...thread, replies: repliesData.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) };
+            }));
+            setThreads(threadsWithReplies);
         }
+
+        // The 'my-submissions' endpoint does not exist, so this block is removed.
+        // The 'submittedAssignments' state will now only be managed locally during the session
 
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -457,6 +595,40 @@ const DiscussionSubmitContent: React.FC = () => {
 
     fetchData();
   }, [discussionId]);
+
+  // --- NEW: Handler for creating a reply ---
+  const handleCreateReply = async (e: FormEvent) => {
+    e.preventDefault();
+    const mainThread = threads[0];
+    if (!newReplyContent.trim() || !mainThread) return;
+    const token = localStorage.getItem('authToken');
+    try {
+        const response = await fetch(`${Server_url}/api/forums/thread/reply/`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              thread: mainThread.id,
+              message: newReplyContent 
+            })
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to post reply.');
+        }
+        await fetchData(); // Refetch all data to show the new reply
+        setNewReplyContent('');
+        toast.success("Reply posted!");
+    } catch (err: any) {
+        toast.error(err.message);
+    }
+  };
+
+  // Add this line at the top, after you have access to discussionId and currentUser
+  useTrackTime({
+    activityType: "discussion", // or "assignment" if you want to track per-assignment
+    activityId: discussionId,
+    userId: currentUser?.id
+  });
 
   const handleGoBack = () => {
     navigate(-1);
@@ -776,46 +948,59 @@ const DiscussionSubmitContent: React.FC = () => {
                           <p className="text-sm text-gray-500 mb-6">
                             DUE BY: {assignment.due_date ? formatDueDate(assignment.due_date) : 'MON 17 MAR • 12:00PM'}
                           </p>
-                          {assignment.questions?.map((question, questionIndex) => (
-                            <div key={question.id} className="mb-6">
-                              <div className={`bg-blue-50 rounded-lg p-4 mb-4 ${!unlocked || submitted ? 'opacity-50 pointer-events-none' : ''}`}>
-                                <h3 className="text-blue-600 font-semibold mb-2">
-                                  Question {questionIndex + 1}
-                                </h3>
-                                <p className="text-gray-700 text-sm mb-4">
-                                  {question.question_text}
-                                </p>
-                                <div className="mb-4">
-                                  <p className="text-xs text-gray-500 mb-2">
-                                    {question.question_type === 'file_upload' ? 'UPLOAD ANSWER' : 'ENTER ANSWER'} ({question.points} Points)
+                          {assignment.questions?.map((question, questionIndex) => {
+                            const currentAnswer = answers.find(a => a.question_id === question.id);
+                            return (
+                              <div key={question.id} className="mb-6">
+                                <div className={`bg-blue-50 rounded-lg p-4 mb-4 ${!unlocked || submitted ? 'opacity-50 pointer-events-none' : ''}`}>
+                                  <h3 className="text-blue-600 font-semibold mb-2">
+                                    Question {questionIndex + 1}
+                                  </h3>
+                                  <p className="text-gray-700 text-sm mb-4">
+                                    {question.question_text}
                                   </p>
-                                  {question.question_type === 'file_upload' ? (
-                                    <label className="block cursor-pointer">
-                                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                                        <FiUpload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                        <p className="text-sm font-medium text-gray-600 mb-1">Tap to Upload</p>
-                                        <p className="text-xs text-gray-400">SVG, PNG, JPG, GIF | 10MB max.</p>
-                                      </div>
-                                      <input 
-                                        type="file" 
-                                        className="hidden" 
-                                        accept=".svg,.png,.jpg,.jpeg,.gif,.pdf,.doc,.docx"
-                                        onChange={(e) => e.target.files?.[0] && handleFileUpload(question.id, e.target.files[0])}
+                                  <div className="mb-4">
+                                    <p className="text-xs text-gray-500 mb-2">
+                                      {question.answer_type === 'FILE' ? 'UPLOAD ANSWER' : 'ENTER ANSWER'} ({question.points} Points)
+                                    </p>
+                                    {question.answer_type === 'FILE' ? (
+                                      <label className="block cursor-pointer">
+                                        {currentAnswer?.file ? (
+                                          <div className="border-2 border-dashed border-green-400 bg-green-50 rounded-lg p-6 text-center">
+                                            <FiUpload className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                                            <p className="text-sm font-medium text-green-700 mb-1">File Ready for Upload</p>
+                                            <p className="text-xs text-gray-500 truncate" title={currentAnswer.file.name}>
+                                              {currentAnswer.file.name}
+                                            </p>
+                                          </div>
+                                        ) : (
+                                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                                            <FiUpload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                            <p className="text-sm font-medium text-gray-600 mb-1">Tap to Upload</p>
+                                            <p className="text-xs text-gray-400">SVG, PNG, JPG, GIF | 10MB max.</p>
+                                          </div>
+                                        )}
+                                        <input 
+                                          type="file" 
+                                          className="hidden" 
+                                          accept=".svg,.png,.jpg,.jpeg,.gif,.pdf,.doc,.docx"
+                                          onChange={(e) => e.target.files?.[0] && handleFileUpload(question.id, e.target.files[0])}
+                                          disabled={!unlocked || submitted}
+                                        />
+                                      </label>
+                                    ) : (
+                                      <textarea
+                                        className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                        placeholder="Type your answer here..."
+                                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                                         disabled={!unlocked || submitted}
                                       />
-                                    </label>
-                                  ) : (
-                                    <textarea
-                                      className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                      placeholder="Type your answer here..."
-                                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                      disabled={!unlocked || submitted}
-                                    />
-                                  )}
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                           <button
                             onClick={() => handleAssignmentSubmit(assignment, assignmentIndex)}
                             disabled={!unlocked || submitted || submitting}
@@ -837,6 +1022,18 @@ const DiscussionSubmitContent: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* --- NEW: Discussion Forum Section --- */}
+            <div className="mt-8">
+              {threads.length > 0 && (
+                <DiscussionForumView 
+                  thread={threads[0]}
+                  replyContent={newReplyContent}
+                  onReplyChange={setNewReplyContent}
+                  onReplySubmit={handleCreateReply}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -847,7 +1044,7 @@ const DiscussionSubmitContent: React.FC = () => {
           <div className="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center">
             <h2 className="text-2xl font-bold mb-4">Google Classroom Submission</h2>
             <p className="text-gray-600 mb-6">
-              To turn in this assignment on Google Classroom, please log in with your Google account.
+              To turn in this assignment on Google Classroom, please log in. You can also skip this step and submit only to Language Planet.
             </p>
             <button
               onClick={handleGoogleLogin}
@@ -857,14 +1054,20 @@ const DiscussionSubmitContent: React.FC = () => {
               Login with Google to Submit
             </button>
             <button
+              onClick={handleSkipAndSubmit}
+              className="w-full mt-3 bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+            >
+              Skip & Submit to Language Planet
+            </button>
+            <button
               onClick={() => {
                 setShowGoogleLoginModal(false);
                 setPendingGoogleAssignment(null);
-                toast.info('You can submit to Google Classroom later.', { icon: 'ℹ️' });
+                toast.dismiss('google-login');
               }}
-              className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700"
+              className="w-full mt-4 text-sm text-gray-500 hover:text-gray-800"
             >
-              Skip for now
+              Cancel
             </button>
           </div>
         </div>
@@ -873,7 +1076,87 @@ const DiscussionSubmitContent: React.FC = () => {
   );
 };
 
-// The main exported component will now just be the provider wrapper
+// --- NEW: Forum Display Component ---
+interface DiscussionForumViewProps {
+  thread: Thread;
+  replyContent: string;
+  onReplyChange: (value: string) => void;
+  onReplySubmit: (e: FormEvent) => void;
+}
+
+const DiscussionForumView: React.FC<DiscussionForumViewProps> = ({ thread, replyContent, onReplyChange, onReplySubmit }) => {
+  return (
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="flex items-center mb-4">
+        <div className="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+          {(thread.author?.username ?? 'A').charAt(0).toUpperCase()}
+        </div>
+        <div className="ml-3">
+          <p className="text-sm font-semibold text-gray-800">{thread.author?.username ?? 'Anonymous'}</p>
+          <p className="text-xs text-gray-500">
+            {new Date(thread.created_at).toLocaleString('en-US', { 
+              weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', 
+              hour: '2-digit', minute: '2-digit', hour12: true 
+            })}
+          </p>
+        </div>
+      </div>
+
+      <h3 className="text-lg font-bold text-gray-900 mb-2">{thread.title}</h3>
+      <p className="text-gray-700 mb-4">{thread.message}</p>
+
+      {/* --- REPLIES SECTION --- */}
+      <div className="border-t border-gray-200 pt-4 mt-4">
+        <h4 className="text-md font-semibold text-gray-800 mb-2">Replies ({thread.replies.length})</h4>
+        {thread.replies.length === 0 ? (
+          <p className="text-gray-500 text-sm italic">No replies yet. Be the first to reply!</p>
+        ) : (
+          <div className="space-y-4">
+            {thread.replies.map(reply => (
+              <div key={reply.id} className="flex items-start">
+                <div className="flex-shrink-0 w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  {(reply.author?.username ?? 'A').charAt(0).toUpperCase()}
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-semibold text-gray-800">{reply.author?.username ?? 'Anonymous'}</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(reply.created_at).toLocaleString('en-US', { 
+                      weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', 
+                      hour: '2-digit', minute: '2-digit', hour12: true 
+                    })}
+                  </p>
+                  <p className="text-gray-700 mt-1">{reply.message}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* --- REPLY FORM --- */}
+      <div className="mt-4">
+        <h4 className="text-md font-semibold text-gray-800 mb-2">Leave a Reply</h4>
+        <form onSubmit={onReplySubmit} className="flex flex-col">
+          <textarea
+            value={replyContent}
+            onChange={(e) => onReplyChange(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none mb-2"
+            placeholder="Type your reply here..."
+            rows={3}
+          />
+          <button
+            type="submit"
+            className="self-end bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Post Reply
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Create a new wrapper component to provide the Google Auth context
 const DiscussionSubmitPage: React.FC = () => {
   return (
     <GoogleOAuthProvider clientId={client_id}>
@@ -881,15 +1164,5 @@ const DiscussionSubmitPage: React.FC = () => {
     </GoogleOAuthProvider>
   );
 };
-
-// Helper for file to base64
-async function toBase64(file: File): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-  });
-}
 
 export default DiscussionSubmitPage;

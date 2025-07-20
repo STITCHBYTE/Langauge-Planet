@@ -183,45 +183,28 @@ const ClassDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div >
       <Header />
-      <div className="flex flex-1">
-        {/* Sidebar */}
+      <div >
         <div className="w-64 bg-white shadow-md fixed left-0 top-0 h-full">
           <Sidebar />
         </div>
-        
-        {/* Main Content */}
         <div className="flex-1 ml-64 p-6">
           <div className="max-w-7xl mx-auto">
-            {/* Header with breadcrumb */}
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column - Class Content */}
               <div className="lg:col-span-2">
-                {/* Class Header */}
                 <div className="bg-white rounded-lg p-6 mb-6">
                   <div className="flex items-start space-x-4">
-                    {/* Book Icon */}
                     <div className="flex-shrink-0">
-                      {/* <div className="w-24 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center relative overflow-hidden"> */}
-                        {/* <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-green-400 rounded-lg transform rotate-6"></div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-400 rounded-lg transform -rotate-3"></div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-400 rounded-lg"></div> */}
-                        {/* Use class image if available, otherwise fallback to default */}
                         <img 
                           src={classData?.image_url || classData?.image || 'https://via.placeholder.com/96x80/4ade80/ffffff?text=📚'} 
                           alt={`${classData?.title} class image`}
                           className="relative w-16 h-16 object-cover rounded-md z-10"
                           onError={(e) => {
-                            // Fallback to placeholder if image fails to load
                             e.currentTarget.src = 'https://via.placeholder.com/96x80/4ade80/ffffff?text=📚';
                           }}
                         />
                       </div>
-                    {/* </div> */}
-                    
-                    {/* Class Info */}
                     <div className="flex-1">
                       <h1 className="text-3xl font-bold text-gray-900 mb-2">
                         {classData?.title || 'Culture in Spanish'}
@@ -229,8 +212,6 @@ const ClassDetailPage: React.FC = () => {
                       <p className="text-gray-600 mb-4 leading-relaxed">
                         {classData?.description || 'Lorem ipsum dolor sit amet consectetur. Tincidunt faucibus ut tincidunt malesuada sed quam ac rhoncus. Nisl diam nibh lobortis scelerisque. Nunc sed porta arcu malesuada felis ut aliquam diam.'}
                       </p>
-                      
-                      {/* Class Stats */}
                       <div className="flex items-center space-x-6 text-sm text-gray-600">
                         <div className="flex items-center space-x-2">
                           <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
@@ -252,18 +233,13 @@ const ClassDetailPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Discussions Section */}
                 <div className="bg-white rounded-lg p-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-1">DISCUSSIONS</h2>
                   
                   <div className="space-y-4 mt-6">
                     {discussions.length > 0 ? (
                       discussions.map((discussion, index) => {
-                        // Find the assignment linked to this discussion (if any)
                         const relatedAssignment = assignments.find(a => a.discussion === discussion.id);
-                        // For the first discussion, always unlocked
-                        // For others, unlocked only if previous assignment is submitted
                         let isLocked = false;
                         if (index === 0) {
                           isLocked = false;
@@ -273,7 +249,6 @@ const ClassDetailPage: React.FC = () => {
                           if (prevAssignment) {
                             isLocked = !submittedAssignments.includes(prevAssignment.id);
                           } else {
-                            // If no assignment for previous discussion, keep unlocked
                             isLocked = false;
                           }
                         }

@@ -1,31 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import Sidebar from './Sidebar.tsx';
+import { LanguageIcon, BookOpenIcon, UsersIcon } from './DashboardIcons.tsx';
 import { useNavigate } from 'react-router-dom';
-
-// --- SVG Icon Components ---
-
-const HomeIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-  </svg>
-);
-
-const LanguageIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m4 13l4-4M19 9l-4 4M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-  </svg>
-);
-
-const BookOpenIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-  </svg>
-);
-
-const UsersIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197M15 11a4 4 0 110-5.292" />
-  </svg>
-);
+import Server_url from "../config";
 
 const BellIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -123,6 +100,32 @@ const BarChart: React.FC<BarChartProps> = ({ data }) => {
 
 const App: React.FC = () => {
     const navigate = useNavigate();
+    const [totalStudents, setTotalStudents] = useState<number>(0);
+    const [totalTeachers, setTotalTeachers] = useState<number>(0);
+
+    useEffect(() => {
+        const fetchCounts = async () => {
+            const token = localStorage.getItem('authToken');
+            // Fetch students
+            const studentsRes = await fetch(`${Server_url}/api/users/students/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (studentsRes.ok) {
+                const studentsData = await studentsRes.json();
+                setTotalStudents(Array.isArray(studentsData.results) ? studentsData.results.length : studentsData.length);
+            }
+            // Fetch teachers
+            const teachersRes = await fetch(`${Server_url}/api/users/teachers/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (teachersRes.ok) {
+                const teachersData = await teachersRes.json();
+                setTotalTeachers(Array.isArray(teachersData.results) ? teachersData.results.length : teachersData.length);
+            }
+        };
+        fetchCounts();
+    }, []);
+
     const chartData = [
         { day: 'Mon', lesson: 2.5, class: 3.2, quiz: 1.8 },
         { day: 'Tue', lesson: 1.5, class: 2.1, quiz: 1.2 },
@@ -135,39 +138,7 @@ const App: React.FC = () => {
 
     return (
         <div className="flex h-screen bg-gray-100 font-sans">
-            {/* Sidebar */}
-            <aside className="w-64 bg-white flex flex-col border-r">
-                <div className="h-20 flex items-center px-6 border-b">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">L</div>
-                    <span className="ml-3 text-lg font-bold text-gray-800">Language Planet</span>
-                </div>
-                <nav className="flex-1 p-4 space-y-2">
-                    <NavItem icon={<HomeIcon className="w-5 h-5" />} label="Dashboard" active />
-                    <NavItem
-                        icon={<LanguageIcon className="w-5 h-5" />}
-                        label="Languages"
-                        active={false}
-                        onClick={() => navigate('/admin/languages')}
-                    />
-                    <NavItem icon={<BookOpenIcon className="w-5 h-5" />} label="Lessons" onClick={() => navigate('/admin/lessons')} />
-                    <NavItem icon={<UsersIcon className="w-5 h-5" />} label="Students" onClick={() => navigate('/admin/students')} />
-                    <NavItem icon={<UsersIcon className="w-5 h-5" />} label="Teachers" onClick={() => navigate('/admin/teachers')} />
-                </nav>
-                <div className="p-4 border-t">
-                    <div className="flex items-center">
-                        <img src="https://placehold.co/40x40/E0E7FF/4F46E5?text=VA" alt="Victoria Akudo" className="w-10 h-10 rounded-full" />
-                        <div className="ml-3">
-                            <p className="font-semibold text-sm text-gray-800">Victoria Akudo</p>
-                            <p className="text-xs text-gray-500">victoria@example.com</p>
-                        </div>
-                        <button className="ml-auto text-gray-500 hover:text-gray-700">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                        </button>
-                    </div>
-                </div>
-            </aside>
-
-            {/* Main Content */}
+            <Sidebar />
             <main className="flex-1 flex flex-col">
                 {/* Header */}
                 <header className="h-20 bg-white border-b flex items-center px-8 justify-between">
@@ -192,7 +163,10 @@ const App: React.FC = () => {
                             <div className="bg-white p-6 rounded-lg shadow-sm">
                                 <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <button className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-blue-500 transition-colors">
+                                    <button
+                                        className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-blue-500 transition-colors"
+                                        onClick={() => navigate("/admin/languages")}
+                                    >
                                         <span className="text-2xl mr-3">+</span> Add New Language
                                     </button>
                                     <button className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-blue-500 transition-colors">
@@ -272,8 +246,8 @@ const App: React.FC = () => {
                                 <div className="space-y-4">
                                     <MetricCard icon={<LanguageIcon className="w-6 h-6 text-blue-500"/>} label="Total Languages" value="10" percentage={56.80} />
                                     <MetricCard icon={<BookOpenIcon className="w-6 h-6 text-blue-500"/>} label="Total Lessons" value="100" percentage={56.80} />
-                                    <MetricCard icon={<UsersIcon className="w-6 h-6 text-blue-500"/>} label="Total Students" value="3,123" percentage={56.80} />
-                                    <MetricCard icon={<UsersIcon className="w-6 h-6 text-blue-500"/>} label="Total Teachers" value="27" percentage={56.80} />
+                                    <MetricCard icon={<UsersIcon className="w-6 h-6 text-blue-500"/>} label="Total Students" value={totalStudents.toLocaleString()} percentage={56.80} />
+                                    <MetricCard icon={<UsersIcon className="w-6 h-6 text-blue-500"/>} label="Total Teachers" value={totalTeachers.toLocaleString()} percentage={56.80} />
                                 </div>
                             </div>
                         </div>

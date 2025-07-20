@@ -624,12 +624,12 @@ const AddStagePage: React.FC = () => {
                                   <p className="text-xs text-slate-400 mt-1">Max. of 16 points</p>
                                 </div>
                               </div>
-                              <div className="mt-8 pt-6">
+                              {/* <div className="mt-8 pt-6">
                                 <button className="flex items-center justify-center w-full max-w-xs mx-auto px-6 py-2.5 border border-blue-600 text-blue-600 text-sm font-semibold rounded-lg hover:bg-blue-50">
                                   Save Details & Continue
                                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                                 </button>
-                              </div>
+                              </div> */}
                             </div>
                           )}
                           {activeTab === 'exercises' && (

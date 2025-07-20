@@ -27,11 +27,23 @@ const StudentsPage = () => {
   const [showRequestedModal, setShowRequestedModal] = useState(false); // State for new modal
 
   useEffect(() => {
-    if (classId) {
-      fetchClassData();
-      fetchEnrolledStudents();
-      fetchAllTeacherStudents();
-    }
+    const fetchData = async () => {
+      if (classId) {
+        setLoading(true);
+        try {
+          // Fetch data in order to prevent race conditions
+          await fetchClassData();
+          await fetchAllTeacherStudents(); // Must complete first
+          await fetchEnrolledStudents();   // So this has the data it needs
+        } catch (error) {
+          console.error("Error during initial data fetch:", error);
+          toast.error("Failed to load class details.");
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchData();
   }, [classId]);
 
   const fetchClassData = async () => {
@@ -58,7 +70,6 @@ const StudentsPage = () => {
   };
 
   const fetchEnrolledStudents = async () => {
-    setLoading(true);
     const token = localStorage.getItem('authToken');
     
     try {
@@ -74,13 +85,39 @@ const StudentsPage = () => {
       if (!response.ok) throw new Error('Failed to fetch enrolled students');
       
       const data = await response.json();
-      console.log('Enrolled students data:', data);
 
       // Filter out rejected students first
       const validMemberships = data.filter(item => item.status !== 'REJECTED');
 
-      const transformedStudents = validMemberships.map((item) => {
-        const studentDetails = allTeacherStudents.find(s => s.email === item.student);
+      let transformedStudents = await Promise.all(validMemberships.map(async (item) => {
+        // Handle both string and object formats for student data
+        const studentEmail = typeof item.student === 'string' ? item.student : item.student?.email;
+
+        // Defensive check to prevent crash on malformed data
+        if (!studentEmail) {
+          console.warn('Skipping a student record due to incomplete data from API:', item);
+          return null; // This record will be filtered out later
+        }
+
+        const studentDetails = allTeacherStudents.find(s => s.email === studentEmail);
+        
+        // The studentId must come from the detailed record found in allTeacherStudents.
+        const studentId = studentDetails?.id;
+        let totalPoints = 0;
+
+        if (studentId) {
+            try {
+                const submissionsRes = await fetch(`${Server_url}/api/classrooms/assignment-submissions/?student=${studentId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (submissionsRes.ok) {
+                    const submissions = await submissionsRes.json();
+                    totalPoints = submissions.reduce((acc, submission) => acc + (submission.score || 0), 0);
+                }
+            } catch (scoreError) {
+                console.error(`Failed to fetch scores for enrolled student ${studentId}:`, scoreError);
+            }
+        }
 
         // Determine student's status from the new API field
         let status;
@@ -92,10 +129,9 @@ const StudentsPage = () => {
           status = 'Requested';
         }
 
-        const studentName = studentDetails ? studentDetails.name : item.student.split('@')[0];
-        const studentUsername = studentDetails ? studentDetails.username : `@${item.student.split('@')[0]}`;
-        const studentInitial = studentDetails ? studentDetails.initial : item.student[0].toUpperCase();
-        const studentId = studentDetails ? studentDetails.id : item.student; // Use email as fallback ID
+        const studentName = studentDetails ? studentDetails.name : studentEmail.split('@')[0];
+        const studentUsername = studentDetails ? studentDetails.username : `@${studentEmail.split('@')[0]}`;
+        const studentInitial = studentDetails ? studentDetails.initial : studentEmail[0].toUpperCase();
 
         return {
           id: studentId,
@@ -104,13 +140,16 @@ const StudentsPage = () => {
           username: studentUsername,
           initial: studentInitial,
           dateJoined: new Date(item.created_at).toLocaleDateString(),
-          // Use mock/default data for fields not present in the new API response
-          learningPoints: 150,
+          learningPoints: totalPoints, // Use calculated points
           assignmentsCompleted: Math.floor(Math.random() * 10) + 1,
           avgTimeInClass: `${Math.floor(Math.random() * 60) + 20} Mins`,
-          status: status
+          status: status,
+          email: studentEmail
         };
-      });
+      }));
+
+      // Filter out any null records that were skipped due to incomplete data
+      transformedStudents = transformedStudents.filter(student => student !== null);
 
       // Students for the main table (Active and Invited)
       const enrolled = transformedStudents.filter(
@@ -122,16 +161,8 @@ const StudentsPage = () => {
 
     } catch (error) {
       console.error('Error fetching enrolled students:', error);
-      const mockData = [
-        { id: 1, enrollmentId: 101, name: 'Emery Torff', username: '@emery', initial: 'E', dateJoined: '16/03/2024', learningPoints: 150, assignmentsCompleted: 8, avgTimeInClass: '2 Hrs', status: 'Active' },
-        { id: 2, enrollmentId: 102, name: 'Maren Dokidis', username: '@maren', initial: 'M', dateJoined: '16/03/2024', learningPoints: 150, assignmentsCompleted: 10, avgTimeInClass: '53 Mins', status: 'Requested' },
-        { id: 3, enrollmentId: 103, name: 'Cooper Siphron', username: '@cooper', initial: 'C', dateJoined: '16/03/2024', learningPoints: 150, assignmentsCompleted: 4, avgTimeInClass: '40 Mins', status: 'Active' },
-        { id: 6, enrollmentId: 104, name: 'Giana Carder', username: '@giana', initial: 'G', dateJoined: '16/03/2024', learningPoints: 150, assignmentsCompleted: 7, avgTimeInClass: '1.5 Hrs', status: 'Invited' },
-      ];
-      setEnrolledStudents(mockData.filter(s => s.status === 'Active' || s.status === 'Invited'));
-      setRequestedStudents(mockData.filter(s => s.status === 'Requested'));
-    } finally {
-      setLoading(false);
+      setEnrolledStudents([]);
+      setRequestedStudents([]);
     }
   };
 
@@ -151,12 +182,24 @@ const StudentsPage = () => {
       if (!response.ok) throw new Error('Failed to fetch teacher students');
       
       const data = await response.json();
-      console.log('All teacher students data:', data);
       
       // Handle nested structure from API
       const students = data.students || data;
-      const transformedStudents = students.map((item, index) => {
+      const transformedStudents = await Promise.all(students.map(async (item, index) => {
         const student = item.student || item;
+        let totalPoints = 0;
+
+        try {
+            const submissionsRes = await fetch(`${Server_url}/api/classrooms/assignment-submissions/?student=${student.id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (submissionsRes.ok) {
+                const submissions = await submissionsRes.json();
+                totalPoints = submissions.reduce((acc, submission) => acc + (submission.score || 0), 0);
+            }
+        } catch (scoreError) {
+            console.error(`Failed to fetch scores for student ${student.id}:`, scoreError);
+        }
         
         return {
           id: student.id,
@@ -166,39 +209,18 @@ const StudentsPage = () => {
           username: student.username || `@student${index + 1}`,
           initial: (student.first_name?.[0] || student.username?.[0] || 'S').toUpperCase(),
           lastLogin: student.last_login || '16/03/2024 • 15:54',
-          learningPoints: student.learning_points || 150,
+          learningPoints: totalPoints, // Use calculated points
           avgLearningTime: student.avg_learning_time || `${Math.floor(Math.random() * 120) + 20} Mins`,
           email: student.email || '',
           first_name: student.first_name || '',
           last_name: student.last_name || ''
         };
-      });
+      }));
       
       setAllTeacherStudents(transformedStudents);
     } catch (error) {
       console.error('Error fetching all teacher students:', error);
-      // Mock data for modal
-      setAllTeacherStudents([
-        {
-          id: 1,
-          name: 'Emery Torff',
-          username: '@emery',
-          initial: 'E',
-          lastLogin: '16/03/2024 • 15:54',
-          learningPoints: 150,
-          avgLearningTime: '2 Hrs'
-        },
-        {
-          id: 2,
-          name: 'Maren Dokidis',
-          username: '@maren',
-          initial: 'M',
-          lastLogin: '16/03/2024 • 15:54',
-          learningPoints: 150,
-          avgLearningTime: '53 Mins'
-        },
-        // Add more mock students as needed
-      ]);
+      setAllTeacherStudents([]);
     }
   };
 
@@ -235,7 +257,6 @@ const StudentsPage = () => {
 
       // Google Classroom Invite Integration
       console.log('Class Data for Google Classroom check:', classData); // Log classData here
-      
       let googleClassroomId = classData.google_classroom_id;
 
       // If we don't have a Google Classroom ID, try to find it by matching the class title.
@@ -332,8 +353,9 @@ const StudentsPage = () => {
       setShowAddStudentModal(false);
       setModalSearchQuery('');
       
-      // Refresh enrolled students
-      fetchEnrolledStudents();
+      // Refresh both lists to ensure UI updates correctly
+      await fetchAllTeacherStudents();
+      await fetchEnrolledStudents();
       
     } catch (error) {
       console.error('Error adding students:', error);
@@ -379,6 +401,45 @@ const StudentsPage = () => {
       throw new Error(`Failed to ${action} request`);
     }
 
+    // If accepted, also invite to Google Classroom
+    if (action === 'accept') {
+      // Find the student by enrollmentId
+      const student = requestedStudents.find(s => s.enrollmentId === enrollmentId);
+      // Get Google Classroom course ID from classData
+      const googleClassroomId = classData.google_classroom_id;
+      const googleToken = localStorage.getItem('google_access_token');
+      if (googleClassroomId && student && student.email && googleToken) {
+        try {
+          const inviteResponse = await fetch('https://classroom.googleapis.com/v1/invitations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${googleToken}`,
+            },
+            body: JSON.stringify({
+              courseId: googleClassroomId,
+              role: 'STUDENT',
+              userId: student.email
+            })
+          });
+          if (!inviteResponse.ok) {
+            const error = await inviteResponse.json();
+            console.error('Google Classroom API error response:', error);
+            toast.error(error.error.message || 'Failed to send Google Classroom invite');
+            throw new Error(error.error.message || 'Failed to send Google Classroom invite');
+          }
+
+          const data = await inviteResponse.json();
+          console.log('Google Classroom invite sent:', data);
+
+        } catch (error) {
+          console.error(`Google Classroom invite error for ${student.email}:`, error);
+          toast.error(`Google Classroom invite error for ${student.email}: ${error.message}`);
+          // Continue with other students even if one fails
+        }
+      }
+    }
+
     toast.success(`Student request ${action === 'accept' ? 'accepted' : 'rejected'} successfully!`);
     fetchEnrolledStudents(); // Refresh the lists
     
@@ -399,8 +460,8 @@ const StudentsPage = () => {
 
   // Get available students (all teacher's students who are not already associated with this class)
   const availableStudents = allTeacherStudents.filter(
-    student => !allAssociatedStudentIds.has(student.email)
-);
+    student => !allAssociatedStudentIds.has(student.id)
+  );
 
   // Filter students for modal based on search
   const filteredModalStudents = availableStudents.filter(student =>
@@ -468,7 +529,7 @@ const StudentsPage = () => {
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
             <button 
-              onClick={() => navigate('/classes')}
+              onClick={() => navigate(-1)}
               className="flex items-center gap-1 hover:text-blue-600"
             >
               <FiArrowLeft className="w-4 h-4" />
@@ -593,38 +654,45 @@ const StudentsPage = () => {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-6">
-            
-
+          <div className="flex items-center justify-center mt-6">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
+                disabled={currentPage === 1 || totalPages === 0}
                 className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
               >
                 <FiChevronLeft className="w-4 h-4" />
               </button>
 
-              {[...Array(Math.min(totalPages, 5))].map((_, index) => {
-                const pageNumber = index + 1;
-                return (
-                  <button
-                    key={pageNumber}
-                    onClick={() => setCurrentPage(pageNumber)}
-                    className={`w-8 h-8 rounded-lg text-sm font-medium ${
-                      currentPage === pageNumber
-                        ? 'bg-blue-600 text-white'
-                        : 'border border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    {pageNumber}
-                  </button>
-                );
-              })}
+              {totalPages > 0 ? (
+                [...Array(Math.min(totalPages, 5))].map((_, index) => {
+                  const pageNumber = index + 1;
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => setCurrentPage(pageNumber)}
+                      className={`w-8 h-8 rounded-lg text-sm font-medium ${
+                        currentPage === pageNumber
+                          ? 'bg-blue-600 text-white'
+                          : 'border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })
+              ) : (
+                <button
+                  className="w-8 h-8 rounded-lg text-sm font-medium bg-blue-600 text-white"
+                  disabled
+                >
+                  1
+                </button>
+              )}
 
               <button
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
+                disabled={currentPage === totalPages || totalPages === 0}
                 className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
               >
                 <FiChevronRight className="w-4 h-4" />
@@ -712,6 +780,31 @@ const StudentsPage = () => {
                         </div>
                       </div>
                     ))}
+
+                    {/* Pagination for modal */}
+                    {filteredModalStudents.length > 5 && (
+                      <div className="px-6 py-4">
+                        <div className="flex items-center justify-between">
+                          <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                          >
+                            <FiChevronLeft className="w-4 h-4" />
+                          </button>
+                          <span className="text-sm text-gray-500">
+                            Page {currentPage} of {Math.ceil(filteredModalStudents.length / 5)}
+                          </span>
+                          <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredModalStudents.length / 5)))}
+                            disabled={currentPage === Math.ceil(filteredModalStudents.length / 5)}
+                            className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                          >
+                            <FiChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

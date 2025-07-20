@@ -245,11 +245,19 @@
   transition: margin-left 0.3s ease-in-out; /* Smooth transition if sidebar width changes */
 }
 
-@media (max-width: 1024px) { /* Or your tablet breakpoint */
+/* Header should be sticky and above sidebar */
+.header-container {
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+@media (max-width: 1024px) {
   .dashboard-content {
-    margin-left: 0; /* Remove margin when sidebar is an overlay or hidden */
-    /* Adjust padding-top if you have a fixed mobile header */
-    padding-top: 1rem; 
+    margin-left: 0; /* Remove margin when sidebar is overlay */
+    padding-top: 0; /* No extra padding needed with sticky header */
   }
 }
 

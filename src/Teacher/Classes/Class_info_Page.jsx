@@ -6,6 +6,8 @@ import {
   FiClipboard,
   FiPlus,
   FiMoreVertical,
+  FiEdit,
+  FiTrash2,
 } from 'react-icons/fi';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
@@ -57,18 +59,14 @@ const DropdownMenu = ({
           onClick={onEdit}
           className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-          </svg>
+          <FiEdit className="h-4 w-4" />
           Edit
         </button>
         <button
           onClick={onDelete}
           className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
+          <FiTrash2 className="h-4 w-4" />
           Delete
         </button>
       </div>
@@ -108,6 +106,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirm
 const DiscussionItem = ({ discussion, onEdit, onDelete }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownButtonRef = useRef(null);
+  const navigate = useNavigate(); // Add navigate hook
 
   const handleDropdownToggle = (e) => {
     e.stopPropagation();
@@ -124,8 +123,19 @@ const DiscussionItem = ({ discussion, onEdit, onDelete }) => {
     onDelete(discussion);
   };
 
+  const handleNavigateToForum = (e) => {
+    // Stop propagation if the click is on the dropdown button
+    if (dropdownButtonRef.current && dropdownButtonRef.current.contains(e.target)) {
+      return;
+    }
+    navigate(`/discussion-forum/${discussion.id}`);
+  };
+
   return (
-    <li className="p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer relative">
+    <li 
+      onClick={handleNavigateToForum}
+      className="p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer relative"
+    >
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <h3 className="font-semibold text-gray-800">{discussion.title}</h3>
@@ -225,18 +235,14 @@ const AssignmentItem = ({ assignment, onEdit, onDelete }) => {
               onClick={handleEdit}
               className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
+              <FiEdit className="h-4 w-4" />
               Edit
             </button>
             <button
               onClick={handleDelete}
               className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              <FiTrash2 className="h-4 w-4" />
               Delete
             </button>
           </div>
@@ -642,12 +648,12 @@ const ClassPage = () => {
           <div className="flex flex-row gap-2 w-full sm:w-auto">
             <button 
               onClick={() => navigate(`/class/${classId}/enrolled-students`)}
-              className="flex-1 min-w-[140px] bg-white border border-blue-600 text-blue-600 px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-50 transition"
+              className="flex-1 min-w-[140px] bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-lg font-semibold text-sm hover:bg-slate-50 transition"
             >
               View Students
             </button>
             <button
-              className="flex-1 min-w-[160px] bg-white border border-blue-600 text-blue-600 px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-50 transition"
+              className="flex-1 min-w-[220px] bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-lg font-semibold text-sm hover:bg-slate-50 transition"
               onClick={() => navigate(`/reports/${classId}`)}
             >
               View Assignment Report
@@ -675,9 +681,10 @@ const ClassPage = () => {
             <div className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm relative">
               <button 
                 onClick={handleEditClass}
-                className="absolute top-4 right-4 md:top-6 md:right-6 bg-white border border-blue-600 text-blue-600 px-3 py-2 md:px-4 md:py-2 rounded-lg font-semibold text-xs md:text-sm hover:bg-blue-50 transition"
+                className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-2 bg-white border border-slate-300 text-slate-600 px-3 py-2 md:px-4 md:py-2 rounded-lg font-semibold text-xs md:text-sm hover:bg-slate-50 transition"
               >
-                📝 Edit Basic Details
+                <FiEdit className="h-4 w-4" />
+                <span>Edit Details</span>
               </button>
               {classData.image && (
                 <img

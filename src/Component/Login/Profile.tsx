@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Sidebar from '../Home/Sidebar.tsx';
 import Header from '../Home/Header.tsx';
 import Server_url, { client_id } from '../../config';
-import { FiCopy, FiCheck, FiUploadCloud, FiSearch, FiBookOpen } from 'react-icons/fi';
+import { FiCopy, FiCheck, FiSearch } from 'react-icons/fi';
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
-// --- Global Styles for Buttons and Inputs (to match the screenshot) ---
+// --- Global Styles for Buttons and Inputs ---
 const GlobalStyles = () => (
   <style>{`
     .btn-primary {
@@ -47,17 +47,16 @@ const GlobalStyles = () => (
   `}</style>
 );
 
-
 // --- Type Definitions ---
 interface User {
   first_name: string;
   last_name?: string;
   username: string;
   is_teacher: boolean;
+  avatar_url?: string;
 }
 
-// --- Sub-components for better organization ---
-//google scopes
+// --- Google Scopes ---
 const ADMIN_SCOPES =
   "openid profile email " +
   "https://www.googleapis.com/auth/classroom.courses " +
@@ -67,166 +66,435 @@ const ADMIN_SCOPES =
   "https://www.googleapis.com/auth/classroom.rosters " +
   "https://www.googleapis.com/auth/classroom.profile.emails " +
   "https://www.googleapis.com/auth/classroom.profile.photos";
-// Personal Info Card Component
-const PersonalInfoCard: React.FC<{ 
-  user: User | null, 
-  setShowGoogleModal: (show: boolean) => void,
-  isGoogleConnected: boolean,
-  handleDeactivation: () => void
-}> = ({ user, setShowGoogleModal, isGoogleConnected, handleDeactivation }) => {
-  const [copied, setCopied] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
-  };
+// --- Constants for Avatar Customization (Corrected Mouth Types) ---
+const HAPPY_MOUTH_TYPES = ['smile', 'twinkle', 'eating', 'tongue', 'concerned'];
+const EYES_TYPES = ['default', 'happy', 'wink', 'squint', 'hearts', 'side'];
+const HAIR_COLOR = ['#2c1b18', '#4a312c', '#af6e51', '#e8e1e1', '#d2b48c', '#a55728', '#b58143'];
+const SKIN_COLOR = ['#f8d25c', '#ffdbb4', '#edb0a1', '#d08b5b', '#a0522d', '#614335'];
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
+// --- Character Options (Updated to 20 Human Avatars) ---
+const CHARACTER_OPTIONS = [
+  { seed: 'Abby', name: 'Abby' },
+  { seed: 'Max', name: 'Max' },
+  { seed: 'Zoe', name: 'Zoe' },
+  { seed: 'Leo', name: 'Leo' },
+  { seed: 'Mia', name: 'Mia' },
+  { seed: 'Sam', name: 'Sam' },
+  { seed: 'Luna', name: 'Luna' },
+  { seed: 'Jack', name: 'Jack' },
+  { seed: 'Ruby', name: 'Ruby' },
+  { seed: 'Oscar', name: 'Oscar' },
+  { seed: 'Chloe', name: 'Chloe' },
+  { seed: 'Toby', name: 'Toby' },
+  { seed: 'Lily', name: 'Lily' },
+  { seed: 'Finn', name: 'Finn' },
+  { seed: 'Nora', name: 'Nora' },
+  { seed: 'Milo', name: 'Milo' },
+  { seed: 'Ella', name: 'Ella' },
+  { seed: 'Owen', name: 'Owen' },
+  { seed: 'Ivy', name: 'Ivy' },
+  { seed: 'Levi', name: 'Levi' },
+].map(char => ({
+  ...char,
+  style: 'avataaars',
+  preview: `https://api.dicebear.com/7.x/avataaars/svg?seed=${char.seed}`
+}));
 
-    // Preview
-    const reader = new FileReader();
-    reader.onloadend = () => setProfileImage(reader.result as string);
-    reader.readAsDataURL(file);
-
-    // Upload to server
-    const formData = new FormData();
-    formData.append('profile_picture', file);
-    try {
-      const res = await fetch(`${Server_url}/api/users/upload-profile-picture/`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
-        },
-        body: formData,
-      });
-      if (!res.ok) throw new Error('Failed to upload profile picture');
-      // Optionally update user state here
-      toast.success('Profile picture uploaded successfully!');
-    } catch (err) {
-      toast.error('Failed to upload profile picture');
-    }
-    setUploading(false);
-  };
+// --- Character Selection Modal ---
+const CharacterSelectionModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectCharacter: (character: any) => void;
+}> = ({ isOpen, onClose, onSelectCharacter }) => {
+  if (!isOpen) return null;
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-gray-800">Personal Info</h2>
-          <p className="text-sm text-gray-500">Update your personal info</p>
-        </div>
-        <div className="flex gap-4">
-          <button onClick={handleCopyLink} className="btn-secondary text-sm flex items-center gap-2">
-            {copied ? <FiCheck className="text-green-500" /> : <FiCopy />}
-            {copied ? 'Copied!' : 'Copy Profile Link'}
-          </button>
-          <button className="btn-primary text-sm flex items-center gap-2">
-            <FiCheck />
-            Save Changes
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        <div>
-          <label className="text-sm font-medium text-gray-600 block mb-2">Name & Username</label>
-          <p className="text-xs text-gray-400 mb-2">Update your name & username</p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <input
-              className="form-input w-full"
-              value={user ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Loading...'}
-              disabled
-            />
-            <input
-              className="form-input w-full sm:w-1/2"
-              value={user ? `@${user.username}` : ''}
-              disabled
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium text-gray-600 block mb-2">Profile Picture</label>
-          <p className="text-xs text-gray-400 mb-2">Update your profile Picture</p>
-          <input
-            type="file"
-            accept="image/png, image/jpeg"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleImageChange}
-          />
-          <div
-            className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 flex flex-col items-center"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {profileImage ? (
-              <img
-                src={profileImage}
-                alt="Profile Preview"
-                className="w-20 h-20 rounded-full object-cover mx-auto mb-2"
-              />
-            ) : (
-              <FiUploadCloud className="text-blue-500 text-3xl mx-auto mb-2" />
-            )}
-            <p className="text-sm font-semibold text-gray-700">{uploading ? 'Uploading...' : 'Tap to Upload'}</p>
-            <p className="text-xs text-gray-400">PNG, JPG | 10MB max.</p>
-          </div>
-        </div>
-
-        <div>
-            <label className="text-sm font-medium text-gray-600 block mb-1">Languages</label>
-            <p className="text-xs text-gray-400 mb-2">List of languages being learned will be displayed here</p>
-            <div className="flex gap-3 mt-2">
-              <img src="https://flagcdn.com/gb.svg" alt="English" title="English" className="w-10 h-7 object-cover rounded-sm shadow-md" />
-              <img src="https://flagcdn.com/es.svg" alt="Spanish" title="Spanish" className="w-10 h-7 object-cover rounded-sm shadow-md" />
-              <img src="https://flagcdn.com/fr.svg" alt="French" title="French" className="w-10 h-7 object-cover rounded-sm shadow-md" />
-            </div>
-        </div>
-
-        {user?.is_teacher && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <label className="text-sm font-medium text-gray-600 block mb-1">Platform Integrations</label>
-            <p className="text-xs text-gray-400 mb-2">Connect your account to other learning platforms.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-              <button 
-                className={`btn-secondary flex items-center justify-center gap-2 w-full py-3 ${isGoogleConnected ? 'text-red-500 border-red-300 hover:bg-red-50' : ''}`}
-                onClick={() => isGoogleConnected ? handleDeactivation() : setShowGoogleModal(true)}
-              >
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-                {isGoogleConnected ? 'Deactivate Google Classroom' : 'Connect Google Classroom'}
-              </button>
-              <button className="btn-secondary flex items-center justify-center gap-2 w-full py-3"
-              onClick={()=>{
-                toast.info('This feature is coming soon! Stay tuned!')
-              }}>
-                <FiBookOpen className="text-red-500" />
-                Connect Canvas
-              </button>
-              <button className="btn-secondary flex items-center justify-center gap-2 w-full py-3"
-               onClick={()=>{
-                toast.info('This feature is coming soon! Stay tuned!')
-               }}>
-                <span className="font-bold text-lg text-blue-800 bg-white border-2 border-blue-800 rounded-full w-6 h-6 flex items-center justify-center">
-                  <FiBookOpen className="text-blue-800" />
-                </span>
-                Connect Schoology
-              </button>
-            </div>
+            <h3 className="text-2xl font-bold text-gray-800">Choose Your Character</h3>
+            <p className="text-sm text-gray-500">Select a character style to customize</p>
           </div>
-        )}
+          <button 
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+          >
+            ×
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {CHARACTER_OPTIONS.map((character) => (
+            <div key={character.id} className="flex flex-col items-center">
+              <button
+                onClick={() => onSelectCharacter(character)}
+                className="w-20 h-20 rounded-full border-2 border-gray-200 hover:border-blue-400 transition-colors p-1 mb-2 bg-gray-50 hover:bg-blue-50"
+              >
+                <img
+                  src={character.preview}
+                  alt={character.name}
+                  className="w-full h-full rounded-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${character.seed}`;
+                  }}
+                />
+              </button>
+              <span className="text-xs font-medium text-gray-600 text-center">{character.name}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
-// Friends Card Component
+// --- Updated Avatar Editor Modal Component ---
+const AvatarEditor: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (url: string) => void;
+  initialAvatarUrl: string;
+  selectedCharacter?: any;
+}> = ({ isOpen, onClose, onSave, initialAvatarUrl, selectedCharacter }) => {
+  const [activeTab, setActiveTab] = useState<'customize' | 'stickers'>('customize');
+  
+  const [avatarConfig, setAvatarConfig] = useState({
+    mouth: 'smile',
+    eyes: 'happy',
+    hairColor: '4a312c',
+    skinColor: 'ffdbb4',
+    seed: 'default',
+  });
+
+  const [selectedExpression, setSelectedExpression] = useState<object | null>(null);
+
+  // Build avatar URL, always using avataaars style
+  const buildAvatarUrl = (config: object) => {
+    const params = new URLSearchParams(config as Record<string, string>);
+    return `https://api.dicebear.com/7.x/avataaars/svg?${params.toString()}`;
+  };
+
+  const finalAvatarUrl = useMemo(() => {
+    const finalConfig = selectedExpression
+      ? { ...avatarConfig, ...selectedExpression }
+      : avatarConfig;
+    return buildAvatarUrl(finalConfig);
+  }, [avatarConfig, selectedExpression]);
+
+  // Update avatar config when a new character is selected
+  useEffect(() => {
+    if (selectedCharacter) {
+      setAvatarConfig({
+        mouth: 'smile',
+        eyes: 'happy',
+        hairColor: '4a312c',
+        skinColor: 'ffdbb4',
+        seed: selectedCharacter.seed
+      });
+      setSelectedExpression(null);
+    }
+  }, [selectedCharacter]);
+
+  const stickerExpressions = [
+    { name: 'Smiling', config: { eyes: 'happy', mouth: 'smile' } },
+    { name: 'Laughing', config: { eyes: 'squint', mouth: 'twinkle' } }, // Changed 'laughing' to 'twinkle'
+    { name: 'Winking', config: { eyes: 'wink', mouth: 'smile' } },
+    { name: 'In Love', config: { eyes: 'hearts', mouth: 'eating' } },
+    { name: 'Grinning', config: { eyes: 'happy', mouth: 'smile' } }, // Changed 'grin' to 'smile'
+    { name: 'Cheeky', config: { eyes: 'winkWacky', mouth: 'tongue' } },
+  ];
+
+  if (!isOpen) return null;
+
+  const handleSelectSticker = (stickerConfig: object, stickerName: string) => {
+    setSelectedExpression(stickerConfig); 
+    toast.info(`${stickerName} selected as profile picture!`);
+  };
+  
+  const handleTabSwitch = (tab: 'customize' | 'stickers') => {
+    if (tab === 'customize') {
+      setSelectedExpression(null);
+    }
+    setActiveTab(tab);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-lg p-6 max-w-3xl w-full flex flex-col md:flex-row gap-6">
+        
+        <div className="flex-shrink-0 flex flex-col items-center gap-4 bg-gray-100 p-6 rounded-xl">
+          <h3 className="text-lg font-bold text-gray-800">Your Avatar</h3>
+          {selectedCharacter && (
+            <div className="text-center mb-2">
+              <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                {selectedCharacter.name}
+              </span>
+            </div>
+          )}
+          <img 
+            src={finalAvatarUrl} 
+            alt="Avatar Preview" 
+            className="w-48 h-48 rounded-full border-4 border-white shadow-md bg-white" 
+          />
+          
+          <div className="flex gap-2 bg-gray-200 p-1 rounded-full">
+            <button 
+              onClick={() => handleTabSwitch('customize')}
+              className={`px-4 py-1 text-sm font-semibold rounded-full ${activeTab === 'customize' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'}`}
+            >
+              Customize
+            </button>
+            <button 
+              onClick={() => handleTabSwitch('stickers')}
+              className={`px-4 py-1 text-sm font-semibold rounded-full ${activeTab === 'stickers' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'}`}
+            >
+              Stickers
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-grow">
+          {activeTab === 'customize' ? (
+            <div>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Customize Your Look</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Eyes</label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {EYES_TYPES.map(eye => (
+                      <button key={eye} onClick={() => setAvatarConfig(prev => ({...prev, eyes: eye}))}
+                        className={`px-3 py-1 text-xs rounded-full border-2 ${avatarConfig.eyes === eye ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                      >{eye}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Mouth (Happy Styles)</label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {HAPPY_MOUTH_TYPES.map(mouth => (
+                      <button key={mouth} onClick={() => setAvatarConfig(prev => ({...prev, mouth: mouth}))}
+                        className={`px-3 py-1 text-xs rounded-full border-2 ${avatarConfig.mouth === mouth ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                      >{mouth}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Hair Color</label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {HAIR_COLOR.map(color => (
+                       <button key={color} onClick={() => setAvatarConfig(prev => ({...prev, hairColor: color.replace('#','')}))}
+                        className={`w-8 h-8 rounded-full border-2 ${avatarConfig.hairColor === color.replace('#','') ? 'border-blue-500' : 'border-gray-200'}`}
+                        style={{ backgroundColor: color }}
+                      ></button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Skin Color</label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {SKIN_COLOR.map(color => (
+                       <button key={color} onClick={() => setAvatarConfig(prev => ({...prev, skinColor: color.replace('#','')}))}
+                        className={`w-8 h-8 rounded-full border-2 ${avatarConfig.skinColor === color.replace('#','') ? 'border-blue-500' : 'border-gray-200'}`}
+                        style={{ backgroundColor: color }}
+                      ></button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div>
+               <h3 className="text-xl font-bold text-gray-800 mb-2">Create a Sticker</h3>
+               <p className="text-sm text-gray-500 mb-4">Click a sticker to set it as your profile picture.</p>
+               <div className="grid grid-cols-3 gap-4">
+                 {stickerExpressions.map(sticker => {
+                   const stickerUrl = buildAvatarUrl({...avatarConfig, ...sticker.config});
+                   return (
+                     <div key={sticker.name} className="flex flex-col items-center gap-2">
+                       <button onClick={() => handleSelectSticker(sticker.config, sticker.name)}
+                         className={`rounded-full p-1 border-2 hover:border-blue-400 ${finalAvatarUrl === stickerUrl ? 'border-blue-500' : 'border-transparent'}`}
+                       >
+                         <img src={stickerUrl} alt={sticker.name} className="w-20 h-20 rounded-full bg-gray-200" />
+                       </button>
+                       <span className="text-xs font-medium text-gray-600">{sticker.name}</span>
+                     </div>
+                   );
+                 })}
+               </div>
+            </div>
+          )}
+
+          <div className="flex gap-4 mt-6 pt-4 border-t border-gray-200">
+            <button onClick={onClose} className="btn-secondary w-full justify-center">Cancel</button>
+            <button onClick={() => onSave(finalAvatarUrl)} className="btn-primary w-full justify-center">Save Avatar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Updated Personal Info Card Component ---
+const PersonalInfoCard: React.FC<{
+  user: User | null,
+  setShowGoogleModal: (show: boolean) => void,
+  isGoogleConnected: boolean,
+  handleDeactivation: () => void
+}> = ({ user, setShowGoogleModal, isGoogleConnected, handleDeactivation }) => {
+  const [copied, setCopied] = useState(false);
+  const [showCharacterSelection, setShowCharacterSelection] = useState(false);
+  const [showAvatarEditor, setShowAvatarEditor] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState(null);
+  const [displayAvatarUrl, setDisplayAvatarUrl] = useState(`https://api.dicebear.com/7.x/avataaars/svg?seed=1`);
+
+  useEffect(() => {
+    if (user?.avatar_url) {
+      setDisplayAvatarUrl(user.avatar_url);
+    }
+  }, [user]);
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSelectCharacter = (character: any) => {
+    setSelectedCharacter(character);
+    setShowCharacterSelection(false);
+    setShowAvatarEditor(true);
+  };
+
+  const handleSaveAvatar = async (url: string) => {
+    setDisplayAvatarUrl(url); 
+    setShowAvatarEditor(false); 
+    setSelectedCharacter(null);
+    
+    try {
+      const res = await fetch(`${Server_url}/api/users/user/update-avatar/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify({ avatar_url: url }),
+      });
+      if (!res.ok) throw new Error('Failed to update avatar on server');
+      toast.success('Avatar updated successfully!');
+    } catch (err) {
+      toast.error('Failed to save avatar. Please try again.');
+      if (user?.avatar_url) setDisplayAvatarUrl(user.avatar_url);
+    }
+  };
+
+  return (
+    <>
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Personal Info</h2>
+            <p className="text-sm text-gray-500">Update your personal info</p>
+          </div>
+          <div className="flex gap-4">
+            <button onClick={handleCopyLink} className="btn-secondary text-sm flex items-center gap-2">
+              {copied ? <FiCheck className="text-green-500" /> : <FiCopy />}
+              {copied ? 'Copied!' : 'Copy Profile Link'}
+            </button>
+            <button className="btn-primary text-sm flex items-center gap-2">
+              <FiCheck />
+              Save Changes
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div>
+            <label className="text-sm font-medium text-gray-600 block mb-2">Name & Username</label>
+            <p className="text-xs text-gray-400 mb-2">Update your name & username</p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <input
+                className="form-input w-full"
+                value={user ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Loading...'}
+                disabled
+              />
+              <input
+                className="form-input w-full sm:w-1/2"
+                value={user ? `@${user.username}` : ''}
+                disabled
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-600 block mb-2">Avatar</label>
+            <p className="text-xs text-gray-400 mb-2">Choose a character and customize your avatar</p>
+            <div
+              className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 flex flex-col items-center"
+              onClick={() => setShowCharacterSelection(true)}
+            >
+              <img
+                src={displayAvatarUrl}
+                alt="User Avatar"
+                className="w-20 h-20 rounded-full object-cover mx-auto mb-2"
+                onError={e => { e.currentTarget.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'; }}
+              />
+              <p className="text-sm font-semibold text-gray-700">Choose Character & Customize</p>
+              {/* <p className="text-xs text-gray-400">20+ Character Styles • Powered by Dicebear</p> */}
+            </div>
+          </div>
+
+          <div>
+              <label className="text-sm font-medium text-gray-600 block mb-1">Languages</label>
+              <p className="text-xs text-gray-400 mb-2">List of languages being learned will be displayed here</p>
+              <div className="flex gap-3 mt-2">
+                <img src="https://flagcdn.com/gb.svg" alt="English" title="English" className="w-10 h-7 object-cover rounded-sm shadow-md" />
+                <img src="https://flagcdn.com/es.svg" alt="Spanish" title="Spanish" className="w-10 h-7 object-cover rounded-sm shadow-md" />
+                <img src="https://flagcdn.com/fr.svg" alt="French" title="French" className="w-10 h-7 object-cover rounded-sm shadow-md" />
+              </div>
+          </div>
+
+          {user?.is_teacher && (
+            <div>
+              <label className="text-sm font-medium text-gray-600 block mb-1">Platform Integrations</label>
+              <p className="text-xs text-gray-400 mb-2">Connect your account to other learning platforms.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                <button
+                  className={`btn-secondary flex items-center justify-center gap-2 w-full py-3 ${isGoogleConnected ? 'text-red-500 border-red-300 hover:bg-red-50' : ''}`}
+                  onClick={() => isGoogleConnected ? handleDeactivation() : setShowGoogleModal(true)}
+                >
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                  {isGoogleConnected ? 'Deactivate Google Classroom' : 'Connect Google Classroom'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <CharacterSelectionModal
+        isOpen={showCharacterSelection}
+        onClose={() => setShowCharacterSelection(false)}
+        onSelectCharacter={handleSelectCharacter}
+      />
+      
+      <AvatarEditor 
+        isOpen={showAvatarEditor}
+        onClose={() => {
+          setShowAvatarEditor(false);
+          setSelectedCharacter(null);
+        }}
+        onSave={handleSaveAvatar}
+        initialAvatarUrl={displayAvatarUrl}
+        selectedCharacter={selectedCharacter}
+      />
+    </>
+  );
+};
+
+
+// --- Friends Card Component ---
 const FriendsCard: React.FC = () => {
   const myFriends = [
     { name: 'Samuel Jacob', handle: '@sammy', avatar: 'https://randomuser.me/api/portraits/men/1.jpg' },
@@ -281,16 +549,15 @@ const FriendsCard: React.FC = () => {
   );
 };
 
-// Account Settings Section
-const AccountSettings: React.FC<{ 
-  user: User | null, 
-  onToggle: () => void,
+// --- Account Settings Section ---
+const AccountSettings: React.FC<{
+  user: User | null,
   showGoogleModal: boolean,
   setShowGoogleModal: (show: boolean) => void,
   isGoogleConnected: boolean,
   handleTeacherActivation: () => void
-}> = ({ user, onToggle, showGoogleModal, setShowGoogleModal, isGoogleConnected, handleTeacherActivation }) => {
-    
+}> = ({ user, showGoogleModal, setShowGoogleModal, isGoogleConnected, handleTeacherActivation }) => {
+
     const teacherFeatures = [
         "Create custom classes for your students",
         "Customize quizzes and assignments for your students",
@@ -304,138 +571,112 @@ const AccountSettings: React.FC<{
         "Access Language Planet anywhere, anytime."
     ];
 
-    /* 
-      This local function is removed because it redeclares the 'handleTeacherActivation'
-      prop passed from the parent component. We will use the prop directly.
-    */
-    // const handleTeacherActivation = () => { ... };
-
     const GoogleLoginButton = ({ onSuccess, onFailure, onPermissionError }) => {
-  const [isLoading, setIsLoading] = useState(false);
+      const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async () => {
-    try {
-      setIsLoading(true);
-      console.log('Starting admin OAuth login...');
-      
-    //   const redirectUri = `${window.location.origin}/auth-callback`;
-    const redirectUri = "http://localhost:3000/auth-callback"; // Use your actual redirect URI here
-      console.log('Redirect URI:', redirectUri);
-      
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${encodeURIComponent(client_id)}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `scope=${encodeURIComponent(ADMIN_SCOPES)}&` +
-        `response_type=token&` +
-        `include_granted_scopes=true&` +
-        `access_type=online&` +
-        `state=admin_login`;
-      
-      console.log('Redirecting to:', authUrl);
-      window.location.href = authUrl;
+      const handleLogin = async () => {
+        try {
+          setIsLoading(true);
+          const redirectUri = "http://localhost:3000/auth-callback";
 
-    } catch (error) {
-      console.error('Admin login error:', error);
-      setIsLoading(false);
-      
-      // Check for ProjectPermissionDenied error
-      if (error.message?.includes('ProjectPermissionDenied') || 
-          error.message?.includes('The Developer Console project is not permitted')) {
-        onPermissionError();
-      } else {
-        onFailure(error);
-        toast.error(`Login failed: ${error.message}`);
-      }
-    }
-    };
-  
-    return (
-      <button
-        onClick={handleLogin}
-        className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <>
-            <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-            </svg>
-            Connecting...
-          </>
-        ) : (
-          <>
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5 mr-2" />
-            Connect with Google
-          </>
-        )}
-      </button>
-    );
-  };
-  
-      const GoogleConnectionModal = () => (
-          showGoogleModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-                      <div className="text-center mb-6">
-                          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                              <span className="text-2xl">🎓</span>
-                          </div>
-                          <h3 className="text-xl font-bold text-gray-800 mb-2">Connect Google Classroom (Optional)</h3>
-                          <p className="text-sm text-gray-600">
-                              You can connect your Google account to link with Google Classroom for seamless class management. This step is optional. You can activate your teacher panel without connecting Google Classroom.
-                          </p>
-                      </div>
-  
-                      <div className="space-y-4 mb-6">
-                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                              <FiCheck className="text-green-500" />
-                              <span className="text-sm text-gray-700">Import existing classes from Google Classroom</span>
-                          </div>
-                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                              <FiCheck className="text-green-500" />
-                              <span className="text-sm text-gray-700">Sync student rosters automatically</span>
-                          </div>
-                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                              <FiCheck className="text-green-500" />
-                              <span className="text-sm text-gray-700">Share assignments and resources seamlessly</span>
-                          </div>
-                      </div>
-  
-                      <div className="space-y-3">
-                          <GoogleLoginButton
-                              onSuccess={async () => {
-                                try {
-                                  await activateTeacherPanelOnServer();
-                                  setIsGoogleConnected(true);
-                                  setShowGoogleModal(false);
-                                  toast.success('Google Classroom connected and Teacher Panel activated!');
-                                } catch (err: any) {
-                                  localStorage.removeItem('google_access_token');
-                                  setIsGoogleConnected(false);
-                                  toast.error('Google connected, but failed to activate teacher panel. Reason: ' + (err?.message || err));
-                                }
-                              }}
-                              onFailure={() => {
-                                toast.error('Google login failed');
-                              }}
-                              onPermissionError={() => {
-                                toast.error('Google Classroom API permission error. Please check your Google Cloud project.');
-                              }}
-                          />
-                          <button
-                              onClick={() => setShowGoogleModal(false)}
-                              className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-                          >
-                              Cancel
-                          </button>
-                      </div>
-                  </div>
-              </div>
-          )
-      );
-    
+          const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+            `client_id=${encodeURIComponent(client_id)}&` +
+            `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+            `scope=${encodeURIComponent(ADMIN_SCOPES)}&` +
+            `response_type=token&` +
+            `include_granted_scopes=true&` +
+            `access_type=online&` +
+            `state=admin_login`;
+
+          window.location.href = authUrl;
+        } catch (error) {
+          console.error('Admin login error:', error);
+          setIsLoading(false);
+          if (error.message?.includes('ProjectPermissionDenied') ||
+              error.message?.includes('The Developer Console project is not permitted')) {
+            onPermissionError();
+          } else {
+            onFailure(error);
+            toast.error(`Login failed: ${error.message}`);
+          }
+        }
+      };
+
       return (
+        <button
+          onClick={handleLogin}
+          className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              Connecting...
+            </>
+          ) : (
+            <>
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5 mr-2" />
+              Connect with Google
+            </>
+          )}
+        </button>
+      );
+    };
+
+    const GoogleConnectionModal = () => (
+        showGoogleModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+                    <div className="text-center mb-6">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="text-2xl">🎓</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">Connect Google Classroom (Optional)</h3>
+                        <p className="text-sm text-gray-600">
+                            You can connect your Google account to link with Google Classroom for seamless class management. This step is optional.
+                        </p>
+                    </div>
+
+                    <div className="space-y-4 mb-6">
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                            <FiCheck className="text-green-500" />
+                            <span className="text-sm text-gray-700">Import existing classes</span>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                            <FiCheck className="text-green-500" />
+                            <span className="text-sm text-gray-700">Sync student rosters</span>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                            <FiCheck className="text-green-500" />
+                            <span className="text-sm text-gray-700">Share assignments and resources</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <GoogleLoginButton
+                            onSuccess={() => {
+                              toast.success('Google Classroom connected!');
+                              setShowGoogleModal(false);
+                            }}
+                            onFailure={() => toast.error('Google login failed')}
+                            onPermissionError={() => toast.error('Google Classroom API permission error.')}
+                        />
+                        <button
+                            onClick={() => setShowGoogleModal(false)}
+                            className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    );
+
+    return (
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h2 className="text-xl font-bold text-gray-800 mb-1">Account Settings</h2>
         <p className="text-sm text-gray-500 mb-6">Some other perks we have for you</p>
@@ -565,7 +806,7 @@ const ProfilePage: React.FC = () => {
         body: JSON.stringify({ is_teacher: !user.is_teacher }),
       });
       if (!res.ok) throw new Error('Failed to update teacher role');
-      window.location.reload(); // Force full page reload
+      window.location.reload(); 
     } catch (err) {
       console.error('Error updating teacher panel role:', err);
       toast.error('Failed to update teacher panel status');
@@ -574,10 +815,8 @@ const ProfilePage: React.FC = () => {
 
   const handleTeacherActivation = () => {
     if (user?.is_teacher) {
-      // Show the deactivation confirmation modal instead of window.confirm
       setShowDeactivationModal(true);
     } else {
-      // Not a teacher: activate directly without modal
       handleToggleTeacherPanel();
       toast.success('Teacher Panel has been activated!');
     }
@@ -586,9 +825,9 @@ const ProfilePage: React.FC = () => {
   const handleConfirmDeactivation = () => {
     localStorage.removeItem('google_access_token');
     setIsGoogleConnected(false);
-    handleToggleTeacherPanel(); // This will update the server (remove teacher role)
+    handleToggleTeacherPanel(); 
     toast.success('Teacher Panel and Google Classroom disconnected.');
-    setShowDeactivationModal(false); // Close modal after action
+    setShowDeactivationModal(false);
   };
 
   return (
@@ -596,18 +835,17 @@ const ProfilePage: React.FC = () => {
       <GlobalStyles />
       <div className="flex min-h-screen bg-gray-50 font-sans flex-col lg:flex-row">
         <Sidebar isMobileMenuOpen={isSidebarOpen} toggleMobileMenu={() => setIsSidebarOpen(!isSidebarOpen)} />
-        
+
         <div className="flex-1 flex flex-col lg:ml-64">
           <Header onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
 
           <main className="flex-grow p-3 sm:p-6 lg:p-8 overflow-y-auto">
             <div className="flex flex-col gap-6">
-              {/* Top Row */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                  <PersonalInfoCard 
-                    user={user} 
-                    setShowGoogleModal={setShowGoogleModal} 
+                  <PersonalInfoCard
+                    user={user}
+                    setShowGoogleModal={setShowGoogleModal}
                     isGoogleConnected={isGoogleConnected}
                     handleDeactivation={handleTeacherActivation}
                   />
@@ -617,9 +855,14 @@ const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Bottom Row */}
               <div>
-                <AccountSettings user={user} onToggle={handleToggleTeacherPanel} showGoogleModal={showGoogleModal} setShowGoogleModal={setShowGoogleModal} isGoogleConnected={isGoogleConnected} handleTeacherActivation={handleTeacherActivation} />
+                <AccountSettings 
+                    user={user} 
+                    showGoogleModal={showGoogleModal} 
+                    setShowGoogleModal={setShowGoogleModal} 
+                    isGoogleConnected={isGoogleConnected} 
+                    handleTeacherActivation={handleTeacherActivation} 
+                />
               </div>
             </div>
           </main>
@@ -638,17 +881,14 @@ const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Parse the hash fragment for tokens
     const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
 
     const accessToken = params.get("access_token");
     if (accessToken) {
       localStorage.setItem("google_access_token", accessToken);
-      // You can also store other params if needed
     }
 
-    // Redirect to profile or dashboard
     navigate("/profile", { replace: true });
   }, [navigate]);
 

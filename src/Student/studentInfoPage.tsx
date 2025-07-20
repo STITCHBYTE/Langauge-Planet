@@ -1,4 +1,4 @@
-import React ,{ useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import Sidebar from "../Component/Home/Sidebar.tsx"
 import Header from "../Component/Home/Header.tsx"
@@ -11,6 +11,8 @@ interface Assignment {
   description: string
   status: "Pending" | "Submitted" | "Graded"
   points: number | null
+  className: string
+  dueDate: string
 }
 
 interface ClassItem {
@@ -18,113 +20,40 @@ interface ClassItem {
   title: string
   description: string
   dateJoined: string
+  studentStatus: string
 }
 
 interface Lesson {
   id: string
   title: string
   status: "In Progress" | "Completed" | "Not Started"
+  className: string
 }
 
-const assignmentsData: Assignment[] = [
-  {
-    id: "1",
-    title: "Culture in Spanish",
-    description: "Lorem ipsum dolor sit amet...",
-    status: "Pending",
-    points: null,
-  },
-  {
-    id: "2",
-    title: "Basic Spanish Mannerism",
-    description: "Lorem ipsum dolor sit amet...",
-    status: "Pending",
-    points: null,
-  },
-  {
-    id: "3",
-    title: "Basic Spanish Mannerism",
-    description: "Lorem ipsum dolor sit amet...",
-    status: "Submitted",
-    points: null,
-  },
-  {
-    id: "4",
-    title: "Basic Spanish Mannerism",
-    description: "Lorem ipsum dolor sit amet...",
-    status: "Graded",
-    points: 15,
-  },
-  {
-    id: "5",
-    title: "Basic Spanish Mannerism",
-    description: "Lorem ipsum dolor sit amet...",
-    status: "Graded",
-    points: 10,
-  },
-]
 interface StudentInfo {
   id: string;
   name: string;
-  username: string; // usually email or handle like @emery
-  avatarUrl?: string; // optional in case avatar is not available
-  status: "Active" | "Inactive" | "Invited"; // extendable
-  lastLogin: string; // example: "16/03/2024 • 15:54"
+  username: string;
+  avatarUrl?: string;
+  status: "Active" | "Inactive" | "Invited";
+  lastLogin: string;
   learningPoints: number;
   lessonsCompleted: number;
-  averageLearningTime: string; // example: "2 Hrs"
+  averageLearningTime: string;
 }
 
-const classesData: ClassItem[] = [
-  {
-    id: "1",
-    title: "Culture in Spanish",
-    description: "Lorem ipsum dolor sit amet mbue...",
-    dateJoined: "16/03/2024",
-  },
-  {
-    id: "2",
-    title: "Basic Spanish Mannerism",
-    description: "Lorem ipsum dolor sit amet mbue...",
-    dateJoined: "16/03/2024",
-  },
-  {
-    id: "3",
-    title: "Basic Spanish Mannerism",
-    description: "Lorem ipsum dolor sit amet mbue...",
-    dateJoined: "16/03/2024",
-  },
-  {
-    id: "4",
-    title: "Basic Spanish Mannerism",
-    description: "Lorem ipsum dolor sit amet mbue...",
-    dateJoined: "16/03/2024",
-  },
-  {
-    id: "5",
-    title: "Basic Spanish Mannerism",
-    description: "Lorem ipsum dolor sit amet mbue...",
-    dateJoined: "16/03/2024",
-  },
-]
-
-const lessonsData: Lesson[] = [
-  {
-    id: "1",
-    title: "Culture in Spanish",
-    status: "In Progress",
-  },
-]
-
 export default function StudentProfile() {
-  const [isTeacherView, setIsTeacherView] = useState(true)
   const [assignmentSearch, setAssignmentSearch] = useState("")
   const [classSearch, setClassSearch] = useState("")
   const [lessonSearch, setLessonSearch] = useState("")
   const navigate = useNavigate();
   const [studentInfoData, setStudentInfoData] = useState<StudentInfo | null>(null);
-  const { classId } = useParams<{ classId: string }>(); // Assuming the student ID is passed as a URL parameter
-  console.log("Student ID from params:", classId);
+  const [assignmentsData, setAssignmentsData] = useState<Assignment[]>([]);
+  const [classesData, setClassesData] = useState<ClassItem[]>([]);
+  const [lessonsData, setLessonsData] = useState<Lesson[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { studentId } = useParams<{ studentId: string }>(); // Changed from classId to studentId
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Pending":
@@ -143,62 +72,403 @@ export default function StudentProfile() {
         return "bg-gray-100 text-gray-800"
     }
   }
+
   useEffect(() => {
-    const fetchStudent = async () => {
+    const fetchStudentData = async () => {
       try {
+        setLoading(true);
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`${Server_url}/api/users/my-students/`, {
+        
+        console.log('Fetching student data for studentId:', studentId);
+        
+        if (!studentId) {
+          console.error('No studentId provided');
+          toast.error('No student ID provided');
+          setLoading(false);
+          return;
+        }
+        
+        // 1. First try to get student info directly
+        let studentInfo: StudentInfo | null = null;
+        try {
+          const studentResponse = await fetch(`${Server_url}/api/users/${studentId}/`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (studentResponse.ok) {
+            const studentData = await studentResponse.json();
+            console.log('Direct student data:', studentData);
+            
+            // Set student info directly
+            studentInfo = {
+              id: studentData.id || studentId,
+              name: `${studentData.first_name || ''} ${studentData.last_name || ''}`.trim() || 
+                    studentData.name || 
+                    studentData.username || 
+                    'Unknown Student',
+              username: studentData.username || studentData.email?.split('@')[0] || '@unknown',
+              avatarUrl: studentData.profile_picture || studentData.avatar,
+              lastLogin: studentData.last_login
+                ? new Date(studentData.last_login).toLocaleDateString()
+                : 'N/A',
+              learningPoints: studentData.learning_points ?? studentData.points ?? 0,
+              lessonsCompleted: studentData.lessons_completed ?? studentData.completed_lessons ?? 0,
+              averageLearningTime: studentData.avg_learning_time || studentData.average_time || '0 Mins',
+              status: 'Active', // Default status
+            };
+            
+            // Set student info immediately
+            console.log('Setting student info:', studentInfo);
+            setStudentInfoData(studentInfo);
+          } else {
+            console.error('Failed to fetch student directly:', await studentResponse.text());
+            
+            // Create a fallback student info with basic details
+            studentInfo = {
+              id: studentId,
+              name: 'Loading...',
+              username: '@loading',
+              status: 'Active',
+              lastLogin: 'N/A',
+              learningPoints: 0,
+              lessonsCompleted: 0,
+              averageLearningTime: '0 Mins'
+            };
+            setStudentInfoData(studentInfo);
+          }
+        } catch (error) {
+          console.error('Error fetching student directly:', error);
+          
+          // Create a fallback student info
+          studentInfo = {
+            id: studentId,
+            name: 'Student',
+            username: '@student',
+            status: 'Active',
+            lastLogin: 'N/A',
+            learningPoints: 0,
+            lessonsCompleted: 0,
+            averageLearningTime: '0 Mins'
+          };
+          setStudentInfoData(studentInfo);
+        }
+        
+        // Fetch all submissions for this student to calculate total points
+        try {
+          const submissionsResponse = await fetch(`${Server_url}/api/classrooms/assignment-submissions/?student=${studentId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (submissionsResponse.ok) {
+            const submissions = await submissionsResponse.json();
+            const totalPoints = submissions.reduce((acc, sub) => acc + (sub.score || 0), 0);
+            
+            // Update student info with the calculated points
+            setStudentInfoData(prevInfo => prevInfo ? { ...prevInfo, learningPoints: totalPoints } : null);
+            
+            // Also update the local variable if it exists, for subsequent logic
+            if (studentInfo) {
+              studentInfo.learningPoints = totalPoints;
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching assignment submissions for points calculation:', error);
+        }
+        
+        // 2. Fetch all teacher's classes
+        const classesResponse = await fetch(`${Server_url}/api/classrooms/my-classrooms/`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
-  
-        if (!response.ok) throw new Error('Failed to fetch students');
-  
-        const resData = await response.json();
-        const data = resData.students || resData;
-  
-        const studentEntry = data.find((item: any) => item.student.id === classId);
-        if (!studentEntry) return;
-  
-        const s = studentEntry.student;
-        const student: StudentInfo = {
-          id: s.id,
-          name: `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown',
-          username: s.username || '@unknown',
-          avatarUrl: s.profile_picture || undefined,
-          lastLogin: s.last_login
-            ? new Date(s.last_login).toLocaleDateString()
-            : 'N/A',
-          learningPoints: s.learning_points ?? 0,
-          lessonsCompleted: s.lessons_completed ?? 0,
-          averageLearningTime: s.avg_learning_time || '0 Mins',
-          status: s.status || 'Invited',
-        };
+        
+        if (!classesResponse.ok) throw new Error('Failed to fetch classes');
+        const teacherClasses = await classesResponse.json();
+        console.log('Teacher classes:', teacherClasses);
 
-        console.log("Fetched student data:", student);
-        setStudentInfoData(student);
+        // 3. Try multiple approaches to find the student
+        const studentClasses: ClassItem[] = [];
+        const studentAssignments: Assignment[] = [];
+        const studentLessons: Lesson[] = [];
+
+        for (const classItem of teacherClasses) {
+          console.log(`\n=== Checking class: ${classItem.title} (ID: ${classItem.id}) ===`);
+          
+          // Approach 1: Try enrolled-students endpoint
+          try {
+            const studentsResponse = await fetch(
+              `${Server_url}/api/classrooms/classroom/${classItem.id}/enrolled-students/`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+
+            if (studentsResponse.ok) {
+              const studentsData = await studentsResponse.json();
+              const students = studentsData.results || studentsData; // Handle pagination
+              console.log(`Students in class ${classItem.id} (enrolled-students):`, students);
+              
+              // Find the student in this class with more flexible matching
+              const foundStudent = students.find((student: any) => {
+                console.log('Checking enrolled student:', {
+                  id: student.id,
+                  email: student.email,
+                  username: student.username,
+                  first_name: student.first_name,
+                  last_name: student.last_name
+                });
+                
+                return String(student.id) === String(studentId) || 
+                       student.email === studentId || 
+                       student.username === studentId;
+              });
+
+              if (foundStudent) {
+                console.log('✅ Found student in class via enrolled-students:', foundStudent);
+                
+                // Update student info with more complete data if available
+                if (foundStudent.first_name || foundStudent.last_name) {
+                  const updatedStudentInfo: StudentInfo = {
+                    ...studentInfo!,
+                    name: `${foundStudent.first_name || ''} ${foundStudent.last_name || ''}`.trim() || 
+                          foundStudent.name || 
+                          foundStudent.username || 
+                          studentInfo!.name,
+                    username: foundStudent.username || foundStudent.email?.split('@')[0] || studentInfo!.username,
+                  };
+                  setStudentInfoData(updatedStudentInfo);
+                  studentInfo = updatedStudentInfo;
+                }
+                
+                // Add class to student's classes
+                studentClasses.push({
+                  id: classItem.id,
+                  title: classItem.title,
+                  description: classItem.description || 'No description',
+                  dateJoined: foundStudent.date_joined || foundStudent.created_at
+                    ? new Date(foundStudent.date_joined || foundStudent.created_at).toLocaleDateString()
+                    : 'Unknown',
+                  studentStatus: 'ENROLLED'
+                });
+              } else {
+                console.log('❌ Student not found in enrolled-students');
+              }
+            } else {
+              console.error(`Failed to fetch enrolled-students for class ${classItem.id}`);
+            }
+          } catch (error) {
+            console.error(`Error fetching enrolled-students for class ${classItem.id}:`, error);
+          }
+
+          // Approach 2: Try memberships endpoint
+          try {
+            const membershipsResponse = await fetch(
+              `${Server_url}/api/classrooms/classroom/${classItem.id}/memberships/`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+
+            if (membershipsResponse.ok) {
+              const memberships = await membershipsResponse.json();
+              console.log(`Memberships in class ${classItem.id}:`, memberships);
+              
+              const foundMembership = memberships.find((membership: any) => {
+                console.log('Checking membership:', {
+                  full_membership: membership,
+                  student: membership.student,
+                  user: membership.user,
+                  id: membership.id
+                });
+                
+                // Check various possible structures
+                const memberUserId = membership.student?.id || membership.user?.id || membership.student_id || membership.user_id;
+                const memberEmail = membership.student?.email || membership.user?.email || membership.email;
+                const memberUsername = membership.student?.username || membership.user?.username || membership.username;
+                
+                return String(memberUserId) === String(studentId) || 
+                       memberEmail === studentId || 
+                       memberUsername === studentId ||
+                       String(membership.id) === String(studentId);
+              });
+
+              if (foundMembership && studentClasses.length === 0) {
+                console.log('✅ Found student in class via memberships:', foundMembership);
+                
+                const memberData = foundMembership.student || foundMembership.user || foundMembership;
+                
+                studentClasses.push({
+                  id: classItem.id,
+                  title: classItem.title,
+                  description: classItem.description || 'No description',
+                  dateJoined: foundMembership.created_at
+                    ? new Date(foundMembership.created_at).toLocaleDateString()
+                    : 'Unknown',
+                  studentStatus: foundMembership.status || 'ENROLLED'
+                });
+              } else if (!foundMembership) {
+                console.log('❌ Student not found in memberships');
+              }
+            } else {
+              console.error(`Failed to fetch memberships for class ${classItem.id}:`, await membershipsResponse.text());
+            }
+          } catch (error) {
+            console.error(`Error fetching memberships for class ${classItem.id}:`, error);
+          }
+
+          // If student found in this class, fetch assignments and lessons
+          const isStudentInClass = studentClasses.some(sc => sc.id === classItem.id);
+          
+          if (isStudentInClass) {
+            console.log(`📚 Fetching assignments and lessons for class ${classItem.id}`);
+            
+            // Fetch assignments for this class
+            try {
+              const assignmentsResponse = await fetch(
+                `${Server_url}/api/classrooms/classroom/${classItem.id}/assignments/`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+
+              if (assignmentsResponse.ok) {
+                const assignments = await assignmentsResponse.json();
+                console.log(`Assignments in class ${classItem.id}:`, assignments);
+                
+                // Fetch submissions for this class
+                const submissionsResponse = await fetch(
+                  `${Server_url}/api/classrooms/classroom/${classItem.id}/assignment-submissions/`,
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                let submissions = [];
+                if (submissionsResponse.ok) {
+                  submissions = await submissionsResponse.json();
+                  console.log(`Submissions in class ${classItem.id}:`, submissions);
+                }
+
+                // Process assignments for this student
+                for (const assignment of assignments) {
+                  const submission = submissions.find((sub: any) => {
+                    const subStudentId = sub.student?.id || sub.student_id || sub.student;
+                    return sub.assignment === assignment.id && String(subStudentId) === String(studentId);
+                  });
+
+                  studentAssignments.push({
+                    id: assignment.id,
+                    title: assignment.title,
+                    description: assignment.description || 'No description',
+                    status: submission 
+                      ? (submission.graded ? 'Graded' : 'Submitted')
+                      : 'Pending',
+                    points: submission?.points || submission?.score || null,
+                    className: classItem.title,
+                    dueDate: assignment.due_date 
+                      ? new Date(assignment.due_date).toLocaleDateString()
+                      : 'No due date'
+                  });
+                }
+              }
+            } catch (error) {
+              console.error(`Error fetching assignments for class ${classItem.id}:`, error);
+            }
+
+            // Fetch lessons assigned to this class
+            if (classItem.lessons && classItem.lessons.length > 0) {
+              console.log(`Lessons in class ${classItem.id}:`, classItem.lessons);
+              
+              for (const lessonId of classItem.lessons) {
+                try {
+                  const lessonResponse = await fetch(
+                    `${Server_url}/api/lessons/lesson/${lessonId}/`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                  );
+
+                  if (lessonResponse.ok) {
+                    const lesson = await lessonResponse.json();
+                    
+                    studentLessons.push({
+                      id: lesson.id,
+                      title: lesson.title,
+                      status: 'Not Started', // Default - would need progress API
+                      className: classItem.title
+                    });
+                  }
+                } catch (error) {
+                  console.error(`Error fetching lesson ${lessonId}:`, error);
+                }
+              }
+            }
+          }
+        }
+
+        console.log('\n=== FINAL RESULTS ===');
+        console.log('Student info set:', studentInfo);
+        console.log('Student classes found:', studentClasses);
+        console.log('Student assignments found:', studentAssignments);
+        console.log('Student lessons found:', studentLessons);
+
+        // Set the collected data
+        setClassesData(studentClasses);
+        setAssignmentsData(studentAssignments);
+        setLessonsData(studentLessons);
+
+        // Only show error message if no classes found
+        if (studentClasses.length === 0) {
+          toast.error('Student not found in any of your classes. Please check the student ID.');
+        }
+        // Removed the success toast message
+
       } catch (err: any) {
-        console.error("Error fetching student:", err.message);
-        toast.error('Error fetching student info.');
+        console.error("Error fetching student data:", err);
+        toast.error(`Error fetching student data: ${err.message}`);
+      } finally {
+        setLoading(false);
       }
     };
-  
-    fetchStudent();
-  }, [classId]);
 
-console.log("Student Info Data:", studentInfoData);
+    if (studentId) {
+      fetchStudentData();
+    } else {
+      setLoading(false);
+      toast.error('No student ID provided in URL');
+    }
+  }, [studentId]); // Changed from classId
+
+  // Filter functions
+  const filteredAssignments = assignmentsData.filter(assignment =>
+    assignment.title.toLowerCase().includes(assignmentSearch.toLowerCase()) ||
+    assignment.className.toLowerCase().includes(assignmentSearch.toLowerCase())
+  );
+
+  const filteredClasses = classesData.filter(classItem =>
+    classItem.title.toLowerCase().includes(classSearch.toLowerCase())
+  );
+
+  const filteredLessons = lessonsData.filter(lesson =>
+    lesson.title.toLowerCase().includes(lessonSearch.toLowerCase()) ||
+    lesson.className.toLowerCase().includes(lessonSearch.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading student data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
       <Header />
       <div className="flex flex-1">
-        {/* Sidebar */}
-        <div >
+        <div>
           <Sidebar />
         </div>
-        {/* Main Content */}
         <div className="flex-1 flex flex-col md:ml-64 transition-all duration-300">
           <div className="p-3 sm:p-4 md:p-6 lg:p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -236,7 +506,7 @@ console.log("Student Info Data:", studentInfoData);
                             <div className="flex items-center gap-1">
                               <span className="font-medium text-gray-900">{studentInfoData.learningPoints}</span>
                               <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="..." />
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                               </svg>
                             </div>
                           </div>
@@ -253,101 +523,67 @@ console.log("Student Info Data:", studentInfoData);
                     </div>
                   )}
                 </div>
+
                 {/* Assignments Section */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
                     <div>
                       <h3 className="text-base sm:text-lg font-semibold text-gray-900">Assignments</h3>
-                      <p className="text-xs sm:text-sm text-gray-500">Lists of assignments taken</p>
+                      <p className="text-xs sm:text-sm text-gray-500">Student's assignment submissions ({assignmentsData.length} total)</p>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 text-xs sm:text-sm w-full sm:w-auto mt-2 sm:mt-0">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Assign Assignment
-                    </button>
                   </div>
                   <div className="mb-4">
                     <div className="relative">
                       <svg className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path d="..." />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                       <input
                         type="text"
-                        placeholder="Search here..."
+                        placeholder="Search assignments..."
                         value={assignmentSearch}
                         onChange={(e) => setAssignmentSearch(e.target.value)}
                         className="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
                       />
                     </div>
                   </div>
-                  {/* Responsive Table/Card */}
-                  <div className="hidden sm:block space-y-3">
-                    <div className="grid grid-cols-3 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-200">
-                      <span>Assignment Title</span>
-                      <span>Status</span>
-                      <span>Points</span>
-                    </div>
-                    {assignmentsData.map((assignment) => (
-                      <div key={assignment.id} className="grid grid-cols-3 gap-4 items-center py-3 border-b border-gray-100 last:border-b-0">
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">{assignment.title}</p>
-                          <p className="text-xs text-gray-500">{assignment.description}</p>
-                        </div>
-                        <div>
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(assignment.status)}`}>
-                            {assignment.status}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          {assignment.points ? (
-                            <div className="flex items-center gap-1">
-                              <span className="text-sm font-medium">{assignment.points}</span>
-                              <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="..." />
-                              </svg>
+                  
+                  {/* Assignments List */}
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {filteredAssignments.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p className="text-sm">No assignments found for this student</p>
+                      </div>
+                    ) : (
+                      filteredAssignments.map((assignment) => (
+                        <div key={assignment.id} className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900 text-sm">{assignment.title}</h4>
+                              <p className="text-xs text-gray-500">{assignment.description}</p>
+                              <p className="text-xs text-blue-600 mt-1">Class: {assignment.className}</p>
                             </div>
-                          ) : (
-                            <span className="text-sm text-gray-400">-</span>
-                          )}
-                          <button className="text-gray-400 hover:text-gray-600">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="..." />
-                            </svg>
-                          </button>
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(assignment.status)}`}>
+                              {assignment.status}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs text-gray-500">
+                            <span>Due: {assignment.dueDate}</span>
+                            {assignment.points && (
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium text-gray-900">{assignment.points}</span>
+                                <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                  {/* Mobile Card List */}
-                  <div className="sm:hidden space-y-3">
-                    {assignmentsData.map((assignment) => (
-                      <div key={assignment.id} className="bg-gray-50 rounded-lg p-3 border border-gray-100 flex flex-col gap-2">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-900">{assignment.title}</span>
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(assignment.status)}`}>
-                            {assignment.status}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500">{assignment.description}</p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500">Points:</span>
-                          {assignment.points ? (
-                            <span className="font-semibold text-gray-800">{assignment.points}</span>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                          <button className="text-gray-400 hover:text-gray-600 ml-2">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="..." />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
+
               {/* Right Column: Classes + Lessons */}
               <div className="space-y-6">
                 {/* Classes Section */}
@@ -355,139 +591,93 @@ console.log("Student Info Data:", studentInfoData);
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
                     <div>
                       <h3 className="text-base sm:text-lg font-semibold text-gray-900">Classes</h3>
-                      <p className="text-xs sm:text-sm text-gray-500">Lists of your classes joined</p>
+                      <p className="text-xs sm:text-sm text-gray-500">Classes where student is enrolled ({classesData.length} total)</p>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 border rounded-lg hover:bg-blue-50 text-xs sm:text-sm w-full sm:w-auto mt-2 sm:mt-0">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Assign Class
-                    </button>
                   </div>
                   <div className="mb-4">
                     <div className="relative">
                       <svg className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path d="..." />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                       <input
                         type="text"
-                        placeholder="Search here..."
+                        placeholder="Search classes..."
                         value={classSearch}
                         onChange={(e) => setClassSearch(e.target.value)}
                         className="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
                       />
                     </div>
                   </div>
-                  {/* Responsive Table/Card */}
-                  <div className="hidden sm:block space-y-3">
-                    <div className="grid grid-cols-2 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-200">
-                      <span>Class Title</span>
-                      <span>Date Joined</span>
-                    </div>
-                    {classesData.map((classItem) => (
-                      <div key={classItem.id} className="grid grid-cols-2 gap-4 items-center py-3 border-b border-gray-100 last:border-b-0">
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">{classItem.title}</p>
-                          <p className="text-xs text-gray-500">{classItem.description}</p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">{classItem.dateJoined}</span>
-                          <button className="text-gray-400 hover:text-gray-600">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="..." />
-                            </svg>
-                          </button>
-                        </div>
+                  
+                  {/* Classes List */}
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {filteredClasses.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p className="text-sm">No classes found for this student</p>
                       </div>
-                    ))}
-                  </div>
-                  {/* Mobile Card List */}
-                  <div className="sm:hidden space-y-3">
-                    {classesData.map((classItem) => (
-                      <div key={classItem.id} className="bg-gray-50 rounded-lg p-3 border border-gray-100 flex flex-col gap-2">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-900">{classItem.title}</span>
-                          <span className="text-xs text-gray-600">{classItem.dateJoined}</span>
+                    ) : (
+                      filteredClasses.map((classItem) => (
+                        <div key={classItem.id} className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900 text-sm">{classItem.title}</h4>
+                              <p className="text-xs text-gray-500 mt-1">{classItem.description}</p>
+                              <p className="text-xs text-gray-500 mt-2">Joined: {classItem.dateJoined}</p>
+                            </div>
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(classItem.studentStatus)}`}>
+                              {classItem.studentStatus}
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-500">{classItem.description}</p>
-                        <button className="text-gray-400 hover:text-gray-600 self-end">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="..." />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
+
                 {/* Lessons Section */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
                     <div>
                       <h3 className="text-base sm:text-lg font-semibold text-gray-900">Lessons</h3>
-                      <p className="text-xs sm:text-sm text-gray-500">Lists of lessons taken</p>
+                      <p className="text-xs sm:text-sm text-gray-500">Assigned lessons from classes ({lessonsData.length} total)</p>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 border rounded-lg hover:bg-blue-50 text-xs sm:text-sm w-full sm:w-auto mt-2 sm:mt-0">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Assign Lesson
-                    </button>
                   </div>
                   <div className="mb-4">
                     <div className="relative">
                       <svg className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path d="..." />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                       <input
                         type="text"
-                        placeholder="Search here..."
+                        placeholder="Search lessons..."
                         value={lessonSearch}
                         onChange={(e) => setLessonSearch(e.target.value)}
                         className="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
                       />
                     </div>
                   </div>
-                  {/* Responsive Table/Card */}
-                  <div className="hidden sm:block space-y-3">
-                    <div className="grid grid-cols-2 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-200">
-                      <span>Lesson Title</span>
-                      <span>Status</span>
-                    </div>
-                    {lessonsData.map((lesson) => (
-                      <div key={lesson.id} className="grid grid-cols-2 gap-4 items-center py-3 border-b border-gray-100 last:border-b-0">
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">{lesson.title}</p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lesson.status)}`}>
-                            {lesson.status}
-                          </span>
-                          <button className="text-gray-400 hover:text-gray-600">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="..." />
-                            </svg>
-                          </button>
-                        </div>
+                  
+                  {/* Lessons List */}
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {filteredLessons.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p className="text-sm">No lessons found for this student</p>
                       </div>
-                    ))}
-                  </div>
-                  {/* Mobile Card List */}
-                  <div className="sm:hidden space-y-3">
-                    {lessonsData.map((lesson) => (
-                      <div key={lesson.id} className="bg-gray-50 rounded-lg p-3 border border-gray-100 flex flex-col gap-2">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-900">{lesson.title}</span>
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lesson.status)}`}>
-                            {lesson.status}
-                          </span>
+                    ) : (
+                      filteredLessons.map((lesson) => (
+                        <div key={lesson.id} className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900 text-sm">{lesson.title}</h4>
+                              <p className="text-xs text-blue-600 mt-1">From: {lesson.className}</p>
+                            </div>
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(lesson.status)}`}>
+                              {lesson.status}
+                            </span>
+                          </div>
                         </div>
-                        <button className="text-gray-400 hover:text-gray-600 self-end">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="..." />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </div>

@@ -49,7 +49,7 @@ const Header = () => {
     localStorage.clear();
     navigate('/login');
   };
-
+console.log('currentUser', currentUser);
   return (
     <header className="w-full bg-white shadow-sm px-3 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-2 sticky top-0 z-30 ml-0 transition-all">
       {/* Left: Greeting & Hamburger */}
@@ -123,11 +123,18 @@ const Header = () => {
             className="avatar-circle cursor-pointer"
             onClick={() => setShowProfileModal((prev) => !prev)}
             tabIndex={0}
-            
             aria-haspopup="true"
             aria-expanded={showProfileModal}
           >
-            <span className="avatar-text">{initials}</span>
+            {currentUser?.avatar_url ? (
+              <img
+                src={currentUser.avatar_url}
+                alt="Avatar"
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <span className="avatar-text">{initials}</span>
+            )}
           </div>
           <img
             src="https://cdn.builder.io/api/v1/image/assets/TEMP/f5fc99522c49d496f47526ab4ed29b9f4fee5422"

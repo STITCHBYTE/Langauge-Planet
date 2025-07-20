@@ -119,6 +119,24 @@ const AddStudentsPage = () => {
                 if (!responsePotential.ok) throw new Error('Failed to fetch students list');
                 const potentialData = await responsePotential.json();
 
+                // Fetch scores for each potential student
+                const studentsWithPoints = await Promise.all(potentialData.map(async (student) => {
+                    let totalPoints = 0;
+                    try {
+                        const submissionsRes = await fetch(`${Server_url}/api/classrooms/assignment-submissions/?student=${student.id}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (submissionsRes.ok) {
+                            const submissions = await submissionsRes.json();
+                            totalPoints = submissions.reduce((acc, sub) => acc + (sub.score || 0), 0);
+                        }
+                    } catch (scoreError) {
+                        console.error(`Failed to fetch scores for student ${student.id}:`, scoreError);
+                    }
+                    return { ...student, points: totalPoints };
+                }));
+
+
                 // Fetch already added students
                 const responseAdded = await fetch(`${Server_url}/api/users/my-students/`, {
                     headers: {
@@ -132,7 +150,7 @@ const AddStudentsPage = () => {
                 // Extract student objects from addedData, which may be nested
                 const addedStudentsList = addedData.map(item => item.student);
 
-                setPotentialStudents(potentialData);
+                setPotentialStudents(studentsWithPoints);
                 setAddedStudents(addedStudentsList);
             } catch (err) {
                 if (err instanceof Error) {

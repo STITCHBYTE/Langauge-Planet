@@ -1,55 +1,156 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { FiSearch, FiFilter, FiCopy, FiMoreVertical } from "react-icons/fi";
+import { useParams, useNavigate } from "react-router-dom";
+import { FiSearch, FiFilter, FiCopy, FiMoreVertical, FiArrowLeft } from "react-icons/fi";
 import { toast } from "react-toastify";
 import Header from "../../Component/Home/Header.tsx";
 import Sidebar from "../../Component/Home/Sidebar.tsx";
-
-const PAGINATION = [1, 2, 3, 4, 5, 6];
+import Server_url from "../../config.js";
 
 const ViewStudent: React.FC = () => {
   const { lesson_id } = useParams();
+  const navigate = useNavigate();
   const [students, setStudents] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [lessonTitle, setLessonTitle] = useState('');
+  // Add state for filter
+  const [filterLetter, setFilterLetter] = useState<string>("");
+  const [filterType, setFilterType] = useState<string>("all");
 
-  // Fetch students for the class this lesson is assigned to
   useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchStudentsForLesson = async () => {
       setLoading(true);
-      try {
-        // 1. Get lesson details to find the class it is assigned to
-        const lessonRes = await fetch(`/api/lessons/${lesson_id}/`);
-        const lessonData = await lessonRes.json();
-        const classroomId = lessonData.classroom || lessonData.classroom_id;
-
-        // 2. Get students for that class
-        const studentsRes = await fetch(
-          `/api/classrooms/classroom/${classroomId}/enrolled-students/`
-        );
-        const studentsData = await studentsRes.json();
-
-        // 3. Optionally, get lesson progress for each student
-        // This assumes you have an endpoint like /api/lessons/{lesson_id}/progress/?student={student_id}
-        // For demo, we'll just show the student info
-        setStudents(studentsData.results || studentsData);
-      } catch (err) {
-        setStudents([]);
-        toast.error("Failed to fetch students or lesson details.");
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast.error("Authentication required.");
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      try {
+        console.log("Fetching students for lesson_id:", lesson_id);
+        // 1. Fetch lesson details to get its title
+        const lessonRes = await fetch(`${Server_url}/api/lessons/lesson/${lesson_id}/`, { headers });
+        if (lessonRes.ok) {
+            const lessonData = await lessonRes.json();
+            setLessonTitle(lessonData.title);
+            console.log("Lesson data:", lessonData);
+        }
+
+        // 2. Fetch all of the teacher's classes
+        const classesRes = await fetch(`${Server_url}/api/classrooms/my-classrooms/`, { headers });
+        if (!classesRes.ok) throw new Error("Failed to fetch classes.");
+        const teacherClasses = await classesRes.json();
+        console.log("Fetched teacher classes:", teacherClasses);
+
+        // 3. Find all classes that contain this lesson
+        const lessonIdStr = String(lesson_id);
+        const classesWithLesson = teacherClasses.filter((cls: any) => {
+          if (Array.isArray(cls.lessons)) {
+            // If lessons is array of strings
+            if (typeof cls.lessons[0] === "string") {
+              return cls.lessons.includes(lessonIdStr);
+            }
+            // If lessons is array of numbers
+            if (typeof cls.lessons[0] === "number") {
+              return cls.lessons.includes(parseInt(lesson_id, 10));
+            }
+            // If lessons is array of objects
+            if (typeof cls.lessons[0] === "object" && cls.lessons[0] !== null) {
+              return cls.lessons.some((lesson: any) => lesson.id === lessonIdStr || lesson.id === parseInt(lesson_id, 10));
+            }
+          }
+          return false;
+        });
+        console.log("Classes with this lesson:", classesWithLesson);
+
+        if (classesWithLesson.length === 0) {
+            setStudents([]);
+            setLoading(false);
+            return;
+        }
+
+        // 4. Fetch enrolled students from all relevant classes
+        const studentPromises = classesWithLesson.map((cls: any) =>
+          fetch(`${Server_url}/api/classrooms/classroom/${cls.id}/enrolled-students/`, { headers })
+            .then(res => res.ok ? res.json() : [])
+        );
+
+        const studentsByClass = await Promise.all(studentPromises);
+        // Handle paginated or direct array responses
+        const allStudentsRaw = studentsByClass.flatMap(data => data.results || data);
+
+        console.log("Flattened students:", allStudentsRaw);
+
+        // Deduplicate by student ID (for direct student objects)
+        const uniqueStudents = Array.from(
+          new Map(
+            allStudentsRaw.map(student => [student.id, student])
+          ).values()
+        );
+
+        setStudents(uniqueStudents);
+        console.log("Unique students:", uniqueStudents);
+
+      } catch (err) {
+        console.error("Error fetching students for lesson:", err);
+        toast.error("Failed to fetch students for this lesson.");
+        setStudents([]);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchStudents();
+
+    if (lesson_id) {
+        fetchStudentsForLesson();
+    }
   }, [lesson_id]);
 
   // Filter students by search
-  const filteredStudents = students.filter(
-    (student) =>
-      student.first_name?.toLowerCase().includes(search.toLowerCase()) ||
-      student.last_name?.toLowerCase().includes(search.toLowerCase()) ||
-      student.username?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredStudents = students.filter((student) => {
+    const searchValue = search.toLowerCase();
+    if (!searchValue) return true; // Show all if search is empty
+
+    if (filterType === "first_name") {
+      return student.first_name?.toLowerCase().includes(searchValue);
+    }
+    if (filterType === "last_name") {
+      return student.last_name?.toLowerCase().includes(searchValue);
+    }
+    if (filterType === "username") {
+      return student.username?.toLowerCase().includes(searchValue);
+    }
+    // "all" or default: search all fields
+    return (
+      student.first_name?.toLowerCase().includes(searchValue) ||
+      student.last_name?.toLowerCase().includes(searchValue) ||
+      student.username?.toLowerCase().includes(searchValue)
+    );
+  });
+
+  // Add this function in your component
+  const handleCopyInviteLink = () => {
+    const inviteLink = `${window.location.origin}/lesson/${lesson_id}`;
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      navigator.clipboard.writeText(inviteLink)
+        .then(() => toast.success("Lesson invite link copied!"))
+        .catch(() => toast.error("Failed to copy link!"));
+    } else {
+      // Fallback for unsupported browsers
+      try {
+        const tempInput = document.createElement("input");
+        tempInput.value = inviteLink;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+        toast.success("Lesson invite link copied!");
+      } catch {
+        toast.error("Failed to copy link!");
+      }
+    }
+  };
 
   return (
     <div className="bg-[#f8fafc] min-h-screen flex flex-col">
@@ -59,43 +160,23 @@ const ViewStudent: React.FC = () => {
       <div className="ml-[17%]">
         <Header />
 
-        <div className="flex-1 flex flex-col">
-          {/* Top Bar */}
-          {/* <div className="flex items-center justify-between px-8 py-4 border-b bg-white">
-          <div className="flex items-center gap-2 text-gray-500 text-sm">
-            <a href="#" className="hover:underline">
-              &lt; Go Back
-            </a>
-            <span className="mx-2">Lessons / ... /</span>
-            <span className="font-semibold text-blue-600">View Students</span>
-          </div> */}
-          {/* <div className="flex items-center gap-6">
-            <span className="text-gray-500 text-sm">Student View</span>
-            <div className="flex items-center gap-2">
-              <span className="text-green-600 font-semibold text-sm">
-                Teacher View
-              </span>
-              <span className="inline-block w-4 h-4 bg-green-200 rounded-full"></span>
-            </div>
-            <img
-              src="https://cdn.builder.io/api/v1/image/assets/TEMP/f5fc99522c49d496f47526ab4ed29b9f4fee5422"
-              alt="bell"
-              className="w-7 h-7 rounded-full"
-            />
-            <img
-              src="https://cdn.builder.io/api/v1/image/assets/TEMP/e9566c3c1deed7e865e669aef469b59439b094e0"
-              alt="flag"
-              className="w-7 h-7 rounded-full"
-            />
-            <img
-              src="https://randomuser.me/api/portraits/women/44.jpg"
-              alt="profile"
-              className="w-9 h-9 rounded-full"
-            />
+        <div className="flex-1 flex flex-col p-6">
+          {/* Breadcrumbs */}
+          <div className="flex items-center text-sm mb-6 flex-wrap">
+            <button onClick={() => navigate(-1)} className="flex items-center text-gray-500 hover:text-gray-700">
+              <FiArrowLeft className="h-4 w-4 mr-2" />
+              Go Back
+            </button>
+            <span className="mx-2 text-gray-400">/</span>
+            <span className="text-gray-500">Lessons</span>
+            <span className="mx-2 text-gray-400">/</span>
+            <span className="text-gray-800 font-medium">{lessonTitle || 'Lesson'}</span>
+            <span className="mx-2 text-gray-400">/</span>
+            <span className="text-blue-600 font-medium">View Students</span>
           </div>
-        </div> */}
+          
           {/* Filter/Search Bar */}
-          <div className="bg-white px-8 py-6 border-b">
+          <div className="bg-white px-8 py-6 border-b rounded-t-lg">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-3 flex-1">
                 <div className="relative w-full max-w-xs">
@@ -110,17 +191,29 @@ const ViewStudent: React.FC = () => {
                 </div>
                 <button className="flex items-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-lg font-semibold text-sm hover:bg-blue-50 transition">
                   <FiFilter />
-                  Filter By
+                  <select
+                    value={filterType}
+                    onChange={e => setFilterType(e.target.value)}
+                    className="bg-transparent border-none outline-none"
+                  >
+                    <option value="all">All</option>
+                    <option value="first_name">First Name</option>
+                    <option value="last_name">Last Name</option>
+                    <option value="username">Username</option>
+                  </select>
                 </button>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-semibold text-sm border border-blue-100 hover:bg-blue-100 transition">
+              <button
+                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-semibold text-sm border border-blue-100 hover:bg-blue-100 transition"
+                onClick={handleCopyInviteLink}
+              >
                 <FiCopy />
                 Copy Lesson Invite Link
               </button>
             </div>
           </div>
           {/* Table */}
-          <div className="flex-1 overflow-x-auto bg-white px-8">
+          <div className="flex-1 overflow-x-auto bg-white px-8 rounded-b-lg">
             {loading ? (
               <div className="py-12 text-center text-gray-500">
                 Loading students...
@@ -177,7 +270,7 @@ const ViewStudent: React.FC = () => {
                         colSpan={4}
                         className="py-8 text-center text-gray-400"
                       >
-                        No students found.
+                        No students found for this lesson.
                       </td>
                     </tr>
                   )}

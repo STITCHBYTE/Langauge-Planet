@@ -1,14 +1,12 @@
 import React, { useState, useEffect, ChangeEvent, useRef } from 'react';
 import axios from 'axios';
-import Header from '../../Component/Home/Header.tsx'; // Assuming Header can accept an onMenuClick prop
-import Sidebar from '../../Component/Home/Sidebar.tsx'; // Assuming Sidebar can be controlled
+import Header from '../../Component/Home/Header.tsx';
+import Sidebar from '../../Component/Home/Sidebar.tsx';
 import { useNavigate } from 'react-router-dom';
 import Server_url from '../../config';
 import { toast } from 'react-toastify';
+import { FiEye, FiEdit, FiTrash2, FiMoreVertical, FiUsers, FiSearch, FiPlus, FiFilter, FiChevronDown } from 'react-icons/fi';
 
-// --- Reusable Components (included for completeness) ---
-
-// Interface representing each class
 interface Class {
   id: string;
   title: string;
@@ -48,18 +46,15 @@ const DropdownMenu: React.FC<{
     <div ref={dropdownRef} className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-50">
       <div className="py-1">
         <button onClick={onView} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
-          {/* View Icon */}
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+          <FiEye className="h-4 w-4" />
           View Class
         </button>
         <button onClick={onEdit} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
-          {/* Edit Icon */}
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+          <FiEdit className="h-4 w-4" />
           Edit Class
         </button>
         <button onClick={onDelete} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
-          {/* Delete Icon */}
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          <FiTrash2 className="h-4 w-4" />
           Delete Class
         </button>
       </div>
@@ -93,33 +88,34 @@ const ClassCard: React.FC<{
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownButtonRef = useRef<HTMLDivElement>(null);
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col overflow-hidden relative">
-      <div className="absolute top-4 right-4 z-10">
-        <div ref={dropdownButtonRef} onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(!isDropdownOpen); }} className="cursor-pointer text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-100">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>
+    <div 
+      className="bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col relative p-4 cursor-pointer"
+      onClick={() => onView(classItem.id)}
+    >
+      <div className="absolute top-3 right-3 z-10">
+        <div ref={dropdownButtonRef} onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(!isDropdownOpen); }} className="cursor-pointer text-slate-500 hover:text-slate-800 p-1.5 rounded-full hover:bg-slate-100">
+          <FiMoreVertical className="h-4 w-4" />
         </div>
         <DropdownMenu isOpen={isDropdownOpen} onClose={() => setIsDropdownOpen(false)} onView={() => onView(classItem.id)} onEdit={() => onEdit(classItem.id)} onDelete={() => onDelete(classItem.id)} buttonRef={dropdownButtonRef} />
       </div>
-      <div className="p-4">
-        <img src={`${classItem.image}`} alt={classItem.title} className="w-24 h-24 object-cover rounded-md mb-4" onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/100'; }} />
+      
+      <div className="flex-grow">
+        <img src={`${classItem.image}`} alt={classItem.title} className="w-16 h-16 object-cover rounded-lg mb-3" onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/100'; }} />
+        <h3 className="text-base font-semibold text-slate-800 mb-1 truncate">{classItem.title}</h3>
+        <p className="text-xs text-slate-500 line-clamp-2">{classItem.description}</p>
       </div>
-      <div className="p-4 pt-0 flex flex-col flex-grow">
-        <h3 className="text-lg font-semibold text-gray-800 mb-1 truncate">{classItem.title}</h3>
-        <p className="text-sm text-gray-600 line-clamp-2">{classItem.description}</p>
-        <hr className="my-3 border-gray-200" />
-        <div className="flex items-center justify-between mt-auto">
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${classItem.is_private ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>{classItem.is_private ? 'Private' : 'Public'}</span>
-          <div className="flex items-center text-gray-600 text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H2v-2a3 3 0 015.356-1.857M17 20v-2c0-.653-.133-1.272-.375-1.84M2 12A8 8 0 0110 4h.01M17 12a8 8 0 01-16 0" /></svg>
-            {classItem.students || 0} Students
-          </div>
+
+      <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
+        <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${classItem.is_private ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>{classItem.is_private ? 'Private Class' : 'Public Class'}</span>
+        <div className="flex items-center text-slate-500 text-xs font-medium">
+          <FiUsers className="h-3.5 w-3.5 mr-1.5" />
+          {classItem.students || 0} Students
         </div>
       </div>
     </div>
   );
 };
 
-// --- Main Responsive Dashboard Component ---
 const ClassDashboard: React.FC = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -128,8 +124,11 @@ const ClassDashboard: React.FC = () => {
   const [filterValue, setFilterValue] = useState<string>('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [classToDelete, setClassToDelete] = useState<Class | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for mobile sidebar
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const navigate = useNavigate();
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
 
   const API_URL = `${Server_url}/api/classrooms/my-classrooms/`;
   const TOKEN = localStorage.getItem("authToken");
@@ -149,6 +148,19 @@ const ClassDashboard: React.FC = () => {
     fetchClasses();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node) &&
+        filterButtonRef.current && !filterButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsFilterOpen(false);
+      }
+    };
+    if (isFilterOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isFilterOpen]);
+
   const handleViewClass = (classId: string) => navigate(`/Class_info_Page/${classId}`);
   const handleEditClass = (classId: string) => navigate(`/edit-class/${classId}`);
   const handleDeleteClass = (classId: string) => {
@@ -162,7 +174,7 @@ const ClassDashboard: React.FC = () => {
   const confirmDeleteClass = async () => {
     if (!classToDelete) return;
     try {
-      await axios.delete(`${Server_url}/api/classrooms/${classToDelete.id}/delete/`, { headers: { 'Authorization': `Bearer ${TOKEN}` } });
+      await axios.delete(`${Server_url}/api/classrooms/classroom/${classToDelete.id}/delete/`, { headers: { 'Authorization': `Bearer ${TOKEN}` } });
       setClasses(prev => prev.filter(classItem => classItem.id !== classToDelete.id));
       toast.success('Class deleted successfully.');
     } catch (error) {
@@ -178,55 +190,60 @@ const ClassDashboard: React.FC = () => {
     .filter(c => filterValue === '' || (filterValue === 'public' && !c.is_private) || (filterValue === 'private' && c.is_private));
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] font-sans">
       <div className="flex">
-        {/* Pass sidebar open state to the Sidebar component if it supports it */}
         <Sidebar isMobileMenuOpen={isSidebarOpen} toggleMobileMenu={() => setIsSidebarOpen(!isSidebarOpen)} />
-
-        {/* Main Content Wrapper */}
         <div className="flex-1 flex flex-col lg:ml-64">
-          {/* Pass a function to the header to toggle the sidebar */}
           <Header onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
           
-          <main className="flex-grow p-4 sm:p-6 lg:p-8">
-            {/* Header Controls */}
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <main className="flex-grow p-6 lg:p-8">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
               <div className="flex flex-col sm:flex-row items-center w-full md:w-auto gap-3">
-                <div className="relative w-full sm:w-64">
+                <div className="relative w-full sm:w-auto">
                   <input
                     type="text"
-                    placeholder="Search classes..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Search here..."
+                    className="w-full sm:w-56 pl-10 pr-4 py-2 bg-white border border-slate-300/70 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     value={searchTerm}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                   />
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 </div>
-                <select
-                  className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={filterValue}
-                  onChange={(e) => setFilterValue(e.target.value)}
-                >
-                  <option value="">All Types</option>
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
-                </select>
+                <div className="relative w-full sm:w-auto">
+                  <button
+                    ref={filterButtonRef}
+                    onClick={() => setIsFilterOpen(!isFilterOpen)}
+                    className="w-full sm:w-auto px-4 py-2 bg-white border border-slate-300/70 rounded-lg text-sm font-medium text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50"
+                  >
+                    <FiFilter className="h-4 w-4 text-slate-500" />
+                    <span>{filterValue ? `Status: ${filterValue.charAt(0).toUpperCase() + filterValue.slice(1)}` : 'Filter By'}</span>
+                    <FiChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isFilterOpen && (
+                    <div ref={filterDropdownRef} className="absolute top-full mt-2 w-full sm:w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-20">
+                      <div className="py-1">
+                        <button onClick={() => { setFilterValue(''); setIsFilterOpen(false); }} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">All</button>
+                        <button onClick={() => { setFilterValue('public'); setIsFilterOpen(false); }} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">Public</button>
+                        <button onClick={() => { setFilterValue('private'); setIsFilterOpen(false); }} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">Private</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <button
-                className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition whitespace-nowrap"
+                className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition whitespace-nowrap flex items-center justify-center gap-2"
                 onClick={() => navigate('/create-class')}
               >
-                + Create New Class
+                <FiPlus className="h-4 w-4" />
+                Create New Class
               </button>
             </div>
-
-            {/* Content Area */}
-            {loading ? <div className="text-center text-lg text-gray-600">Loading classes...</div> :
-             error ? <div className="text-center text-red-600 text-lg">Error: {error}</div> :
-             filteredClasses.length === 0 ? <div className="text-center text-gray-600 text-lg">No classes found.</div> :
+            {loading ? <div className="text-center text-lg text-slate-600 pt-10">Loading classes...</div> :
+             error ? <div className="text-center text-red-600 text-lg pt-10">Error: {error}</div> :
+             filteredClasses.length === 0 ? <div className="text-center text-slate-600 text-lg pt-10">No classes found.</div> :
              (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5">
                 {filteredClasses.map((classItem) => (
                   <ClassCard key={classItem.id} classItem={classItem} onView={handleViewClass} onEdit={handleEditClass} onDelete={handleDeleteClass} />
                 ))}

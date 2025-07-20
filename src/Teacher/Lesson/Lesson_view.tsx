@@ -72,7 +72,7 @@ const QuizCard = ({ quiz, onEdit, onDelete }) => (
                 </p>
             </div>
             <div className="flex items-center gap-2">
-                <button 
+                {/* <button 
                     onClick={() => onEdit(quiz.id)}
                     className="p-1 text-slate-400 hover:text-blue-600"
                     title="Edit Quiz"
@@ -80,7 +80,7 @@ const QuizCard = ({ quiz, onEdit, onDelete }) => (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                </button>
+                </button> */}
                 <button 
                     onClick={() => onDelete(quiz.id)}
                     className="p-1 text-slate-400 hover:text-red-600"
@@ -443,10 +443,12 @@ const LessonDetailsPage: React.FC = () => {
                   <div className="flex flex-row flex-wrap items-center justify-between gap-2 mb-6">
                     <div className="flex flex-row flex-wrap gap-2">
                       <ActionButton onClick={() => navigate(`/lesson/${lesson.id}/students`)}>View Students</ActionButton>
-                      <ActionButton>View Quiz Report</ActionButton>
+                     <ActionButton onClick={() => navigate(`/lesson-report/${lesson.id}`)}>View Quiz Report</ActionButton>
                       <ActionButton destructive onClick={handleDeleteLesson}>Delete Lesson</ActionButton>
-                      <ActionButton>Student View</ActionButton>
-                      <ActionButton primary>Publish Lesson</ActionButton>
+                      {/* <ActionButton>Student View</ActionButton> */}
+                     <ActionButton primary onClick={() => toast.success('Your lesson is published successfully!')}>
+                        Publish Lesson
+                      </ActionButton>
                     </div>
                   </div>
 
@@ -536,7 +538,7 @@ const LessonDetailsPage: React.FC = () => {
                                                 {stage.description && <p className="text-sm text-slate-500 mt-1">{stage.description}</p>}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                              <button
+                                              {/* <button
                                                 onClick={() => handleEditStage(stage.id)}
                                                 className="p-1 text-slate-400 hover:text-blue-600"
                                                 title="Edit Stage"
@@ -544,7 +546,7 @@ const LessonDetailsPage: React.FC = () => {
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                 </svg>
-                                              </button>
+                                              </button> */}
                                               <button
                                                 onClick={() => handleDeleteStage(stage.id)}
                                                 className="p-1 text-slate-400 hover:text-red-600"

@@ -22,8 +22,7 @@ type Lesson = {
   image?: string;
   is_private?: boolean;
   lesson_level?: string;
-  status?: string; // Make sure your backend returns this
-  // ...other fields
+  status?: string;
 };
 
 const LessonTabs: React.FC<{ activeTab: string; setActiveTab: (level: string) => void }> = ({ activeTab, setActiveTab }) => (

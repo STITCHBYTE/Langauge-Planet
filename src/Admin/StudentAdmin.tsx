@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Server_url from '../config.js';
+import Sidebar from './Sidebar.tsx';
 
 const HomeIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -158,31 +159,7 @@ const App: React.FC = () => {
 
     return (
         <div className="flex h-screen bg-gray-50 font-sans">
-            <aside className="w-64 bg-white flex flex-col border-r">
-                <div className="h-20 flex items-center px-6 border-b">
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">L</div>
-                    <span className="ml-3 text-lg font-bold text-gray-800">Language Planet</span>
-                </div>
-                <nav className="flex-1 p-4 space-y-2">
-                    <NavItem icon={<HomeIcon />} label="Dashboard" />
-                    <NavItem icon={<LanguageIcon />} label="Languages" />
-                    <NavItem icon={<BookOpenIcon />} label="Lessons" />
-                    <NavItem icon={<UsersIcon />} label="Students" active />
-                    <NavItem icon={<UsersIcon />} label="Teachers" />
-                </nav>
-                <div className="p-4 border-t">
-                    <div className="flex items-center">
-                        <img src="https://placehold.co/40x40/E0E7FF/4F46E5?text=VA" alt="Victoria Akudo" className="w-10 h-10 rounded-full" />
-                        <div className="ml-3">
-                            <p className="font-semibold text-sm text-gray-800">Victoria Akudo</p>
-                            <p className="text-xs text-gray-500">victoria@example.com</p>
-                        </div>
-                        <button className="ml-auto text-gray-500 hover:text-gray-700">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                        </button>
-                    </div>
-                </div>
-            </aside>
+            <Sidebar />
             <main className="flex-1 flex flex-col">
                 <header className="h-20 bg-white border-b flex items-center px-8 justify-between">
                     <div>

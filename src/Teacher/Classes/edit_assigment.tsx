@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Import hooks
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronDown,
   Calendar,
@@ -11,9 +11,11 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 import Header from '../../Component/Home/Header.tsx';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
-import Server_url from '../../config';          
+import Server_url from '../../config';
 
 interface Discussion {
   id: number;
@@ -28,6 +30,23 @@ interface Student {
   first_name?: string;
   last_name?: string;
 }
+
+// Custom DatePicker Input Component
+const CustomDateInput = React.forwardRef<HTMLInputElement, any>(({ value, onClick, placeholder }, ref) => (
+  <div className="relative w-full">
+    <input
+      ref={ref}
+      value={value}
+      onClick={onClick}
+      readOnly
+      placeholder={placeholder}
+      className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 cursor-pointer bg-white"
+    />
+    <Calendar
+      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 cursor-pointer hover:text-blue-600 pointer-events-none"
+    />
+  </div>
+));
 
 // QuestionDisplayCard component remains the same
 const QuestionDisplayCard = ({ question, index, onEdit, onDelete }) => {
@@ -160,13 +179,15 @@ const QuestionEditForm = ({ question, index, onSave, onFormChange, onDelete }) =
 const EditAssignmentPage = () => {
   const { classroomId } = useParams(); // Get classroomId from URL
   const navigate = useNavigate(); // For redirecting after success
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // State for form fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState(''); // New state for description
   const [discussionId, setDiscussionId] = useState('');
   const [assignedStudents, setAssignedStudents] = useState<string[]>([]); // Will hold selected student IDs
-  const [dueDate, setDueDate] = useState(''); // Using simple string for date input
+  const [dueDate, setDueDate] = useState<Date | null>(null); // Changed to Date object
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false); // State to control custom calendar
 
   const [questions, setQuestions] = useState([]);
   const [discussionOptions, setDiscussionOptions] = useState<Discussion[]>([]);
@@ -360,7 +381,7 @@ const EditAssignmentPage = () => {
             description: description,
             discussion: discussionId,
             assigned_students: assignedStudents,
-            due_date: dueDate || null,
+            due_date: dueDate ? dueDate.toISOString() : null, // Convert Date to ISO string
             points: totalPoints,
             questions: questionsPayload, // Nest the questions array
         };
@@ -593,23 +614,32 @@ const EditAssignmentPage = () => {
                     </div>
                   </div>
 
-                  {/* Due Date */}
+                  {/* Due Date with Material Design 3 DatePicker */}
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700">
                       Due Date <span className="text-gray-500">(optional)</span>
                     </label>
-                    <div className="relative mt-1">
-                      <input
-                        type="datetime-local"
-                        value={dueDate}
-                        onChange={e => setDueDate(e.target.value)}
-                        className="flex items-center justify-between w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm"
+                    <div className="mt-1 w-full">
+                      <DatePicker
+                        selected={dueDate}
+                        onChange={(date: Date) => setDueDate(date)}
+                        showTimeSelect
+                        timeFormat="HH:mm"
+                        timeIntervals={15}
+                        timeCaption="Time"
+                        dateFormat="dd/MM/yyyy, HH:mm"
+                        placeholderText="dd/mm/yyyy, --:-- --"
+                        customInput={<CustomDateInput />}
+                        popperClassName="react-datepicker-popper"
+                        calendarClassName="react-datepicker-calendar"
+                        minDate={new Date()}
+                        isClearable={false}
+                        wrapperClassName="w-full"
                       />
-                      <Calendar className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
                   </div>
 
-                <div>
+                  <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700">
                       Assign to Students
                     </label>
@@ -712,6 +742,70 @@ const EditAssignmentPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Custom CSS for Material Design 3 styling */}
+      <style jsx>{`
+        .react-datepicker-popper {
+          z-index: 9999 !important;
+        }
+        
+        .react-datepicker {
+          font-family: inherit;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .react-datepicker__header {
+          background-color: #f9fafb;
+          border-bottom: 1px solid #e5e7eb;
+          border-radius: 8px 8px 0 0;
+        }
+        
+        .react-datepicker__current-month {
+          font-weight: 600;
+          color: #374151;
+        }
+        
+        .react-datepicker__day {
+          color: #374151;
+          border-radius: 4px;
+          transition: all 0.15s ease-in-out;
+        }
+        
+        .react-datepicker__day:hover {
+          background-color: #dbeafe;
+          color: #1d4ed8;
+        }
+        
+        .react-datepicker__day--selected {
+          background-color: #2563eb !important;
+          color: white !important;
+        }
+        
+        .react-datepicker__day--keyboard-selected {
+          background-color: #3b82f6;
+          color: white;
+        }
+        
+        .react-datepicker__time-container {
+          border-left: 1px solid #e5e7eb;
+        }
+        
+        .react-datepicker__time-list-item {
+          padding: 8px 12px;
+          transition: background-color 0.15s ease-in-out;
+        }
+        
+        .react-datepicker__time-list-item:hover {
+          background-color: #f3f4f6;
+        }
+        
+        .react-datepicker__time-list-item--selected {
+          background-color: #2563eb !important;
+          color: white !important;
+        }
+      `}</style>
     </div>
   );
 };

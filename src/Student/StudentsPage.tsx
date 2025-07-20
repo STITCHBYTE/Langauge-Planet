@@ -105,22 +105,41 @@ const StudentsPage = () => {
                 const resData = await response.json();
                 const data = resData.students || resData;
 
-                const mapped = data.map((item, index) => {
+                // Map over students and fetch their scores concurrently
+                const mappedData = await Promise.all(data.map(async (item, index) => {
                     const s = item.student;
+                    let totalPoints = 0;
+
+                    try {
+                        // Fetch assignment submissions for each student
+                        const submissionsRes = await fetch(`${SERVER_URL}/api/classrooms/assignment-submissions/?student=${s.id}`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+
+                        if (submissionsRes.ok) {
+                            const submissions = await submissionsRes.json();
+                            // Sum the 'score' from each submission
+                            totalPoints = submissions.reduce((acc, submission) => acc + (submission.score || 0), 0);
+                        }
+                    } catch (scoreError) {
+                        console.error(`Failed to fetch scores for student ${s.id}:`, scoreError);
+                        // If fetching scores fails, points will remain 0
+                    }
+
                     return {
                         id: s.id || index,
                         name: `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown',
                         username: s.username || '@unknown',
                         initial: s.username?.[1]?.toUpperCase() || 'U',
                         lastLogin: s.last_login || 'N/A',
-                        learningPoints: s.learning_points ?? 0,
+                        learningPoints: totalPoints, // Use the calculated total score
                         lessonsCompleted: s.lessons_completed ?? 0,
                         avgLearningTime: s.avg_learning_time || '0 Mins',
                         status: s.status || 'Invited',
                     };
-                });
+                }));
 
-                setAllStudents(mapped);
+                setAllStudents(mappedData);
             } catch (err) {
                 console.error("Error fetching students:", err.message);
                 toast.error('Error fetching students list.');
