@@ -22,10 +22,10 @@ const CharacterSelect: React.FC<CharacterSelectProps> = ({ onSelect, selectedCha
     const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(initialSelectedCharacter || null);
 
     const PORTRAIT_DATA: { [key: string]: React.CSSProperties } = {
-        'MedievalKingPack': { backgroundSize: '800%', backgroundPosition: '39% 90%' },
-        'medieval_warrior': { backgroundSize: '1000%', backgroundPosition: '40% 90%' },
-        'medieval_warrior2': { backgroundSize: '2000%', backgroundPosition: '4% 68%' },
-        'medieval_warrior3': { backgroundSize: '2200%', backgroundPosition: '55.2% 63%' },
+        'MedievalKingPack': { backgroundSize: '1260%', backgroundPosition: '21% 80%' },
+        'medieval_warrior': { backgroundSize: '1700%', backgroundPosition: '23% 95%' },
+        'medieval_warrior2': { backgroundSize: '3000%', backgroundPosition: '44% 68%' },
+        'medieval_warrior3': { backgroundSize: '3000%', backgroundPosition: '55% 63%' },
     };
 
     useEffect(() => {

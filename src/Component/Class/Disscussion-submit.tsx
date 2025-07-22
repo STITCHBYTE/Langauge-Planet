@@ -91,7 +91,6 @@ const getFileName = (url: string) => {
 };
 
 const getFileSize = (url: string) => {
-  // You can implement actual file size detection if needed
   return 'Unknown size';
 };
 
@@ -103,10 +102,6 @@ const handleGoogleApiError = (error: any, functionName: string) => {
   throw new Error(message);
 };
 
-/**
- * Marks an assignment as "Turned In" using the Google API Client Library (gapi).
- * This is a different approach to avoid CORS issues with axios/fetch.
- */
 export async function turnInGoogleClassroomAssignment(
   studentGoogleToken: string,
   courseId: string,
@@ -131,7 +126,6 @@ export async function turnInGoogleClassroomAssignment(
       gapi.client.load('classroom', 'v1', () => {
         gapi.client.setToken({ access_token: studentGoogleToken });
 
-        // Step 1: List submissions for this coursework
         gapi.client.classroom.courses.courseWork.studentSubmissions.list({
           courseId: courseId,
           courseWorkId: courseWorkId,
@@ -146,8 +140,6 @@ export async function turnInGoogleClassroomAssignment(
             }
             const submissionId = submissions[0].id;
             console.log('[DEBUG] Found submission:', submissionId);
-
-            // Step 2: Turn in the submission
             gapi.client.classroom.courses.courseWork.studentSubmissions.turnIn({
               courseId: courseId,
               courseWorkId: courseWorkId,
@@ -175,8 +167,6 @@ export async function turnInGoogleClassroomAssignment(
   });
 }
 
-
-// Create a new component for the main page logic so we can use the hook inside the provider
 const DiscussionSubmitContent: React.FC = () => {
   const { discussionId } = useParams<{ discussionId: string }>();
   const navigate = useNavigate();
@@ -210,7 +200,6 @@ const DiscussionSubmitContent: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // 1. Fetch discussion details
       const discussionResponse = await fetch(`${Server_url}/api/classrooms/discussions/${discussionId}/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -221,8 +210,6 @@ const DiscussionSubmitContent: React.FC = () => {
       if (!discussionResponse.ok) throw new Error('Failed to fetch discussion data');
       const discussionData = await discussionResponse.json();
       setDiscussionData(discussionData);
-
-      // 2. Fetch assignments associated with this discussion
       const assignmentsResponse = await fetch(`${Server_url}/api/classrooms/discussions/${discussionId}/assignments/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -243,7 +230,6 @@ const DiscussionSubmitContent: React.FC = () => {
         })));
       }
 
-      // 3. Fetch Forum Threads for this discussion
       const threadsRes = await fetch(`${Server_url}/api/forums/discussion/${discussionId}/threads/`, {
           headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -273,7 +259,6 @@ const DiscussionSubmitContent: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  // --- REAL Google Login Handler ---
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       console.log('[DEBUG] Google Login Success:', tokenResponse);
@@ -281,10 +266,7 @@ const DiscussionSubmitContent: React.FC = () => {
       localStorage.setItem('googleClassroomToken', accessToken);
       toast.success('Google Login Successful!', { id: 'google-login' });
 
-      // NOW, resume the submission process for the pending assignment
       if (pendingGoogleAssignment) {
-        // We call handleAssignmentSubmit which contains the full logic,
-        // rather than proceeding directly. This is safer.
         await handleAssignmentSubmit(pendingGoogleAssignment, -1);
       }
       setShowGoogleLoginModal(false);
@@ -294,24 +276,16 @@ const DiscussionSubmitContent: React.FC = () => {
       toast.error('Google Login Failed. Please try again.', { id: 'google-login' });
       setShowGoogleLoginModal(false);
     },
-    // This scope is correct. It allows reading courses and modifying submissions.
     scope: 'openid https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.me',
   });
 
   const handleGoogleLogin = () => {
-    console.log("Initiating Google Login...");
     toast.loading('Waiting for Google Login...', { id: 'google-login' });
-    login(); // This will open the Google login popup
+    login();
   };
 
-  // --- NEW HELPER FUNCTION ---
-  // This function tries to find the Google IDs on-the-fly.
   const findGoogleIdsAndCreateSubmission = async (assignment: Assignment, studentGoogleToken: string) => {
-    // toast.loading('Finding assignment on Google Classroom...', { id: 'google-find' });
-    
     try {
-      // Step 1: Find the Google Course ID
-      console.log('[DEBUG] Finding Google Course ID...');
       const coursesResponse = await axios.get('https://classroom.googleapis.com/v1/courses?studentId=me', {
         headers: { Authorization: `Bearer ${studentGoogleToken}` },
       });
@@ -324,10 +298,6 @@ const DiscussionSubmitContent: React.FC = () => {
         throw new Error("Please accept invite if accepted, then contact support");
       }
       const googleCourseId = matchingCourse.id;
-      console.log(`[DEBUG] Found matching Google Course ID: ${googleCourseId}`);
-
-      // Step 2: Find the Google CourseWork (Assignment) ID
-      console.log('[DEBUG] Finding Google CourseWork ID...');
       const courseWorkResponse = await axios.get(`https://classroom.googleapis.com/v1/courses/${googleCourseId}/courseWork`, {
         headers: { Authorization: `Bearer ${studentGoogleToken}` },
       });
@@ -356,8 +326,6 @@ const DiscussionSubmitContent: React.FC = () => {
     } catch (error) {
       console.error('[DEBUG] Failed to find Google IDs:', error);
       toast.error(error.message || 'Could not link to Google Classroom.', { id: 'google-find' });
-      // Optionally, you could ask the user if they want to submit to your server anyway.
-      // For now, we stop the process.
       setSubmitting(false);
     }
   };
@@ -372,18 +340,10 @@ const DiscussionSubmitContent: React.FC = () => {
 
     try {
       const isGoogleAssignment = assignmentToSubmit.google_course_id && assignmentToSubmit.google_classroom_id;
-      
-      console.log('[DEBUG] Assignment Data:', assignmentToSubmit);
-      console.log('[DEBUG] Is this a Google Classroom assignment?', isGoogleAssignment);
-      console.log('[DEBUG] Does the student have a Google token?', !!studentGoogleToken);
-      console.log('[DEBUG] Was Google submission skipped by user?', skipGoogle);
-
-      // 1. Submit to Google Classroom FIRST if applicable and not skipped
       if (isGoogleAssignment && studentGoogleToken && !skipGoogle) {
         console.log('[DEBUG] Conditions met. Attempting to submit to Google Classroom first.');
         toast.info('Turning in on Google Classroom...', { id: 'google-turn-in' });
         try {
-          // The helper function now has its own logs
           await turnInGoogleClassroomAssignment(
             studentGoogleToken,
             assignmentToSubmit.google_course_id,
@@ -392,7 +352,6 @@ const DiscussionSubmitContent: React.FC = () => {
           toast.success('Turned in on Google Classroom!', { id: 'google-turn-in' });
         } catch (googleError) {
           console.error('[DEBUG] Submission to Google Classroom FAILED. Halting process.', googleError);
-          // The handleGoogleApiError function will show a toast and throw an error.
           throw googleError;
         }
       } else {
@@ -405,32 +364,40 @@ const DiscussionSubmitContent: React.FC = () => {
       
       const formData = new FormData();
       formData.append('assignment', assignmentToSubmit.id);
-      // Add the skip flag to the payload if true
-      if (skipGoogle) {
-        formData.append('google_submission_skipped', 'true');
-      }
-
-      const textAnswersPayload = [];
+      
+      // This array will be JSON.stringified
+      const answersPayload = [];
 
       for (const question of assignmentToSubmit.questions || []) {
         const userAnswer = answers.find(answer => answer.question_id === question.id);
         if (!userAnswer) continue;
 
         if (question.answer_type === 'FILE' && userAnswer.file) {
-          // Append the file directly to the form data for this question
-          formData.append(`answer_file_${question.id}`, userAnswer.file);
+          const fileFieldName = `answer_file_${question.id}`;
+          // 1. Append the actual file to FormData with a unique key
+          formData.append(fileFieldName, userAnswer.file);
+          // 2. Add a reference to that file in the JSON payload
+          answersPayload.push({
+            question: question.id,
+            answer_file: fileFieldName, // The key used in FormData
+          });
         } else if (question.answer_type === 'TEXT' && userAnswer.answer_text) {
-          // Add text answers to a separate array to be JSON stringified
-          textAnswersPayload.push({
+          // Add text answers directly to the JSON payload
+          answersPayload.push({
             question: question.id,
             answer_text: userAnswer.answer_text,
           });
         }
       }
 
-      // Append the JSON string of text answers if there are any
-      if (textAnswersPayload.length > 0) {
-        formData.append('answers', JSON.stringify(textAnswersPayload));
+      // Append the JSON string of ALL answers if there are any
+      if (answersPayload.length > 0) {
+        formData.append('answers', JSON.stringify(answersPayload));
+      }
+
+      // Add the skip flag to the payload if true
+      if (skipGoogle) {
+        formData.append('google_submission_skipped', 'true');
       }
 
       console.log('[DEBUG] Payload for Language Planet server (FormData)');
@@ -443,25 +410,38 @@ const DiscussionSubmitContent: React.FC = () => {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,
-          // 'Content-Type' is intentionally omitted; the browser sets it for FormData
+          // DO NOT set 'Content-Type' for multipart/form-data, the browser does it.
         },
         body: formData,
       });
 
-      const responseData = await response.json(); // Get JSON response regardless of status
-
+      const responseData = await response.json();
       if (!response.ok) {
         console.error('[DEBUG] FAILED to submit to Language Planet server. Response:', responseData);
         throw new Error(responseData.detail || `Failed to submit assignment: ${assignmentToSubmit.title}`);
       }
 
       console.log('[DEBUG] Successfully submitted to Language Planet server. Response:', responseData);
-      toast.success(`Submitted to Language Planet!`, { id: 'lp-submit' });
-      setSubmittedAssignments(prev => [...prev, assignmentToSubmit.id]);
+      toast.success(`Assignment "${assignmentToSubmit.title}" submitted!`, { id: 'lp-submit' });
+
+      // Check if all assignments are now submitted and navigate if so
+      const newSubmitted = [...submittedAssignments, assignmentToSubmit.id];
+      setSubmittedAssignments(newSubmitted);
+
+      if (assignments.every(a => newSubmitted.includes(a.id))) {
+        toast.success("All assignments submitted! Redirecting back to class.", {
+          autoClose: 2000,
+          onClose: () => {
+            if (discussionData?.classroom) {
+              navigate(`/classes/${discussionData.classroom}/students`);
+            } else {
+              navigate(-1); // Fallback navigation
+            }
+          }
+        });
+      }
 
     } catch (err) {
-      // This will catch errors from both Google and LP submissions.
-      // Specific toasts are handled inside the try block or by the helper.
       setError(err instanceof Error ? err.message : 'Submission failed');
     } finally {
       setSubmitting(false);
@@ -625,7 +605,7 @@ const DiscussionSubmitContent: React.FC = () => {
 
   // Add this line at the top, after you have access to discussionId and currentUser
   useTrackTime({
-    activityType: "discussion", // or "assignment" if you want to track per-assignment
+    activityType: "class", // or "assignment" if you want to track per-assignment
     activityId: discussionId,
     userId: currentUser?.id
   });

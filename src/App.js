@@ -55,6 +55,9 @@ import Admin_LessonReport from './Admin/LessonAdmin/Admin_LessonReport.tsx';
 import Admin_View_student from './Admin/LessonAdmin/Admin_View_student.tsx';
 import Admin_Add_Stage from './Admin/LessonAdmin/Admin_Add_Stage.tsx';
 import Admin_Add_Quiz from './Admin/LessonAdmin/Admin_Add_Quiz.tsx';
+import QuizzesSubmission from './Component/Learning/quizzesSubmission.tsx';
+import FightingGameOnline from './Component/FightingGame/FightingFriends.tsx';
+import CarGame from './Component/game/CarGame/carGame.tsx';
 function App() {
   const AppRoutes = () => {
     const { currentUser } = useView();
@@ -89,6 +92,7 @@ function App() {
             <Route path="/learning" element={<Learning />} />
             <Route path='/classroom' element={<Classroom />} />
             <Route path='/game' element={<Game/>}/>
+            <Route path='/game/:roomCode' element={<FightingGameOnline/>}/>
             <Route path='/fighting-game' element={<FightingGame/>}/>
             <Route path='/login' element={<Login/>}/>
             <Route path='/profile' element={<Profile/>}/>
@@ -122,6 +126,8 @@ function App() {
             <Route path="/lesson/:lessonId" element={<StudentLesson />} />
             <Route path="/stage/:stageId" element={<LessonStudentStage />} />
             <Route path="/lesson-report/:lessonId" element={<LessonReport />} /> {/* New route for Lesson Report */}
+            <Route path="/quiz/:lessonId/:quizId" element={<QuizzesSubmission />} />
+            <Route path="/carGame" element={<CarGame />} />  
           </>
           }
         </Routes>

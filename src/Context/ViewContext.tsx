@@ -3,10 +3,13 @@ import Cookies from 'js-cookie';
 import Server_url from '../config';
 
 interface CurrentUser {
+  id: string;
   first_name?: string;
+  last_name?: string;
   is_teacher?: boolean;
   username?: string;
   email?: string;
+  avatar_url?: string;
 }
 
 interface ViewContextType {

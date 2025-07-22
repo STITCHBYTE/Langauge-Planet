@@ -2,20 +2,24 @@ import React from 'react';
 import './Style.css';
 
 interface GameCardProps {
-  icon: string;
+  image: string;
   title: string;
   description: string;
+  color: 'blue' | 'green';
+  onClick: () => void;
 }
 
-const GameCard = ({ icon, title, description }: GameCardProps) => {
+const GameCard: React.FC<GameCardProps> = ({ image, title, description, color, onClick }) => {
   return (
-    <button className="game-card">
-      <img src={icon} alt={title} className="game-card-icon" />
-      <div className="game-card-content">
-        <h3 className="game-card-title">{title}</h3>
-        <p className="game-card-description">{description}</p>
+    <article className={`new-game-card new-game-card-${color}`} onClick={onClick}>
+      <figure className="new-game-card-media">
+        <img src={image} alt={title} className="new-game-card-image" />
+      </figure>
+      <div className="new-game-card-content">
+        <h3 className="new-game-card-title">{title}</h3>
+        <p className="new-game-card-description">{description}</p>
       </div>
-    </button>
+    </article>
   );
 };
 

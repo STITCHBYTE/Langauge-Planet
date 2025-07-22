@@ -4,6 +4,7 @@ import Sidebar from '../Home/Sidebar.tsx';
 import Header from '../Home/Header.tsx';
 import Server_url from '../../config.js';
 import { FiClock, FiLock, FiUnlock } from 'react-icons/fi';
+import { useView } from '../../Context/ViewContext.tsx';
 
 // --- TYPE DEFINITIONS ---
 type Stage = {
@@ -18,33 +19,21 @@ type Lesson = {
   image?: string;
   duration?: string;
   stages?: Stage[];
+  quizzes?: { id: string }[];
+  lesson_level?: string;
 };
 
 // --- COMPONENT ---
 const StudentLesson: React.FC = () => {
   const { lessonId } = useParams();
   const navigate = useNavigate();
+  const { currentUser } = useView();
 
   // --- STATE MANAGEMENT ---
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [completedStages, setCompletedStages] = useState<Set<string>>(new Set());
-  const [userId, setUserId] = useState<string | null>(null);
-
-  // --- EFFECT 1: FETCH USER ID ---
-  useEffect(() => {
-    const getUserId = () => {
-      // Attempt to get user ID from localStorage, assuming it's stored after login
-      const storedUserId = localStorage.getItem('user_id');
-      if (storedUserId) {
-        setUserId(storedUserId);
-      } else {
-        console.error("User ID not found in localStorage.");
-        // You might want to fetch it from an API endpoint like /api/users/me/ as a fallback
-      }
-    };
-    getUserId();
-  }, []);
+  const [quizzes, setQuizzes] = useState<{ id: string }[]>([]);
 
   // --- EFFECT 2: FETCH THE MAIN LESSON DATA ---
   useEffect(() => {
@@ -78,6 +67,7 @@ const StudentLesson: React.FC = () => {
   // --- EFFECT 3: FETCH SUBMISSIONS TO DETERMINE COMPLETED STAGES ---
   useEffect(() => {
     const fetchStageCompletions = async () => {
+      const userId = currentUser?.id;
       if (!lesson || !lesson.stages || !lesson.stages.length || !userId) {
         return;
       }
@@ -86,34 +76,49 @@ const StudentLesson: React.FC = () => {
       if (!token) return;
 
       try {
+        const res = await fetch(`${Server_url}/api/lessons/lesson/${lesson.id}/stage-completions/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+
+        const completions = await res.json();
+        // completions: [{stage_id, user_id, ...}, ...]
         const completed = new Set<string>();
-        // Fetch submissions for all stages in parallel
-        const submissionPromises = lesson.stages.map(stage =>
-          fetch(`${Server_url}/api/lessons/stage/${stage.id}/submissions/`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }).then(res => res.ok ? res.json() : [])
-        );
-        
-        const submissionsByStage = await Promise.all(submissionPromises);
-        
-        // Process all submissions to find the ones by the current user
-        submissionsByStage.flat().forEach(submission => {
-          // Check if the submission belongs to the current user and is marked as passed/completed
-          if (String(submission.student) === String(userId) && submission.passed) {
-            completed.add(submission.stage);
+        completions.forEach((submission: any) => {
+          if (String(submission.user_id) === String(userId)) {
+            completed.add(submission.stage_id);
           }
         });
-        
         setCompletedStages(completed);
-        console.log("Completed Stages:", completed);
-
       } catch (err) {
-        console.error("An error occurred while fetching stage completions:", err);
+        console.error("Error fetching stage completions:", err);
       }
     };
 
-    fetchStageCompletions();
-  }, [lesson, userId]);
+    if (currentUser) {
+      fetchStageCompletions();
+    }
+  }, [lesson, currentUser]);
+
+  // Fetch quizzes for the lesson
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      if (!lessonId) return;
+      const token = localStorage.getItem('authToken');
+      try {
+        const res = await fetch(`${Server_url}/api/lessons/lesson/${lessonId}/quizzes/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setQuizzes(data);
+        console.log("Lesson quizzes:", data);
+      } catch (err) {
+        console.error("Error fetching quizzes:", err);
+      }
+    };
+    fetchQuizzes();
+  }, [lessonId]);
 
   // --- RENDER LOGIC ---
 
@@ -125,8 +130,19 @@ const StudentLesson: React.FC = () => {
     return <div className="text-center py-8 text-red-500">Lesson not found.</div>;
   }
 
+  const allStagesCompleted = lesson.stages && lesson.stages.length > 0 && completedStages.size === lesson.stages.length;
+  const quizAvailable = lesson.quizzes && lesson.quizzes.length > 0;
+
   const handleStartLesson = () => {
-    if (lesson.stages && lesson.stages.length > 0) {
+    if (!lesson || !lesson.stages || lesson.stages.length === 0) return;
+
+    // Find the first uncompleted stage to continue from
+    const firstUncompletedStage = lesson.stages.find(stage => !completedStages.has(stage.id));
+    
+    if (firstUncompletedStage) {
+      navigate(`/stage/${firstUncompletedStage.id}`);
+    } else if (lesson.stages.length > 0) {
+      // If all are completed, navigate to the first stage to allow review
       navigate(`/stage/${lesson.stages[0].id}`);
     }
   };
@@ -152,29 +168,45 @@ const StudentLesson: React.FC = () => {
           <section className="bg-white rounded-xl shadow p-8 mb-8">
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold mb-2 text-gray-900">{lesson.title}</h1>
-                <p className="text-gray-500 mb-6 max-w-2xl">
-                  {lesson.description}
-                </p>
-                <div className="border rounded-lg px-4 py-2 flex items-center gap-2 text-gray-500 mb-6 w-fit bg-white">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{lesson.title}</h1>
+                <p className="text-gray-600 mb-4">{lesson.description}</p>
+                <span className="text-xs font-semibold uppercase text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{lesson.lesson_level}</span>
+                <div className="mt-4 flex items-center gap-2 text-gray-500 text-sm">
                   <FiClock />
                   <span>{lesson.duration || "1 hour to complete"}</span>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-4 min-w-[160px]">
+              <div className="flex-shrink-0 flex flex-col items-end w-full md:w-auto">
                 {lesson.image && (
                   <img
-                    src={`${Server_url}${lesson.image}`}
-                    alt={lesson.title}
-                    className="w-32 h-32 object-contain rounded-lg bg-gray-100 mb-4"
+                    src={
+                      lesson.image.startsWith('http')
+                        ? lesson.image
+                        : `${Server_url}${lesson.image}`
+                    }
+                    alt="Lesson"
+                    className="w-32 h-32 object-contain mb-4"
+                    style={{ background: "#f3f4f6", borderRadius: "1rem" }}
                   />
                 )}
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={handleStartLesson}
-                    className="bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                    disabled={!lesson.stages || lesson.stages.length === 0}
+                    className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Start Lesson
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (quizzes.length > 0) {
+                        navigate(`/quiz/${lessonId}/${quizzes[0].id}`);
+                      }
+                    }}
+                    disabled={!allStagesCompleted || quizzes.length === 0}
+                    className="bg-gray-100 text-gray-500 font-semibold px-6 py-3 rounded-lg border hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Take Quiz
                   </button>
                 </div>
               </div>
@@ -185,24 +217,24 @@ const StudentLesson: React.FC = () => {
                 {lesson.stages && lesson.stages.length > 0 ? (
                   lesson.stages.map((stage, idx) => {
                     const isCompleted = completedStages.has(stage.id);
-                    // The first stage is never locked. Subsequent stages are locked if the previous one isn't completed.
                     const isLocked = idx > 0 && !completedStages.has(lesson.stages![idx - 1].id);
 
                     return (
                       <li
                         key={stage.id}
-                        className={`flex items-center justify-between rounded-lg px-6 py-4 mb-2 transition ${
-                          isLocked 
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                            : 'bg-green-50 text-gray-700 cursor-pointer hover:bg-blue-50'
-                        } ${isCompleted ? 'border-l-4 border-green-500' : ''}`}
-                        onClick={() => !isLocked && navigate(`/stage/${stage.id}`)}
+                        className={`flex items-center justify-between rounded-lg px-6 py-4 mb-2 bg-white border transition`}
+                        style={{ opacity: isLocked ? 0.6 : 1 }}
                       >
                         <div className="flex items-center gap-4">
-                          {isLocked ? <FiLock /> : isCompleted ? <FiUnlock className="text-green-500" /> : <FiUnlock />}
-                          <span>{`Stage ${idx + 1}: ${stage.title}`}</span>
+                          {isLocked ? <FiLock className="text-gray-400" /> : <FiUnlock className="text-green-500" />}
+                          <span className="font-medium">{`Stage ${idx + 1}: ${stage.title}`}</span>
                         </div>
-                        {isCompleted && <span className="text-xs font-bold text-green-600 bg-green-200 px-2 py-1 rounded-full">COMPLETED</span>}
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-semibold ${isCompleted ? "text-green-600" : "text-gray-400"}`}>
+                            {isCompleted ? "Done" : "Undone"}
+                          </span>
+                          {isLocked ? <FiLock className="text-gray-400" /> : <FiUnlock className="text-green-500" />}
+                        </div>
                       </li>
                     );
                   })

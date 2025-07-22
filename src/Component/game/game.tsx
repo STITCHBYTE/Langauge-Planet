@@ -1,21 +1,19 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../Home/Header.tsx";
 import Sidebar from "../Home/Sidebar.tsx";
-import GameCard from "../game/SectionA.tsx";
+import SectionA from "../game/SectionA.tsx";
 import AddFriends from "./AddFriends.tsx";
-import "./GameCard.css"; // Import your stylesheet
+import "./GameCard.css";
 import FightGame from "./FightGame.tsx";
 
-function Class() {
+function Game() {
   const [showFightingGame, setShowFightingGame] = useState(false);
+  const navigate = useNavigate();
 
-  const handleGameCardClick = () => {
-    setShowFightingGame(true);
-  };
-
-  const handleBackFromGame = () => {
-    setShowFightingGame(false);
-  };
+  const handleFightingGameClick = () => setShowFightingGame(true);
+  const handleCarGameClick = () => navigate('/carGame');
+  const handleBackFromGame = () => setShowFightingGame(false);
 
   if (showFightingGame) {
     return (
@@ -32,28 +30,34 @@ function Class() {
   }
 
   return (
-    <div className="class-container">
-      {/* Header */}
-   <div className="hrader">
-   <Header />
-      {/* Body Content */}
-      <div className="class-layout">
-        <aside className="class-sidebar">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+      <div className="ml-[17%]">
+        <Header />
+      </div>
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <aside className="w-64 bg-white border-r border-gray-200 min-h-screen">
           <Sidebar />
         </aside>
-
-        <main className="class-main">
-          <div className="class-game" onClick={handleGameCardClick} style={{ cursor: 'pointer' }}>
-            <GameCard />
-          </div>
-          <div className="class-friends">
-            <AddFriends />
+        {/* Main Content */}
+        <main className="flex-1 flex justify-center items-start py-12 px-8 bg-[#f8fafc]">
+          <div className="flex gap-8 w-full max-w-[1400px]">
+            {/* Games Container */}
+            <div className="bg-white rounded-2xl shadow-lg p-8 flex flex-col gap-8 w-[520px]">
+              <SectionA
+                onCarGameClick={handleCarGameClick}
+                onFightingGameClick={handleFightingGameClick}
+              />
+            </div>
+            {/* Friends Panel */}
+            <div className="bg-white rounded-2xl shadow-lg p-8 w-[520px] min-h-[600px]">
+              <AddFriends />
+            </div>
           </div>
         </main>
-      </div>
       </div>
     </div>
   );
 }
 
-export default Class;
+export default Game;

@@ -1,32 +1,62 @@
 import React from 'react';
 import './Style.css';
 
-const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const hours = [5, 4, 3, 2, 1, 0];
+const BarChart = ({ data = [], yAxisMax = 5 }) => {
+  // Helper to generate labels for the Y-axis based on the max value
+  const generateYAxisLabels = (maxValue) => {
+    const labels = [];
+    // Create 5 steps for the axis (e.g., if max is 10, steps are 10, 8, 6, 4, 2, 0)
+    for (let i = 5; i >= 0; i--) {
+      labels.push((maxValue / 5) * i);
+    }
+    return labels;
+  };
 
-const BarChart = () => {
+  const yAxisLabels = generateYAxisLabels(yAxisMax);
+  const getBarHeight = (valueInSeconds) => {
+    if (!valueInSeconds || valueInSeconds <= 0) return '0%';
+    
+    const hours = valueInSeconds / 3600;
+    const percentage = Math.min((hours / yAxisMax) * 100, 100);
+    
+    return `${percentage}%`;
+  };
+
   return (
-    <div className="barchart-container">
-      <div className="barchart-grid">
-        {hours.map((hour, index) => (
-          <div key={index} className="barchart-row">
-            <span className="barchart-hour">{hour} hrs</span>
-            <div className="barchart-line" />
+    <div className="bar-chart">
+      <div className="chart-y-axis">
+        {yAxisLabels.map((value, index) => (
+          <div key={index} className="y-axis-row">
+            <span className="y-axis-label">
+              {/* Show integer if it's a whole number, otherwise 1 decimal place */}
+              {Number.isInteger(value) ? value : value.toFixed(1)} hrs
+            </span>
+            <div className="grid-line" />
           </div>
         ))}
       </div>
-
-      <div className="barchart-bars">
-        {days.map((day, index) => (
-          <div key={index} className="barchart-day">
-            <div className="barchart-day-bars">
-              <div className="bar blue" />
-              <div className="bar green" />
-              <div className="bar purple" />
+      <div className="chart-content">
+        <div className="chart-bars">
+          {data.map((dayData, index) => (
+            <div key={index} className="bar-group">
+              <div className="bar-container">
+                <div 
+                  className="bar lessons-bar" 
+                  style={{ height: getBarHeight(dayData.lessons) }}
+                />
+                <div 
+                  className="bar class-bar"
+                  style={{ height: getBarHeight(dayData.class) }}
+                />
+                <div 
+                  className="bar quizzes-bar" 
+                  style={{ height: getBarHeight(dayData.quizzes) }}
+                />
+              </div>
+              <span className="x-axis-label">{dayData.day}</span>
             </div>
-            <span className="barchart-day-label">{day}</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

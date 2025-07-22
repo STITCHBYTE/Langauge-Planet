@@ -402,63 +402,51 @@ const FightingGame: React.FC<FightingGameProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameOver || gamePaused) return;
-      if (quizActive) {
-        // Accept only main keyboard 1-4 and numpad 1-4
-        if (
-          e.code === 'Digit1' || e.code === 'Numpad1' ||
-          e.code === 'Digit2' || e.code === 'Numpad2' ||
-          e.code === 'Digit3' || e.code === 'Numpad3' ||
-          e.code === 'Digit4' || e.code === 'Numpad4'
-        ) {
-          // Map to 0-3 index
-          let idx = -1;
-          switch (e.code) {
-            case 'Digit1': case 'Numpad1': idx = 0; break;
-            case 'Digit2': case 'Numpad2': idx = 1; break;
-            case 'Digit3': case 'Numpad3': idx = 2; break;
-            case 'Digit4': case 'Numpad4': idx = 3; break;
-          }
-          if (idx !== -1) handleTranslationAnswer(idx);
-        }
-        // Ignore all other keys during quiz
+      if (gameOver || gamePaused) return; // If game is paused, stop all input (except quiz answers)
+      if (quizActive) { // If quiz is active, only process quiz answers
+        if (['1', '2', '3', '4'].includes(e.key)) handleTranslationAnswer(parseInt(e.key, 10) - 1);
         return;
       }
-      // ...existing code for game controls...
+      // Re-added 'jump' for movement/attack checks to ensure consistency with dodge/heal animations
       const canMove = !['attack1', 'attack2', 'hit', 'ko', 'jump', 'dodge', 'heal'].includes(player1.action);
       const canAttack = !['hit', 'ko', 'jump', 'dodge', 'heal'].includes(player1.action);
 
       // Determine if player is in range and facing opponent for a potential hit
-      const target = player2;
+      const target = player2; // Opponent is always player2 in single-player
       const distance = Math.abs((player1.x + characterWidth / 2) - (target.x + characterWidth / 2));
       const isInRange = distance <= attackRange + characterWidth / 2;
       const isFacingTarget = (player1.direction === 'right' && player1.x < target.x) || (player1.direction === 'left' && player1.x > target.x);
       const willHit = isInRange && isFacingTarget && !target.isDodging;
 
+
       switch (e.key.toLowerCase()) {
         case 'a': case 'arrowleft': if (canMove) handleMovement(1, 'left'); break;
         case 'd': case 'arrowright': if (canMove) handleMovement(1, 'right'); break;
-        case 'w': case 'arrowup': executeDodge(1); break;
-        case 's': case 'arrowdown': executeDodge(1); break;
+        case 'w': case 'arrowup': executeDodge(1); break; // Trigger dodge
+        case 's': case 'arrowdown': executeDodge(1); break; // Trigger dodge
+        // Re-added cooldown checks for attack keys
         case 'j':
           if (canAttack && player1.cooldowns.attack1 === 0) {
-              if (willHit) {
+              if (willHit) { // Only start quiz if attack will actually hit
                   startTranslationQuiz(1, 2, difficultySettings.playerAttackDamage, 'attack1');
               } else {
-                  executeAttack(1, 'attack1');
+                  // Play attack animation even if out of range/not facing, but no quiz
+                  executeAttack(1, 'attack1'); // Call executeAttack to play animation, it will determine if damage occurs
               }
           }
           break;
         case 'k':
           if (canAttack && player1.cooldowns.attack2 === 0) {
-              if (willHit) {
+              if (willHit) { // Only start quiz if attack will actually hit
                   startTranslationQuiz(1, 2, difficultySettings.playerAttackDamage + 10, 'attack2');
               } else {
-                  executeAttack(1, 'attack2');
+                  // Play attack animation even if out of range/not facing, but no quiz
+                  executeAttack(1, 'attack2'); // Call executeAttack to play animation
               }
           }
           break;
-        case 'h': if (player1.cooldowns.heal === 0) executeHeal(1); break;
+        // Re-added cooldown check for heal key
+        case 'h': if (player1.cooldowns.heal === 0) executeHeal(1); break; // Only check heal cooldown, 'canAttack' is not applicable
       }
     };
 

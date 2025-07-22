@@ -6,7 +6,12 @@ import "./GameCard.css";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 
-const SectionA: React.FC = () => {
+interface SectionAProps {
+  onCarGameClick: () => void;
+  onFightingGameClick: () => void;
+}
+
+const SectionA: React.FC<SectionAProps> = ({ onCarGameClick, onFightingGameClick }) => {
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
   const socketRef = useRef<Socket | null>(null);
@@ -57,23 +62,24 @@ const SectionA: React.FC = () => {
   };
 
   const handlePlayWithFriends = () => {
-  console.log("Requesting room creation from server...");
-  socketRef.current?.emit("createRoom");
-};
-
+    console.log("Requesting room creation from server...");
+    socketRef.current?.emit("createRoom");
+  };
 
   return (
     <>
       <section className="section-a">
-        <GameCard
-          backgroundClass="bg-blue"
-          coverImage="https://cdn.builder.io/api/v1/image/assets/TEMP/1bf32348527794d1efa089cc8ab15e204fdcad56?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775"
-          overlayImage="https://cdn.builder.io/api/v1/image/assets/TEMP/620c4404ba32be14d604579e55c1a6f129050c79?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775"
-          title="Word Racing Game"
-          description="Lorem ipsum dolor sit amet consectetur. Cursus diam nisi sit lacinia diam integer urna proin malesuada."
-        />
+        <div onClick={onCarGameClick} style={{ cursor: 'pointer' }}>
+          <GameCard
+            backgroundClass="bg-blue"
+            coverImage="https://cdn.builder.io/api/v1/image/assets/TEMP/1bf32348527794d1efa089cc8ab15e204fdcad56?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775"
+            overlayImage="https://cdn.builder.io/api/v1/image/assets/TEMP/620c4404ba32be14d604579e55c1a6f129050c79?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775"
+            title="Word Racing Game"
+            description="Lorem ipsum dolor sit amet consectetur. Cursus diam nisi sit lacinia diam integer urna proin malesuada."
+          />
+        </div>
         <div className="section-a__spacer">
-          <div onClick={() => setShowModal(true)}>
+          <div onClick={onFightingGameClick} style={{ cursor: 'pointer' }}>
             <GameCard
               backgroundClass="bg-emerald"
               coverImage="https://cdn.builder.io/api/v1/image/assets/TEMP/fc61acc0eef22ec08fc7048e67207c044594a229?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775"

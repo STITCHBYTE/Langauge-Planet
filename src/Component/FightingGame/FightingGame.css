@@ -32,6 +32,81 @@ h1 {
   z-index: 10;
 }
 
+/* Container for the main message and room info */
+.game-message-container {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Container for the Room ID, copy button, and feedback message */
+.room-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 1rem;
+  color: #ccc;
+  border: 1px solid #555;
+}
+
+.room-info span {
+  margin-right: 10px;
+}
+
+/* Style for the copy button */
+.copy-button {
+  background: #555;
+  border: none;
+  border-radius: 50%; /* Makes it a circle */
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.copy-button:hover {
+  background: #777;
+}
+
+/* Styles the SVG icon inside the button */
+.copy-button svg {
+  fill: #fff;
+}
+
+/* "Copied!" feedback message style */
+.copy-feedback {
+  color: #2ecc71; /* Green color */
+  font-weight: bold;
+  margin-left: 10px;
+  animation: fade-in-out 2s forwards;
+}
+
+/* Simple fade animation for the feedback text */
+@keyframes fade-in-out {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.character-select-container {
+    width: 100%;
+    height: 100%;
+    margin-top: 100px;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(to bottom right, #0a0f1c2f, #1b22384e);
+    color: #ffffff;
+    font-family: 'Orbitron', sans-serif;
+}
+
 .game-over-screen {
   position: absolute;
   top: 50%;
@@ -816,4 +891,282 @@ h1 {
   40% { transform: translateX(5px) rotate(2deg); }
   60% { transform: translateX(-5px) rotate(-2deg); }
   80% { transform: translateX(5px) rotate(2deg); }
+}
+
+/* Healthbar UI container */
+.healthbar-ui-container {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 40px;
+  width: 100%;
+  max-width: 900px;
+  z-index: 20;
+  justify-content: center;
+}
+
+.healthbar-player {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* Bottom center controls bar */
+.controls-bar-ui {
+  position: absolute;
+  left: 50%;
+  bottom: 0px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  /* background: #eaffea; */
+  /* border: 3px solid #2ecc40; */
+  border-radius: 18px;
+  padding: 0px 0px;
+  box-shadow: 0 2px 12px rgba(46, 204, 64, 0.12);
+  z-index: 30;
+  align-items: center;
+}
+/* Glass effect for individual control keys */
+.controls-key-glass {
+  display: inline-block;
+  min-width: 32px;
+  text-align: center;
+  margin: 0 4px;
+  padding: 10px 10px;
+  border-radius: 10px;
+  border: 2px solid #2ecc40;
+  background: rgba(230, 255, 230, 0.45);
+  /* box-shadow: 0 2px 10px 0 rgba(46,204,64,0.10), 0 1.5px 0 0 #b6fcb6 inset; */
+  backdrop-filter: blur(6px);
+  color: #218c3a;
+  font-family: 'Orbitron', monospace;
+  font-size: 1.15em;
+  font-weight: bold;
+  transition: background 0.2s, box-shadow 0.2s;
+  user-select: none;
+}
+.controls-label{
+  color: white;
+}
+.controls-key-glass:active,
+.controls-key-glass:focus {
+  background: rgba(46, 204, 64, 0.18);
+  box-shadow: 0 0 0 2px #2ecc40;
+}
+
+/* Health Bar UI Container */
+.ff-healthbar-ui-container {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 60px;
+  width: 80%;
+  max-width: 900px;
+  z-index: 20;
+  justify-content: center;
+}
+
+.ff-healthbar-player {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ff-player-name {
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-bottom: 6px;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.ff-health-bar-container {
+  width: 100%;
+  max-width: 350px; /* Increased from 220px to 350px */
+  margin-bottom: 4px;
+}
+
+.ff-health-bar {
+  width: 100%;
+  height: 22px;
+  background: #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(46,204,64,0.10);
+  border: 2px solid #000000;
+  margin-bottom: 2px;
+}
+
+.ff-health-fill {
+  height: 100%;
+  transition: width 0.3s cubic-bezier(.4,2,.6,1), background 0.3s;
+  border-radius: 12px 0 0 12px;
+}
+
+.ff-high-health {
+  background: linear-gradient(90deg, #2ecc40 60%, #b6fcb6 100%);
+}
+.ff-medium-health {
+  background: linear-gradient(90deg, #f1c40f 60%, #f9fbe7 100%);
+}
+.ff-low-health {
+  background: linear-gradient(90deg, #e74c3c 60%, #ffeaea 100%);
+}
+
+.ff-health-text {
+  font-size: 1em;
+  color: #ffffff;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 2px;
+  letter-spacing: 1px;
+}
+
+
+/* Base style for each character card */
+.character-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #78b5947d; /* Dark blue-grey */
+  border: 4px solid transparent; /* Transparent border to prevent layout shift on selection */
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  color: #ecf0f1; /* Light grey text */
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  position: relative; /* For positioning tags if needed later */
+}
+
+/* A subtle lift effect when hovering over a card */
+.character-card:hover {
+  transform: translateY(-5px);
+  border-color: #3498db; /* Blue highlight on hover */
+}
+
+/* Style for the character's sprite image */
+.char-select-sprite {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  margin-bottom: 0.75rem;
+}
+
+/* Style for the character's name */
+.character-card h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* --- Selection Indicator Styles --- */
+/*
+ * Main message banner for in-game announcements like "FIGHT!"
+ */
+.game-message-banner {
+  /* Positioning */
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+
+  /* Text Styling */
+  color: #ffffff;
+  font-size: 7rem; /* Big font size */
+  font-weight: bold;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  text-transform: uppercase;
+  -webkit-text-stroke: 4px #c0392b; /* Red stroke */
+  text-shadow: 6px 6px 10px rgba(0, 0, 0, 0.7);
+
+  /* Animation */
+  animation: message-pop-in 2s forwards;
+  pointer-events: none; /* Make it unclickable */
+}
+
+/* Animation keyframes */
+@keyframes message-pop-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.1);
+  }
+  40% {
+    transform: translateX(-50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.8);
+  }
+}
+
+/*
+ * Styling for the message in the CONNECTING screen
+ */
+.lobby-container .game-message {
+  font-size: 1.5rem;
+  color: #ecf0f1;
+  text-align: center;
+}
+
+/*
+ * Styling for the message in the CHARACTER_SELECT screen
+ */
+.character-select-container h2 {
+  font-size: 2rem;
+  color: #d6e73c;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+/* Style for YOUR selected character */
+.character-card.selected-me {
+  border-color: #2ecc71; /* Bright green */
+  background-color: #2c5b40;
+  transform: scale(1.05); /* Make it pop */
+}
+
+/* Style for the OPPONENT's selected character */
+.character-card.selected-opponent {
+  border-color: #e74c3c; /* Bright red */
+  background-color: #6e332f;
+  transform: scale(1.05); /* Make it pop */
+}
+
+/* --- Tag Styles --- */
+
+/* Base style for the "You" and "Opponent" tags */
+.selection-tag {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px; /* Pill shape */
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin-top: 0.75rem;
+  color: white;
+}
+
+/* Specific color for your selection tag */
+.my-tag {
+  background-color: #2ecc71; /* Bright green */
+}
+
+/* Specific color for the opponent's selection tag */
+.opponent-tag {
+  background-color: #e74c3c; /* Bright red */
 }
