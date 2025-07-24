@@ -13,7 +13,6 @@ const ViewStudent: React.FC = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [lessonTitle, setLessonTitle] = useState('');
-  // Add state for filter
   const [filterLetter, setFilterLetter] = useState<string>("");
   const [filterType, setFilterType] = useState<string>("all");
 
@@ -29,61 +28,42 @@ const ViewStudent: React.FC = () => {
       const headers = { 'Authorization': `Bearer ${token}` };
 
       try {
-        console.log("Fetching students for lesson_id:", lesson_id);
-        // 1. Fetch lesson details to get its title
         const lessonRes = await fetch(`${Server_url}/api/lessons/lesson/${lesson_id}/`, { headers });
         if (lessonRes.ok) {
             const lessonData = await lessonRes.json();
             setLessonTitle(lessonData.title);
-            console.log("Lesson data:", lessonData);
         }
-
-        // 2. Fetch all of the teacher's classes
         const classesRes = await fetch(`${Server_url}/api/classrooms/my-classrooms/`, { headers });
         if (!classesRes.ok) throw new Error("Failed to fetch classes.");
         const teacherClasses = await classesRes.json();
-        console.log("Fetched teacher classes:", teacherClasses);
-
-        // 3. Find all classes that contain this lesson
         const lessonIdStr = String(lesson_id);
         const classesWithLesson = teacherClasses.filter((cls: any) => {
           if (Array.isArray(cls.lessons)) {
-            // If lessons is array of strings
             if (typeof cls.lessons[0] === "string") {
               return cls.lessons.includes(lessonIdStr);
             }
-            // If lessons is array of numbers
             if (typeof cls.lessons[0] === "number") {
               return cls.lessons.includes(parseInt(lesson_id, 10));
             }
-            // If lessons is array of objects
             if (typeof cls.lessons[0] === "object" && cls.lessons[0] !== null) {
               return cls.lessons.some((lesson: any) => lesson.id === lessonIdStr || lesson.id === parseInt(lesson_id, 10));
             }
           }
           return false;
         });
-        console.log("Classes with this lesson:", classesWithLesson);
 
         if (classesWithLesson.length === 0) {
             setStudents([]);
             setLoading(false);
             return;
         }
-
-        // 4. Fetch enrolled students from all relevant classes
         const studentPromises = classesWithLesson.map((cls: any) =>
           fetch(`${Server_url}/api/classrooms/classroom/${cls.id}/enrolled-students/`, { headers })
             .then(res => res.ok ? res.json() : [])
         );
 
         const studentsByClass = await Promise.all(studentPromises);
-        // Handle paginated or direct array responses
         const allStudentsRaw = studentsByClass.flatMap(data => data.results || data);
-
-        console.log("Flattened students:", allStudentsRaw);
-
-        // Deduplicate by student ID (for direct student objects)
         const uniqueStudents = Array.from(
           new Map(
             allStudentsRaw.map(student => [student.id, student])
@@ -91,10 +71,8 @@ const ViewStudent: React.FC = () => {
         );
 
         setStudents(uniqueStudents);
-        console.log("Unique students:", uniqueStudents);
 
       } catch (err) {
-        console.error("Error fetching students for lesson:", err);
         toast.error("Failed to fetch students for this lesson.");
         setStudents([]);
       } finally {
@@ -106,11 +84,9 @@ const ViewStudent: React.FC = () => {
         fetchStudentsForLesson();
     }
   }, [lesson_id]);
-
-  // Filter students by search
   const filteredStudents = students.filter((student) => {
     const searchValue = search.toLowerCase();
-    if (!searchValue) return true; // Show all if search is empty
+    if (!searchValue) return true;
 
     if (filterType === "first_name") {
       return student.first_name?.toLowerCase().includes(searchValue);
@@ -121,15 +97,12 @@ const ViewStudent: React.FC = () => {
     if (filterType === "username") {
       return student.username?.toLowerCase().includes(searchValue);
     }
-    // "all" or default: search all fields
     return (
       student.first_name?.toLowerCase().includes(searchValue) ||
       student.last_name?.toLowerCase().includes(searchValue) ||
       student.username?.toLowerCase().includes(searchValue)
     );
   });
-
-  // Add this function in your component
   const handleCopyInviteLink = () => {
     const inviteLink = `${window.location.origin}/lesson/${lesson_id}`;
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
@@ -137,7 +110,6 @@ const ViewStudent: React.FC = () => {
         .then(() => toast.success("Lesson invite link copied!"))
         .catch(() => toast.error("Failed to copy link!"));
     } else {
-      // Fallback for unsupported browsers
       try {
         const tempInput = document.createElement("input");
         tempInput.value = inviteLink;
@@ -161,7 +133,6 @@ const ViewStudent: React.FC = () => {
         <Header />
 
         <div className="flex-1 flex flex-col p-6">
-          {/* Breadcrumbs */}
           <div className="flex items-center text-sm mb-6 flex-wrap">
             <button onClick={() => navigate(-1)} className="flex items-center text-gray-500 hover:text-gray-700">
               <FiArrowLeft className="h-4 w-4 mr-2" />
@@ -174,8 +145,6 @@ const ViewStudent: React.FC = () => {
             <span className="mx-2 text-gray-400">/</span>
             <span className="text-blue-600 font-medium">View Students</span>
           </div>
-          
-          {/* Filter/Search Bar */}
           <div className="bg-white px-8 py-6 border-b rounded-t-lg">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-3 flex-1">
@@ -212,7 +181,6 @@ const ViewStudent: React.FC = () => {
               </button>
             </div>
           </div>
-          {/* Table */}
           <div className="flex-1 overflow-x-auto bg-white px-8 rounded-b-lg">
             {loading ? (
               <div className="py-12 text-center text-gray-500">

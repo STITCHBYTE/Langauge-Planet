@@ -5,8 +5,6 @@ import Header from '../Home/Header.tsx';
 import Server_url from '../../config.js';
 import { FiClock, FiLock, FiUnlock } from 'react-icons/fi';
 import { useView } from '../../Context/ViewContext.tsx';
-
-// --- TYPE DEFINITIONS ---
 type Stage = {
   id: string;
   title: string;
@@ -23,19 +21,15 @@ type Lesson = {
   lesson_level?: string;
 };
 
-// --- COMPONENT ---
 const StudentLesson: React.FC = () => {
   const { lessonId } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useView();
-
-  // --- STATE MANAGEMENT ---
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [completedStages, setCompletedStages] = useState<Set<string>>(new Set());
   const [quizzes, setQuizzes] = useState<{ id: string }[]>([]);
 
-  // --- EFFECT 2: FETCH THE MAIN LESSON DATA ---
   useEffect(() => {
     const fetchLesson = async () => {
       setLoading(true);
@@ -52,7 +46,6 @@ const StudentLesson: React.FC = () => {
         const data = await res.json();
         setLesson(data);
       } catch (err) {
-        console.error("Error fetching lesson:", err);
         setLesson(null);
       } finally {
         setLoading(false);
@@ -64,7 +57,6 @@ const StudentLesson: React.FC = () => {
     }
   }, [lessonId]);
 
-  // --- EFFECT 3: FETCH SUBMISSIONS TO DETERMINE COMPLETED STAGES ---
   useEffect(() => {
     const fetchStageCompletions = async () => {
       const userId = currentUser?.id;
@@ -82,7 +74,6 @@ const StudentLesson: React.FC = () => {
         if (!res.ok) return;
 
         const completions = await res.json();
-        // completions: [{stage_id, user_id, ...}, ...]
         const completed = new Set<string>();
         completions.forEach((submission: any) => {
           if (String(submission.user_id) === String(userId)) {
@@ -91,7 +82,6 @@ const StudentLesson: React.FC = () => {
         });
         setCompletedStages(completed);
       } catch (err) {
-        console.error("Error fetching stage completions:", err);
       }
     };
 
@@ -100,7 +90,6 @@ const StudentLesson: React.FC = () => {
     }
   }, [lesson, currentUser]);
 
-  // Fetch quizzes for the lesson
   useEffect(() => {
     const fetchQuizzes = async () => {
       if (!lessonId) return;
@@ -112,15 +101,11 @@ const StudentLesson: React.FC = () => {
         if (!res.ok) return;
         const data = await res.json();
         setQuizzes(data);
-        console.log("Lesson quizzes:", data);
       } catch (err) {
-        console.error("Error fetching quizzes:", err);
       }
     };
     fetchQuizzes();
   }, [lessonId]);
-
-  // --- RENDER LOGIC ---
 
   if (loading) {
     return <div className="text-center py-8 text-gray-500">Loading lesson...</div>;
@@ -136,13 +121,11 @@ const StudentLesson: React.FC = () => {
   const handleStartLesson = () => {
     if (!lesson || !lesson.stages || lesson.stages.length === 0) return;
 
-    // Find the first uncompleted stage to continue from
     const firstUncompletedStage = lesson.stages.find(stage => !completedStages.has(stage.id));
     
     if (firstUncompletedStage) {
       navigate(`/stage/${firstUncompletedStage.id}`);
     } else if (lesson.stages.length > 0) {
-      // If all are completed, navigate to the first stage to allow review
       navigate(`/stage/${lesson.stages[0].id}`);
     }
   };

@@ -6,11 +6,10 @@ import Header from './Header.tsx';
 import LearningCard from './LearningCard.tsx';
 import ClassCard from './ClassCard.tsx';
 import GameCard from './GameCard.tsx';
-import WeeklyStatsSection from './WeeklyStatsSection.tsx'; // Import the new component
+import WeeklyStatsSection from './WeeklyStatsSection.tsx';
 import Server_url from '../../config.js';
 import './Style.css';
 
-// Helper function to create a full URL for images
 const getFullImageUrl = (path) => {
   if (!path) return null;
   if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -18,10 +17,6 @@ const getFullImageUrl = (path) => {
   }
   return `${Server_url}${path}`;
 };
-
-// =================================================================
-// ========== SECTION & CARD COMPONENTS (Self-Contained) ==========
-// =================================================================
 
 const AvailableClassCard = ({ classId, icon, title, teacher }) => {
   const [isRequesting, setIsRequesting] = useState(false);
@@ -44,7 +39,6 @@ const AvailableClassCard = ({ classId, icon, title, teacher }) => {
         toast.error('Failed to send request');
       }
     } catch (error) {
-      console.error('Error requesting to join class:', error);
       toast.error('Error sending request');
     } finally {
       setIsRequesting(false);
@@ -128,10 +122,6 @@ const GamesSection = ({ games }) => (
     </div>
   </div>
 );
-
-// =================================================================
-// ==========           MAIN DASHBOARD COMPONENT          ==========
-// =================================================================
 
 const DashboardReturning = () => {
   const [learningItems, setLearningItems] = useState([]);
@@ -218,7 +208,6 @@ const DashboardReturning = () => {
         setLearningItems(lessonsToFetch);
 
       } catch (error) {
-        console.error('Error loading dashboard data:', error);
         toast.error('Could not load dashboard. Please try again.');
       } finally {
         setLoading(false);

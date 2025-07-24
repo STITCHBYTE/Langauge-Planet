@@ -3,7 +3,7 @@ import Sidebar from '../Home/Sidebar.tsx';
 import Header from '../Home/Header.tsx';
 import Server_url, { client_id } from '../../config';
 import { FiCopy, FiCheck, FiSearch } from 'react-icons/fi';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 
 // --- Global Styles for Buttons and Inputs ---
@@ -46,8 +46,6 @@ const GlobalStyles = () => (
     }
   `}</style>
 );
-
-// --- Type Definitions ---
 interface User {
   first_name: string;
   last_name?: string;
@@ -56,7 +54,6 @@ interface User {
   avatar_url?: string;
 }
 
-// --- Google Scopes ---
 const ADMIN_SCOPES =
   "openid profile email " +
   "https://www.googleapis.com/auth/classroom.courses " +
@@ -67,13 +64,11 @@ const ADMIN_SCOPES =
   "https://www.googleapis.com/auth/classroom.profile.emails " +
   "https://www.googleapis.com/auth/classroom.profile.photos";
 
-// --- Constants for Avatar Customization (Corrected Mouth Types) ---
 const HAPPY_MOUTH_TYPES = ['smile', 'twinkle', 'eating', 'tongue', 'concerned'];
 const EYES_TYPES = ['default', 'happy', 'wink', 'squint', 'hearts', 'side'];
 const HAIR_COLOR = ['#2c1b18', '#4a312c', '#af6e51', '#e8e1e1', '#d2b48c', '#a55728', '#b58143'];
 const SKIN_COLOR = ['#f8d25c', '#ffdbb4', '#edb0a1', '#d08b5b', '#a0522d', '#614335'];
 
-// --- Character Options (Updated to 20 Human Avatars) ---
 const CHARACTER_OPTIONS = [
   { seed: 'Abby', name: 'Abby' },
   { seed: 'Max', name: 'Max' },
@@ -101,7 +96,6 @@ const CHARACTER_OPTIONS = [
   preview: `https://api.dicebear.com/7.x/avataaars/svg?seed=${char.seed}`
 }));
 
-// --- Character Selection Modal ---
 const CharacterSelectionModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -150,7 +144,6 @@ const CharacterSelectionModal: React.FC<{
   );
 };
 
-// --- Updated Avatar Editor Modal Component ---
 const AvatarEditor: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -170,7 +163,6 @@ const AvatarEditor: React.FC<{
 
   const [selectedExpression, setSelectedExpression] = useState<object | null>(null);
 
-  // Build avatar URL, always using avataaars style
   const buildAvatarUrl = (config: object) => {
     const params = new URLSearchParams(config as Record<string, string>);
     return `https://api.dicebear.com/7.x/avataaars/svg?${params.toString()}`;
@@ -183,7 +175,6 @@ const AvatarEditor: React.FC<{
     return buildAvatarUrl(finalConfig);
   }, [avatarConfig, selectedExpression]);
 
-  // Update avatar config when a new character is selected
   useEffect(() => {
     if (selectedCharacter) {
       setAvatarConfig({
@@ -199,10 +190,10 @@ const AvatarEditor: React.FC<{
 
   const stickerExpressions = [
     { name: 'Smiling', config: { eyes: 'happy', mouth: 'smile' } },
-    { name: 'Laughing', config: { eyes: 'squint', mouth: 'twinkle' } }, // Changed 'laughing' to 'twinkle'
+    { name: 'Laughing', config: { eyes: 'squint', mouth: 'twinkle' } },
     { name: 'Winking', config: { eyes: 'wink', mouth: 'smile' } },
     { name: 'In Love', config: { eyes: 'hearts', mouth: 'eating' } },
-    { name: 'Grinning', config: { eyes: 'happy', mouth: 'smile' } }, // Changed 'grin' to 'smile'
+    { name: 'Grinning', config: { eyes: 'happy', mouth: 'smile' } },
     { name: 'Cheeky', config: { eyes: 'winkWacky', mouth: 'tongue' } },
   ];
 
@@ -336,7 +327,6 @@ const AvatarEditor: React.FC<{
   );
 };
 
-// --- Updated Personal Info Card Component ---
 const PersonalInfoCard: React.FC<{
   user: User | null,
   setShowGoogleModal: (show: boolean) => void,
@@ -441,7 +431,6 @@ const PersonalInfoCard: React.FC<{
                 onError={e => { e.currentTarget.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'; }}
               />
               <p className="text-sm font-semibold text-gray-700">Choose Character & Customize</p>
-              {/* <p className="text-xs text-gray-400">20+ Character Styles • Powered by Dicebear</p> */}
             </div>
           </div>
 
@@ -466,6 +455,20 @@ const PersonalInfoCard: React.FC<{
                 >
                   <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
                   {isGoogleConnected ? 'Deactivate Google Classroom' : 'Connect Google Classroom'}
+                </button>
+                <button
+                  className="btn-secondary flex items-center justify-center gap-2 w-full py-3"
+                  onClick={() => {
+                    const clientId = '6mZnmwLrrhHc2wYzUNvAwH4tevY834BBWCUfkAMKCZBTT8mzUBUWkBfVwENKuvPY'; // Your developer API key
+                    const redirectUri = encodeURIComponent(window.location.origin + '/canvas-auth-callback');
+                    const canvasDomain = 'https://canvas.instructure.com'; // Change if using a custom Canvas instance
+                    const authUrl = `${canvasDomain}/login/oauth2/auth?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=url:GET|/api/v1/courses`;
+
+                    window.location.href = authUrl;
+                  }}
+                >
+                  <img src="https://static.instructure.com/images/canvas-logo.png" alt="Canvas" className="w-5 h-5" />
+                  Connect with Canvas
                 </button>
               </div>
             </div>
@@ -492,9 +495,6 @@ const PersonalInfoCard: React.FC<{
     </>
   );
 };
-
-
-// --- Friends Card Component ---
 const FriendsCard: React.FC = () => {
   const myFriends = [
     { name: 'Samuel Jacob', handle: '@sammy', avatar: 'https://randomuser.me/api/portraits/men/1.jpg' },
@@ -548,8 +548,6 @@ const FriendsCard: React.FC = () => {
     </div>
   );
 };
-
-// --- Account Settings Section ---
 const AccountSettings: React.FC<{
   user: User | null,
   showGoogleModal: boolean,
@@ -590,7 +588,6 @@ const AccountSettings: React.FC<{
 
           window.location.href = authUrl;
         } catch (error) {
-          console.error('Admin login error:', error);
           setIsLoading(false);
           if (error.message?.includes('ProjectPermissionDenied') ||
               error.message?.includes('The Developer Console project is not permitted')) {
@@ -730,8 +727,6 @@ const AccountSettings: React.FC<{
       </div>
     );
 };
-
-// --- Deactivation Confirmation Modal ---
 const DeactivationModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -767,9 +762,6 @@ const DeactivationModal: React.FC<{
     </div>
   );
 };
-
-
-// --- Main Profile Page Component ---
 const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -788,7 +780,6 @@ const ProfilePage: React.FC = () => {
         const data = await res.json();
         setUser(data);
       } catch (err) {
-        console.error('Failed to fetch user', err);
       }
     };
     fetchUser();
@@ -808,7 +799,6 @@ const ProfilePage: React.FC = () => {
       if (!res.ok) throw new Error('Failed to update teacher role');
       window.location.reload(); 
     } catch (err) {
-      console.error('Error updating teacher panel role:', err);
       toast.error('Failed to update teacher panel status');
     }
   };
@@ -897,3 +887,47 @@ const AuthCallback: React.FC = () => {
 
 export default ProfilePage;
 export { AuthCallback };
+
+export const CanvasAuthCallback: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const code = params.get("code");
+
+    if (code) {
+      fetch("https://canvas.instructure.com/login/oauth2/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          client_id: "6mZnmwLrrhHc2wYzUNvAwH4tevY834BBWCUfkAMKCZBTT8mzUBUWkBfVwENKuvPY",
+          client_secret: "6mZnmwLrrhHc2wYzUNvAwH4tevY834BBWCUfkAMKCZBTT8mzUBUWkBfVwENKuvPY",
+          redirect_uri: window.location.origin + "/canvas-auth-callback",
+          code,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.access_token) {
+            localStorage.setItem("canvas_access_token", data.access_token);
+            toast.success("Canvas connected!");
+            navigate("/profile");
+          } else {
+            toast.error("Failed to connect Canvas.");
+            navigate("/profile");
+          }
+        })
+        .catch(() => {
+          toast.error("Canvas OAuth failed.");
+          navigate("/profile");
+        });
+    } else {
+      toast.error("No Canvas code found.");
+      navigate("/profile");
+    }
+  }, [location, navigate]);
+
+  return <div>Connecting to Canvas...</div>;
+};

@@ -1,15 +1,14 @@
 import React, { useState, useEffect, FC } from 'react';
 import axios from 'axios';
-import Sidebar from '../../Component/Home/Sidebar.tsx'; // Assuming these components exist
-import Header from '../../Component/Home/Header.tsx';   // and can accept props
+import Sidebar from '../../Component/Home/Sidebar.tsx';
+import Header from '../../Component/Home/Header.tsx';
 import Server_url from '../../config';
-import { useNavigate } from 'react-router-dom'; // <-- Import useNavigate
+import { useNavigate } from 'react-router-dom';
 import { FiUsers, FiBookOpen, FiClipboard, FiPlus, FiArrowRight, FiTrendingUp, FiMoreVertical } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { useView } from '../../Context/ViewContext.tsx'; // For the Student/Teacher view toggle
+import { useView } from '../../Context/ViewContext.tsx';
 import { toast } from 'react-toastify';
 
-// --- Type Definitions ---
 interface Metric {
   totalStudents: number;
   totalClasses: number;
@@ -44,8 +43,6 @@ interface ChartData {
     Classes: number;
     Quizzes: number;
 }
-
-// --- Reusable UI Components (with navigation) ---
 
 const MetricCard: FC<{ title: string; value: number | string; icon: React.ReactNode; onClick: () => void; }> = ({ title, value, icon, onClick }) => (
   <div onClick={onClick} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex-1 cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all">
@@ -97,9 +94,6 @@ const PopularList: FC<{ title: string; items: PopularItem[]; onItemClick: (id: s
         </ul>
     </div>
 );
-
-
-// --- Main Dashboard Component ---
 const Dashboard: React.FC = () => {
     const navigate = useNavigate();
     const [metrics, setMetrics] = useState<Metric | null>(null);
@@ -129,22 +123,15 @@ const Dashboard: React.FC = () => {
                     totalClasses: classesRes.data.length,
                     totalLessons: lessonsRes.data.length,
                 });
-
-                // Fetch student counts and activity data
                 const classesWithStudentCount = await fetchClassesWithStudents(classesRes.data, headers);
                 const lessonsWithStudentCount = await fetchLessonsWithStudents(lessonsRes.data, classesRes.data, headers);
 
                 setPopularClasses(classesWithStudentCount);
                 setPopularLessons(lessonsWithStudentCount);
-
-                // Fetch pending assignments
                 await fetchPendingAssignments(token, classesRes.data);
-
-                // Fetch activity summary for learning time chart
                 await fetchLearningTimeData(studentsRes.data, headers);
 
             } catch (error) {
-                console.error("Failed to fetch dashboard data:", error);
                 toast.error('Failed to fetch dashboard data. Please try again.');
             } finally {
                 setLoading(false);
@@ -156,13 +143,12 @@ const Dashboard: React.FC = () => {
 
     const fetchLearningTimeData = async (allStudents: any[], headers: any) => {
         try {
-            // Initialize data structure for each day
             const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const chartData: ChartData[] = [];
             
             for (let i = 0; i < 7; i++) {
                 const currentDate = new Date();
-                currentDate.setDate(currentDate.getDate() - (6 - i)); // Last 7 days
+                currentDate.setDate(currentDate.getDate() - (6 - i));
                 chartData.push({
                     name: dayNames[currentDate.getDay()],
                     Lessons: 0,
@@ -170,14 +156,10 @@ const Dashboard: React.FC = () => {
                     Quizzes: 0
                 });
             }
-
-            // If no students, return empty data
             if (!allStudents || allStudents.length === 0) {
                 setLearningTimeData(chartData);
                 return;
             }
-
-            // Collect all student IDs from nested structure
             const studentIds = allStudents.map(item => {
                 const student = item.student || item;
                 return student.id;
@@ -187,8 +169,6 @@ const Dashboard: React.FC = () => {
                 setLearningTimeData(chartData);
                 return;
             }
-
-            // Fetch activity data for each student using the original endpoint format
             const activityPromises = studentIds.map(async (studentId) => {
                 try {
                     const response = await axios.get(
@@ -201,16 +181,12 @@ const Dashboard: React.FC = () => {
                         }
                     );
                     return response.data;
-                    console.log(`Fetched activity for student ${studentId}:`, response.data);
                 } catch (error) {
-                    console.error(`Failed to fetch activity for student ${studentId}:`, error);
                     return {};
                 }
             });
 
             const allActivityData = await Promise.all(activityPromises);
-
-            // Process and aggregate activity data
             const dateActivityMap = new Map();
             
             allActivityData.forEach(studentActivity => {
@@ -220,13 +196,11 @@ const Dashboard: React.FC = () => {
                     }
                     
                     const dateData = dateActivityMap.get(date);
-                    if (activities.lesson) dateData.lesson.push(activities.lesson / 3600); // Convert seconds to hours
+                    if (activities.lesson) dateData.lesson.push(activities.lesson / 3600);
                     if (activities.class) dateData.class.push(activities.class / 3600);
                     if (activities.quiz) dateData.quiz.push(activities.quiz / 3600);
                 });
             });
-
-            // Calculate averages and update chart data
             chartData.forEach((dayData, index) => {
                 const currentDate = new Date();
                 currentDate.setDate(currentDate.getDate() - (6 - index));
@@ -234,7 +208,6 @@ const Dashboard: React.FC = () => {
                 
                 const dayActivities = dateActivityMap.get(dateString);
                 if (dayActivities) {
-                    // Calculate average time for each activity type
                     dayData.Lessons = dayActivities.lesson.length > 0 
                         ? Number((dayActivities.lesson.reduce((sum, time) => sum + time, 0) / dayActivities.lesson.length).toFixed(1))
                         : 0;
@@ -252,8 +225,6 @@ const Dashboard: React.FC = () => {
             setLearningTimeData(chartData);
 
         } catch (error) {
-            console.error('Error fetching learning time data:', error);
-            // Set default empty data if API fails
             const defaultData: ChartData[] = [
                 { name: 'Mon', Lessons: 0, Classes: 0, Quizzes: 0 },
                 { name: 'Tue', Lessons: 0, Classes: 0, Quizzes: 0 },
@@ -266,8 +237,6 @@ const Dashboard: React.FC = () => {
             setLearningTimeData(defaultData);
         }
     };
-
-    // Helper functions to break down the existing fetch logic
     const fetchClassesWithStudents = async (classes: any[], headers: any) => {
         return await Promise.all(
             classes.map(async (classItem: any) => {
@@ -279,7 +248,6 @@ const Dashboard: React.FC = () => {
                     const studentCount = (studentsRes.data.results || studentsRes.data).length;
                     return { ...classItem, students: studentCount };
                 } catch (error) {
-                    console.error(`Error fetching students for class ${classItem.id}:`, error);
                     return { ...classItem, students: 0 };
                 }
             })
@@ -304,7 +272,6 @@ const Dashboard: React.FC = () => {
                     
                     return { ...lesson, students: totalStudents };
                 } catch (error) {
-                    console.error(`Error calculating students for lesson ${lesson.id}:`, error);
                     return { ...lesson, students: 0 };
                 }
             })
@@ -314,22 +281,15 @@ const Dashboard: React.FC = () => {
     const fetchPendingAssignments = async (token: string, classes: any[]) => {
         try {
             const pendingList: PendingAssignment[] = [];
-
-            // For each class, fetch assignments and their submissions
             for (const classItem of classes) {
-                // Fetch assignments for this class
                 const assignmentsRes = await axios.get(
                     `${Server_url}/api/classrooms/classroom/${classItem.id}/assignments/`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-
-                // Fetch enrolled students for this class
                 const studentsRes = await axios.get(
                     `${Server_url}/api/classrooms/classroom/${classItem.id}/enrolled-students/`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-
-                // Fetch submissions for this class
                 const submissionsRes = await axios.get(
                     `${Server_url}/api/classrooms/classroom/${classItem.id}/assignment-submissions/`,
                     { headers: { Authorization: `Bearer ${token}` } }
@@ -339,8 +299,6 @@ const Dashboard: React.FC = () => {
                 const students = studentsRes.data.results || studentsRes.data;
                 const submissions = submissionsRes.data;
                 const totalStudents = students.length;
-
-                // Calculate pending assignments
                 assignments.forEach((assignment: any) => {
                     const assignmentSubmissions = submissions.filter(
                         (sub: any) => sub.assignment === assignment.id
@@ -350,8 +308,6 @@ const Dashboard: React.FC = () => {
                     const completionPercentage = totalStudents > 0 
                         ? Math.round((submittedCount / totalStudents) * 100) 
                         : 0;
-
-                    // Only add to pending list if there are pending submissions
                     if (pendingCount > 0) {
                         pendingList.push({
                             id: assignment.id,
@@ -364,8 +320,6 @@ const Dashboard: React.FC = () => {
                     }
                 });
             }
-
-            // Sort by completion percentage (lowest first) and limit to 10
             const sortedPending = pendingList
                 .sort((a, b) => a.completion_percentage - b.completion_percentage)
                 .slice(0, 10);
@@ -373,12 +327,9 @@ const Dashboard: React.FC = () => {
             setPendingAssignments(sortedPending);
 
         } catch (error) {
-            console.error('Error fetching pending assignments:', error);
             setPendingAssignments([]);
         }
     };
-
-    // Mock Data for components without APIs
     const defaultLearningTimeData: ChartData[] = [
         { name: 'Mon', Lessons: 0, Classes: 0, Quizzes: 0 },
         { name: 'Tue', Lessons: 0, Classes: 0, Quizzes: 0 },

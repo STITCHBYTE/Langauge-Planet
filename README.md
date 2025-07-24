@@ -68,4 +68,42 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-# Learning-Planet
+
+# Langauge-Planet
+
+A comprehensive web platform for classroom management, assignments, discussions, and integration with Google Classroom. Built with React and Node.js.
+
+---
+
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [Available Commands](#available-commands)
+- [Project Structure](#project-structure)
+- [APIs Used](#apis-used)
+- [Key Features](#key-features)
+- [Deployment](#deployment)
+- [Learn More](#learn-more)
+
+---
+
+## Project Overview
+
+Langauge-Planet is designed to help teachers and students manage classes, assignments, discussions, and reports. It supports integration with Google Classroom for seamless grade and assignment syncing.
+
+---
+
+## Available Commands
+
+| Command                | Description                                                      |
+|------------------------|------------------------------------------------------------------|
+| `npm start`            | Runs the app in development mode at [http://localhost:3000](http://localhost:3000) |
+| `npm run server`       | Starts the backend server (Node.js, for game features)           |
+| `npm run dev`          | Runs both frontend and backend concurrently                      |
+| `npm run build`        | Builds the app for production to the `build` folder              |
+| `npm test`             | Launches the test runner in interactive watch mode               |
+| `npm run eject`        | Ejects the app for full configuration control                    |
+
+---
+
+## Project Structure

@@ -173,7 +173,6 @@ const FightGame: React.FC = () => {
   return (
     <div className="game-selection-container">
       <div className="game-selection-modal">
-        {/* Left Side - Player Controls */}
         <div className="controls-section">
           <h2 className="controls-title">Game Controls</h2>
           
@@ -221,8 +220,6 @@ const FightGame: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Right Side - Game Mode Selection */}
         <div className="gamemode-section">
           <h2 className="gamemode-title">Select Game Mode</h2>
           <p className="gamemode-subtitle">Choose how you want to battle</p>

@@ -73,7 +73,6 @@ const CarSelection: React.FC<CarSelectionProps> = ({ onCarSelect, selectedCarId,
             </h2>
             
             <div className="flex flex-col lg:flex-row gap-8">
-                {/* Car Selection Grid */}
                 <div className="flex-1">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                         {carOptions.map((car) => (
@@ -111,8 +110,6 @@ const CarSelection: React.FC<CarSelectionProps> = ({ onCarSelect, selectedCarId,
                         ))}
                     </div>
                 </div>
-
-                {/* 3D Preview */}
                 <div className="flex-1 max-w-md">
                     <h3 className="text-2xl font-bold text-white text-center mb-4">
                         {hoveredCarId ? '🔄 Hover Preview' : selectedCarId ? '🔄 Selected Car (Rotating)' : '🚗 Select Your Car'}
@@ -123,12 +120,12 @@ const CarSelection: React.FC<CarSelectionProps> = ({ onCarSelect, selectedCarId,
                         {previewCar ? (
                             <div style={{ width: '100%', height: '256px', position: 'relative' }}>
                                 <Car3D 
-                                    key={previewCar.id} // Force re-render when car changes
+                                    key={previewCar.id}
                                     modelPath={previewCar.modelPath}
                                     position={{ x: 0, y: -0.3, z: 0 }}
                                     rotation={Math.PI / 4}
                                     scale={1.8}
-                                    autoRotate={!hoveredCarId && !!selectedCarId} // Enable auto-rotation only for selected car (not when hovering)
+                                    autoRotate={!hoveredCarId && !!selectedCarId}
                                 />
                             </div>
                         ) : (

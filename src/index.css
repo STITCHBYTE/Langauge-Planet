@@ -12,7 +12,7 @@ code {
     monospace;
 }
 
-/* Global header positioning */
+
 .header,
 .header-container {
   position: sticky !important;
@@ -22,7 +22,7 @@ code {
   box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
 }
 
-/* Ensure main content areas have proper margins */
+
 .dashboard-content,
 .main-wrapper,
 .class-container {

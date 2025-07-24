@@ -1,8 +1,6 @@
 import React from 'react';
 import { FiClock } from 'react-icons/fi';
-import './Learning.css'; // Styles are shared in the same CSS file
-
-// Updated to match the props needed for the UI replica
+import './Learning.css';
 export interface LessonCardProps {
   title: string;
   description: string;
@@ -21,7 +19,6 @@ const LessonCard: React.FC<LessonCardProps> = ({ title, description, image, prog
             <h3 className="card-title">{title}</h3>
             <p className="card-description">{description}</p>
             <div className="card-footer">
-                {/* Conditionally render progress or duration */}
                 {progress !== undefined && timeLeft ? (
                     <div className="progress-info">
                         <div className="progress-bar-container">

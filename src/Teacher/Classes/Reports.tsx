@@ -10,7 +10,6 @@ import Sidebar from "../../Component/Home/Sidebar.tsx";
 import Header from "../../Component/Home/Header.tsx";
 
 const handleApiError = (error: any, functionName: string) => {
-  console.error(`Error in ${functionName}:`, error);
   if (error.response?.status === 401) {
     throw new Error("Authentication failed. Please log in again.");
   }
@@ -124,7 +123,6 @@ const Reports: React.FC = () => {
           const data = await studentsRes.json();
           studentsData = data.results || data;
           setStudents(studentsData);
-          console.log("Students Data:", studentsData);
           setTotalStudents(studentsData.length);
         }
 
@@ -138,7 +136,6 @@ const Reports: React.FC = () => {
         if (assignmentsRes.ok) {
           assignmentsData = await assignmentsRes.json();
           setAssignments(assignmentsData);
-          console.log("Assignments Data:", assignmentsData);
           assignmentsData.forEach((assignment: any) => {
             if (assignment.questions) {
               questions += assignment.questions.length;
@@ -156,7 +153,6 @@ const Reports: React.FC = () => {
         let submissionsData: any[] = [];
         if (submissionsRes.ok) {
           submissionsData = await submissionsRes.json();
-          console.log("Submissions Data:", submissionsData);
           setSubmissions(submissionsData);
           const uniqueStudents = new Set(submissionsData.map((s: any) => s.student));
           setStudentsSubmitted(uniqueStudents.size);
@@ -182,8 +178,6 @@ const Reports: React.FC = () => {
         }
         setStudentsReport(report);
       } catch (err) {
-        console.error("Error fetching report data:", err);
-        toast.error("Failed to load report data.");
       }
     };
     fetchAll();
@@ -262,10 +256,7 @@ const Reports: React.FC = () => {
         const submissionsResponse = await getStudentSubmissions(googleToken, courseId, courseWorkId);
         const studentEmail = selectedAssignment.student.email;
 
-        // This part needs adjustment based on how you can map your local student to a Google student.
-        // For now, assuming the first submission is the one we want to grade, which is likely incorrect in a real scenario.
-        // A more robust solution would involve matching student IDs or emails.
-        const googleSubmission = submissionsResponse.data.studentSubmissions[0]; // Placeholder logic
+        const googleSubmission = submissionsResponse.data.studentSubmissions[0]; 
         if (!googleSubmission) {
             throw new Error(`Submission for student ${studentEmail} not found in Google Classroom.`);
         }
@@ -281,10 +272,7 @@ const Reports: React.FC = () => {
         toast.success("Grade synced and returned in Google Classroom!");
       } catch (googleError: any) {
         const errorMessage = googleError.response?.data?.error?.message || googleError.message;
-        console.error("Google Sync Failed:", { message: errorMessage, fullError: googleError });
         toast.error(`Google Sync Failed: ${errorMessage}`);
-        // The 'return' statement that was here has been removed.
-        // The function will now continue to the next step.
       }
     }
 
@@ -304,7 +292,6 @@ const Reports: React.FC = () => {
       if (res.ok) {
         toast.success("Grades saved successfully!");
         setShowPopup(false);
-        // Consider a function to refresh all data here instead of reloading the page
       } else {
         const errorData = await res.json();
         toast.error(`Failed to save grades: ${errorData.detail || "Unknown error"}`);
@@ -451,7 +438,7 @@ const Reports: React.FC = () => {
                                       <button
                                         className={`text-gray-500 hover:text-blue-600 ${typeof item.submission?.score === "number" ? "opacity-50 cursor-not-allowed" : ""}`}
                                         onClick={() => {
-                                          if (typeof item.submission?.score === "number") return; // Disable if graded
+                                          if (typeof item.submission?.score === "number") return; 
                                           setSelectedAssignment({
                                             assignment: item.assignmentObj,
                                             questions: item.assignmentObj.questions,
@@ -564,7 +551,7 @@ const Reports: React.FC = () => {
                                       <button
                                         className={`text-gray-500 hover:text-blue-600 ${typeof row.submission?.score === "number" ? "opacity-50 cursor-not-allowed" : ""}`}
                                         onClick={() => {
-                                          if (typeof row.submission?.score === "number") return; // Disable if graded
+                                          if (typeof row.submission?.score === "number") return; 
                                           setSelectedAssignment({
                                             assignment: row.assignment,
                                             questions: row.assignment.questions,
@@ -706,7 +693,6 @@ const Reports: React.FC = () => {
         <div className="fixed inset-0 bg-white z-[9999] flex items-center justify-center print-page">
             <div ref={printRef} className="w-full max-w-2xl mx-auto bg-white p-10 rounded-xl shadow-xl border border-gray-200">
                 <div className="flex items-center justify-between mb-8">
-                    {/* <img src="/logo.png" alt="Language Planet" className="h-10" /> */}
                     <span className="text-xl font-bold text-blue-700">Language Planet Report Card</span>
                 </div>
                 <div className="mb-6">
@@ -744,7 +730,6 @@ const Reports: React.FC = () => {
                     <button
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
                     onClick={() => {
-                        console.log("DEBUG: Print button clicked, modal visible:", showPrintPage, printData);
                         window.print();
                     }}
                     >

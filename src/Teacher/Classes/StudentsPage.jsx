@@ -11,7 +11,7 @@ const StudentsPage = () => {
   const navigate = useNavigate();
   
   const [enrolledStudents, setEnrolledStudents] = useState([]);
-  const [requestedStudents, setRequestedStudents] = useState([]); // State for pending requests
+  const [requestedStudents, setRequestedStudents] = useState([]); 
   const [allTeacherStudents, setAllTeacherStudents] = useState([]);
   const [classData, setClassData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,24 +19,21 @@ const StudentsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [studentsPerPage] = useState(10);
   
-  // Modal states
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [modalSearchQuery, setModalSearchQuery] = useState('');
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [addingStudents, setAddingStudents] = useState(false);
-  const [showRequestedModal, setShowRequestedModal] = useState(false); // State for new modal
+  const [showRequestedModal, setShowRequestedModal] = useState(false); 
 
   useEffect(() => {
     const fetchData = async () => {
       if (classId) {
         setLoading(true);
         try {
-          // Fetch data in order to prevent race conditions
           await fetchClassData();
-          await fetchAllTeacherStudents(); // Must complete first
-          await fetchEnrolledStudents();   // So this has the data it needs
+          await fetchAllTeacherStudents(); 
+          await fetchEnrolledStudents();  
         } catch (error) {
-          console.error("Error during initial data fetch:", error);
           toast.error("Failed to load class details.");
         } finally {
           setLoading(false);
@@ -64,8 +61,7 @@ const StudentsPage = () => {
       const data = await response.json();
       setClassData(data);
     } catch (error) {
-      console.error('Error fetching class data:', error);
-      setClassData({ title: 'Culture in Spanish' }); // Fallback
+      setClassData({ title: 'Culture in Spanish' }); 
     }
   };
 
@@ -86,22 +82,17 @@ const StudentsPage = () => {
       
       const data = await response.json();
 
-      // Filter out rejected students first
       const validMemberships = data.filter(item => item.status !== 'REJECTED');
 
       let transformedStudents = await Promise.all(validMemberships.map(async (item) => {
-        // Handle both string and object formats for student data
         const studentEmail = typeof item.student === 'string' ? item.student : item.student?.email;
 
-        // Defensive check to prevent crash on malformed data
         if (!studentEmail) {
-          console.warn('Skipping a student record due to incomplete data from API:', item);
-          return null; // This record will be filtered out later
+          return null; 
         }
 
         const studentDetails = allTeacherStudents.find(s => s.email === studentEmail);
         
-        // The studentId must come from the detailed record found in allTeacherStudents.
         const studentId = studentDetails?.id;
         let totalPoints = 0;
 
@@ -115,11 +106,9 @@ const StudentsPage = () => {
                     totalPoints = submissions.reduce((acc, submission) => acc + (submission.score || 0), 0);
                 }
             } catch (scoreError) {
-                console.error(`Failed to fetch scores for enrolled student ${studentId}:`, scoreError);
             }
         }
 
-        // Determine student's status from the new API field
         let status;
         if (item.status === 'ENROLLED') {
           status = 'Active';
@@ -140,7 +129,7 @@ const StudentsPage = () => {
           username: studentUsername,
           initial: studentInitial,
           dateJoined: new Date(item.created_at).toLocaleDateString(),
-          learningPoints: totalPoints, // Use calculated points
+          learningPoints: totalPoints, 
           assignmentsCompleted: Math.floor(Math.random() * 10) + 1,
           avgTimeInClass: `${Math.floor(Math.random() * 60) + 20} Mins`,
           status: status,
@@ -148,10 +137,8 @@ const StudentsPage = () => {
         };
       }));
 
-      // Filter out any null records that were skipped due to incomplete data
       transformedStudents = transformedStudents.filter(student => student !== null);
 
-      // Students for the main table (Active and Invited)
       const enrolled = transformedStudents.filter(
         s => s.status === 'Active' || s.status === 'Invited'
       );
@@ -160,7 +147,6 @@ const StudentsPage = () => {
       setRequestedStudents(requested);
 
     } catch (error) {
-      console.error('Error fetching enrolled students:', error);
       setEnrolledStudents([]);
       setRequestedStudents([]);
     }
@@ -183,7 +169,6 @@ const StudentsPage = () => {
       
       const data = await response.json();
       
-      // Handle nested structure from API
       const students = data.students || data;
       const transformedStudents = await Promise.all(students.map(async (item, index) => {
         const student = item.student || item;
@@ -198,7 +183,6 @@ const StudentsPage = () => {
                 totalPoints = submissions.reduce((acc, submission) => acc + (submission.score || 0), 0);
             }
         } catch (scoreError) {
-            console.error(`Failed to fetch scores for student ${student.id}:`, scoreError);
         }
         
         return {
@@ -209,7 +193,7 @@ const StudentsPage = () => {
           username: student.username || `@student${index + 1}`,
           initial: (student.first_name?.[0] || student.username?.[0] || 'S').toUpperCase(),
           lastLogin: student.last_login || '16/03/2024 • 15:54',
-          learningPoints: totalPoints, // Use calculated points
+          learningPoints: totalPoints, 
           avgLearningTime: student.avg_learning_time || `${Math.floor(Math.random() * 120) + 20} Mins`,
           email: student.email || '',
           first_name: student.first_name || '',
@@ -219,7 +203,6 @@ const StudentsPage = () => {
       
       setAllTeacherStudents(transformedStudents);
     } catch (error) {
-      console.error('Error fetching all teacher students:', error);
       setAllTeacherStudents([]);
     }
   };
@@ -229,10 +212,9 @@ const StudentsPage = () => {
     
     setAddingStudents(true);
     const token = localStorage.getItem('authToken');
-    const google_token = localStorage.getItem('google_access_token'); // Assuming you store Google token in localStorage
+    const google_token = localStorage.getItem('google_access_token'); 
     
     try {
-      // Add each selected student to the class
       const promises = selectedStudents.map(studentId =>
         fetch(`${Server_url}/api/classrooms/classroom/invite/`, {
           method: 'POST',
@@ -255,13 +237,9 @@ const StudentsPage = () => {
         throw new Error(`Failed to add ${failedRequests.length} student(s)`);
       }
 
-      // Google Classroom Invite Integration
-      console.log('Class Data for Google Classroom check:', classData); // Log classData here
       let googleClassroomId = classData.google_classroom_id;
 
-      // If we don't have a Google Classroom ID, try to find it by matching the class title.
       if (!googleClassroomId) {
-        console.log("google_classroom_id not found in classData. Attempting to find it by matching title...");
         const google_token = localStorage.getItem('google_access_token');
         if (google_token) {
           try {
@@ -273,20 +251,14 @@ const StudentsPage = () => {
 
             if (coursesResponse.ok) {
               const coursesData = await coursesResponse.json();
-                console.log('Fetched Google Classroom courses:', coursesData);
               const matchingCourse = coursesData.courses?.find(course => course.section === classData.id || course.section === classData._id);
               
               if (matchingCourse) {
-                console.log(`Found matching Google Classroom course: ${matchingCourse.name} (ID: ${matchingCourse.id})`);
                 googleClassroomId = matchingCourse.id;
-                // TODO: You should consider saving this matched ID to your backend
-                // to avoid looking it up every time.
               } else {
-                console.warn(`No Google Classroom course found with the title: "${classData.title}"`);
               }
             }
           } catch (error) {
-            console.error("Error fetching or matching Google Classroom courses:", error);
           }
         }
       }
@@ -296,13 +268,11 @@ const StudentsPage = () => {
           const student = allTeacherStudents.find(s => s.id === studentId);
           if (student && student.email) {
             try {
-              // Get fresh access token
               const token = localStorage.getItem('google_access_token');
               
               if (!token) {
-                console.warn('No Google access token found. Skipping Google Classroom invite.');
                 toast.warn('No Google access token found. Skipping Google Classroom invite.');
-                continue; // Skip to the next student
+                continue; 
               }
 
               const response = await fetch('https://classroom.googleapis.com/v1/invitations', {
@@ -312,7 +282,7 @@ const StudentsPage = () => {
                   'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                  courseId: googleClassroomId, // Use the found or existing ID
+                  courseId: googleClassroomId,
                   role: 'STUDENT',
                   userId: student.email
                 })
@@ -320,45 +290,35 @@ const StudentsPage = () => {
 
               if (!response.ok) {
                 const error = await response.json();
-                // Log the detailed error from Google for better debugging
-                console.error('Google Classroom API error response:', error);
                 toast.error(error.error.message || 'Failed to send Google Classroom invite');
                 throw new Error(error.error.message || 'Failed to send Google Classroom invite');
               }
 
               const data = await response.json();
-              console.log('Google Classroom invite sent:', data);
 
             } catch (error) {
-              console.error(`Google Classroom invite error for ${student.email}:`, error);
               toast.error(`Google Classroom invite error for ${student.email}: ${error.message}`);
-              // Continue with other students even if one fails
             }
           }
         }
       } else {
         toast.info('Student(s) added to Language Planet, but this class is not linked to Google Classroom. No invites were sent.');
       }
-      // End Google Classroom Invite Integration
 
-      // Show success message only for the platform invite if Google Classroom part is skipped.
       if (!googleClassroomId) {
         toast.success(`${selectedStudents.length} student(s) added successfully to the platform!`);
       } else {
         toast.success(`${selectedStudents.length} student(s) added and invited successfully!`);
       }
       
-      // Reset modal state
       setSelectedStudents([]);
       setShowAddStudentModal(false);
       setModalSearchQuery('');
       
-      // Refresh both lists to ensure UI updates correctly
       await fetchAllTeacherStudents();
       await fetchEnrolledStudents();
       
     } catch (error) {
-      console.error('Error adding students:', error);
       toast.error(`Failed to add students: ${error.message}`);
     } finally {
       setAddingStudents(false);
@@ -401,11 +361,8 @@ const StudentsPage = () => {
       throw new Error(`Failed to ${action} request`);
     }
 
-    // If accepted, also invite to Google Classroom
     if (action === 'accept') {
-      // Find the student by enrollmentId
       const student = requestedStudents.find(s => s.enrollmentId === enrollmentId);
-      // Get Google Classroom course ID from classData
       const googleClassroomId = classData.google_classroom_id;
       const googleToken = localStorage.getItem('google_access_token');
       if (googleClassroomId && student && student.email && googleToken) {
@@ -424,58 +381,46 @@ const StudentsPage = () => {
           });
           if (!inviteResponse.ok) {
             const error = await inviteResponse.json();
-            console.error('Google Classroom API error response:', error);
             toast.error(error.error.message || 'Failed to send Google Classroom invite');
             throw new Error(error.error.message || 'Failed to send Google Classroom invite');
           }
 
           const data = await inviteResponse.json();
-          console.log('Google Classroom invite sent:', data);
 
         } catch (error) {
-          console.error(`Google Classroom invite error for ${student.email}:`, error);
           toast.error(`Google Classroom invite error for ${student.email}: ${error.message}`);
-          // Continue with other students even if one fails
         }
       }
     }
 
     toast.success(`Student request ${action === 'accept' ? 'accepted' : 'rejected'} successfully!`);
-    fetchEnrolledStudents(); // Refresh the lists
-    
-    // Close modal if no more requests
+    fetchEnrolledStudents(); 
     if (requestedStudents.length === 1) {
       setShowRequestedModal(false);
     }
   } catch (error) {
-    console.error(`Error handling request:`, error);
     toast.error(`Failed to ${action} student request.`);
   }
 };
-  // Get IDs of all students already associated with the class (enrolled, requested, invited)
   const allAssociatedStudentIds = new Set([
     ...enrolledStudents.map(s => s.id),
     ...requestedStudents.map(s => s.id)
   ]);
 
-  // Get available students (all teacher's students who are not already associated with this class)
   const availableStudents = allTeacherStudents.filter(
     student => !allAssociatedStudentIds.has(student.id)
   );
 
-  // Filter students for modal based on search
   const filteredModalStudents = availableStudents.filter(student =>
     student.name.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
     student.username.toLowerCase().includes(modalSearchQuery.toLowerCase())
   );
 
-  // Filter students based on search query
   const filteredStudents = enrolledStudents.filter(student =>
     student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     student.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Pagination
   const indexOfLastStudent = currentPage * studentsPerPage;
   const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
   const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
@@ -526,7 +471,6 @@ const StudentsPage = () => {
         <Sidebar className="hidden lg:block fixed left-0 top-0 h-full w-[17%] z-20" />
         
         <div className={`flex-1 p-6 ${showAddStudentModal || showRequestedModal ? 'filter blur-sm' : ''}`}>
-          {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
             <button 
               onClick={() => navigate(-1)}
@@ -543,7 +487,6 @@ const StudentsPage = () => {
             <span className="text-blue-600 font-medium">Students in Class</span>
           </div>
 
-          {/* Search and Actions */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -594,7 +537,6 @@ const StudentsPage = () => {
             </div>
           </div>
 
-          {/* Table */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-50">
@@ -653,7 +595,6 @@ const StudentsPage = () => {
             </table>
           </div>
 
-          {/* Pagination */}
           <div className="flex items-center justify-center mt-6">
             <div className="flex items-center gap-2">
               <button
@@ -701,18 +642,14 @@ const StudentsPage = () => {
           </div>
         </div>
 
-        {/* Add Student Modal */}
         {showAddStudentModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-end">
-            {/* Backdrop */}
             <div 
               className="absolute inset-0 bg-black bg-opacity-50"
               onClick={() => setShowAddStudentModal(false)}
             ></div>
             
-            {/* Modal */}
             <div className="relative bg-white h-full w-full max-w-2xl shadow-xl flex flex-col">
-              {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900">Add New Student</h2>
@@ -726,7 +663,6 @@ const StudentsPage = () => {
                 </button>
               </div>
 
-              {/* Column Headers */}
               <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
                 <div className="grid grid-cols-6 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <span className="col-span-3">Name</span>
@@ -736,7 +672,6 @@ const StudentsPage = () => {
                 </div>
               </div>
 
-              {/* Student List */}
               <div className="flex-1 overflow-y-auto">
                 {filteredModalStudents.length === 0 ? (
                   <div className="p-6 text-center text-gray-500">
@@ -781,7 +716,6 @@ const StudentsPage = () => {
                       </div>
                     ))}
 
-                    {/* Pagination for modal */}
                     {filteredModalStudents.length > 5 && (
                       <div className="px-6 py-4">
                         <div className="flex items-center justify-between">
@@ -809,7 +743,6 @@ const StudentsPage = () => {
                 )}
               </div>
 
-              {/* Footer */}
               <div className="p-6 border-t border-gray-200">
                 <button
                   onClick={handleAddSelectedStudents}
@@ -826,18 +759,14 @@ const StudentsPage = () => {
           </div>
         )}
 
-        {/* Requested Students Modal */}
         {showRequestedModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-end">
-            {/* Backdrop */}
             <div 
               className="absolute inset-0 bg-black bg-opacity-50"
               onClick={() => setShowRequestedModal(false)}
             ></div>
             
-            {/* Modal */}
             <div className="relative bg-white h-full w-full max-w-md shadow-xl flex flex-col">
-              {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900">Student Requests</h2>
@@ -851,7 +780,6 @@ const StudentsPage = () => {
                 </button>
               </div>
 
-              {/* Student List */}
               <div className="flex-1 overflow-y-auto">
                 {requestedStudents.length === 0 ? (
                   <div className="p-6 text-center text-gray-500">

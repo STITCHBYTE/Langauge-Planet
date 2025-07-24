@@ -26,7 +26,6 @@ const LessonReport: React.FC = () => {
         });
         if (!res.ok) throw new Error("Failed to fetch lesson report");
         const data = await res.json();
-        console.log("Lesson stages API response:", data);
         setReport(data);
       } catch (err) {
         setReport(null);
@@ -47,7 +46,6 @@ const LessonReport: React.FC = () => {
         });
         if (!res.ok) throw new Error("Failed to fetch lesson stages");
         const data = await res.json();
-        // Flatten all questions from all stages
         const stages = data.results || data;
         const allQuestions: any[] = [];
         stages.forEach((stage: any) => {
@@ -57,7 +55,6 @@ const LessonReport: React.FC = () => {
             });
           }
         });
-        // Map by id for fast lookup
         const map: { [id: string]: any } = {};
         allQuestions.forEach(q => {
           map[String(q.id)] = q;
@@ -83,8 +80,6 @@ const LessonReport: React.FC = () => {
       </div>
     );
   }
-
-  // Extract metrics
   const {
     "Total No. of Students": totalStudents,
     "Students Who Attempted": studentsWhoAttempted,
@@ -100,12 +95,8 @@ const LessonReport: React.FC = () => {
     "Prompts": prompts = [],
     "Students": students = [],
   } = report;
-
-  // Find most passed/failed question details using the questionsById map
   const mostPassedQuestion = questionsById[String(mostPassedId)];
   const mostFailedQuestion = questionsById[String(mostFailedId)];
-
-  // For dropdowns
   const studentOptions = students || [];
   const exerciseOptions = prompts || [];
 
@@ -127,8 +118,6 @@ const LessonReport: React.FC = () => {
             <span>/</span>
             <span className="text-blue-600 font-semibold">View Quiz Report</span>
           </div>
-
-          {/* Tabs */}
           <div className="flex gap-2 mb-8">
             <button
               className={`px-4 py-2 rounded-lg font-semibold ${activeTab === "summary" ? "bg-blue-100 text-blue-700" : "bg-white text-gray-600 border"}`}
@@ -148,7 +137,6 @@ const LessonReport: React.FC = () => {
             >
               Exercises Report
             </button>
-            {/* Dropdowns for filtering */}
             <div className="ml-auto flex gap-2">
               {activeTab === "students" && (
                 <select
@@ -180,11 +168,8 @@ const LessonReport: React.FC = () => {
               )}
             </div>
           </div>
-
-          {/* Tab Content */}
           {activeTab === "summary" && (
             <div>
-              {/* Quick Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                 <div className="bg-white rounded-lg p-6 shadow-sm flex flex-col items-center">
                   <FiUsers className="text-blue-500 text-2xl mb-2" />
@@ -227,7 +212,6 @@ const LessonReport: React.FC = () => {
                   <div className="text-xs text-gray-500 mt-1">Avg. Completion Time</div>
                 </div>
               </div>
-              {/* Most Passed/Failed Question */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-blue-50 rounded-lg p-6">
                   <div className="font-bold text-lg mb-2">Most Passed Question</div>

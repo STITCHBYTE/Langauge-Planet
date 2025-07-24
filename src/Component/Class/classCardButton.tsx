@@ -41,8 +41,6 @@ const LessonCardButton = ({ variant, label, onClick }) => {
   };
 
   const style = { ...baseStyle, ...variantStyles[variant] };
-
-  // The onClick prop is applied directly to the button element here
   return (
     <button style={style} onClick={onClick}>
       {label}

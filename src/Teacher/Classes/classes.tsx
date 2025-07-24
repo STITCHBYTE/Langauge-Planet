@@ -16,7 +16,6 @@ interface Class {
   students?: number;
 }
 
-// Dropdown Menu Component
 const DropdownMenu: React.FC<{ 
   isOpen: boolean; 
   onClose: () => void; 
@@ -62,7 +61,6 @@ const DropdownMenu: React.FC<{
   );
 };
 
-// Confirmation Modal Component
 const ConfirmationModal: React.FC<{
   isOpen: boolean; onClose: () => void; onConfirm: () => void; title: string; message: string; confirmText: string;
 }> = ({ isOpen, onClose, onConfirm, title, message, confirmText }) => {
@@ -81,7 +79,6 @@ const ConfirmationModal: React.FC<{
   );
 };
 
-// Class Card Component
 const ClassCard: React.FC<{
   classItem: Class; onView: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string) => void;
 }> = ({ classItem, onView, onEdit, onDelete }) => {

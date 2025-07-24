@@ -1,19 +1,11 @@
-import React from 'react'; // Removed useEffect, useState
+import React from 'react';
 import './Style.css';
 import { useNavigate } from 'react-router-dom';
-// Server_url is no longer needed here
-import { useView } from '../../Context/ViewContext.tsx'; // Import useView
+import { useView } from '../../Context/ViewContext.tsx';
 
 const UserProfile = () => {
-  // const [user, setUser] = useState<{ username: string; email: string } | null>(null); // Removed
   const navigate = useNavigate();
-  const { currentUser, isLoadingUser } = useView(); // Get currentUser from context
-
-  // useEffect for fetchUser is removed
-
-  // Derive user details from currentUser obtained from context
-  // Using username for initials as per original code. If first_name is preferred and available:
-  // const initials = currentUser?.first_name ? currentUser.first_name.slice(0, 2).toUpperCase() : currentUser?.username?.slice(0, 2).toUpperCase() || '..';
+  const { currentUser, isLoadingUser } = useView();
   const initials = currentUser?.username?.slice(0, 2).toUpperCase() || '..';
   const displayName = currentUser?.username || 'Loading...';
   const displayEmail = currentUser?.email || '...';
@@ -21,12 +13,10 @@ const UserProfile = () => {
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('refreshToken');
-    // Optionally clear context state related to user if ViewProvider handles this on auth change
-    navigate('/'); // or use navigation to login page
+    navigate('/');
   };
 
   if (isLoadingUser && !currentUser) {
-    // Optional: Render a loading skeleton for UserProfile
     return (
       <div className="user-profile-container">
         <div className="user-profile-info">
@@ -36,7 +26,6 @@ const UserProfile = () => {
             <p className="user-profile-email">...</p>
           </div>
         </div>
-        {/* Logout button can be hidden or disabled during loading */}
       </div>
     );
   }

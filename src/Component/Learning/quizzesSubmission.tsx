@@ -33,11 +33,9 @@ const QuizzesSubmission: React.FC = () => {
         });
         if (!res.ok) throw new Error('Failed to fetch quizzes');
         const data = await res.json();
-        console.log("Lesson quizzes:", data);
         setQuizzes(data);
         setQuizStartTime(Date.now());
       } catch (err) {
-        console.error("Quiz fetch error:", err);
         setQuizzes([]);
       } finally {
         setLoading(false);
@@ -119,7 +117,6 @@ const QuizzesSubmission: React.FC = () => {
         })
       });
     } catch (err) {
-      console.error('Quiz submission error:', err);
     }
 
     if (currentIdx < quizzes.length - 1) {
@@ -177,7 +174,6 @@ const QuizzesSubmission: React.FC = () => {
       </div>
 
       <div className="flex flex-col items-center mt-12 mb-8">
-        {/* MULTIPLE CHOICE */}
         {quiz.exercise_type === 'multiple-choice' && quiz.multiple_choice && (
           <>
             <h2 className="text-xl font-semibold mb-8 text-gray-800 text-center">
@@ -234,8 +230,6 @@ const QuizzesSubmission: React.FC = () => {
             </div>
           </>
         )}
-
-        {/* TRANSLATE */}
         {quiz.exercise_type === 'translate' && quiz.translate && (
           <>
             <div className="flex flex-col items-center mb-8">
@@ -312,8 +306,6 @@ const QuizzesSubmission: React.FC = () => {
             </button>
           </>
         )}
-
-        {/* WORD MATCH */}
         {quiz.exercise_type === 'word-match' && quiz.word_match?.matches && (
           <>
             <div className="flex flex-col items-center mb-8">

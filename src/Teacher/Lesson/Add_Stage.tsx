@@ -5,7 +5,6 @@ import { useParams } from 'react-router-dom';
 import Server_url from '../../config.js';
 import { toast } from 'react-toastify';
 
-// --- 1. TYPE DEFINITIONS ---
 type ExerciseType = 'multiple-choice' | 'word-match' | 'translate';
 interface BaseExercise { id: string; title: string; type: ExerciseType; }
 interface MultipleChoiceAnswer { id:string; text: string; isCorrect: boolean; imageUrl?: string; imageFile?: File; }
@@ -15,8 +14,6 @@ interface WordMatchExercise extends BaseExercise { type: 'word-match'; prompt: s
 interface TranslateExercise extends BaseExercise { type: 'translate'; prompt: string; phraseToTranslate: string; imageUrl?: string; correctWords: string[]; wrongWords: string[]; displayWords: string[]; }
 type Exercise = MultipleChoiceExercise | WordMatchExercise | TranslateExercise;
 
-
-// --- UTILITY FUNCTIONS ---
 const shuffleArray = <T,>(array: T[]): T[] => {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
@@ -38,8 +35,6 @@ const speak = (text: string, lang: string = 'en-US') => {
   }
 };
 
-
-// --- 2. EXERCISE EDITOR SUB-COMPONENTS ---
 
 const MultipleChoiceEditor: React.FC<{ exercise: MultipleChoiceExercise, onUpdate: (updatedExercise: Exercise) => void }> = ({ exercise, onUpdate }) => {
     const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
@@ -214,7 +209,6 @@ const TranslateEditor: React.FC<{ exercise: TranslateExercise, onUpdate: (update
     const handleShuffle = () => onUpdate({ ...exercise, displayWords: shuffleArray(exercise.displayWords) });
     useEffect(() => {
         onUpdate({ ...exercise, displayWords: shuffleArray([...exercise.correctWords, ...exercise.wrongWords]) });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [exercise.correctWords.join(','), exercise.wrongWords.join(',')]);
 
     return (
@@ -316,8 +310,6 @@ const EnterTitleModal: React.FC<{ isOpen: boolean; onClose: () => void; onCreate
         </div>
     );
 };
-
-// --- MAIN PAGE COMPONENT ---
 const AddStagePage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'details' | 'exercises'>('details');
     const [stageTitle, setStageTitle] = useState('Learn Basic Words');
@@ -388,7 +380,6 @@ const AddStagePage: React.FC = () => {
 
     const activeExercise = exercises.find(ex => ex.id === activeExerciseId);
 
-    // Save stage and move to exercises tab
     const handleSaveStage = async () => {
         try {
             const token = localStorage.getItem('authToken');
@@ -406,16 +397,14 @@ const AddStagePage: React.FC = () => {
             });
             if (!response.ok) throw new Error('Failed to save stage');
             const data = await response.json();
-            setStageId(data.id || data.stage_id); // Use the returned stage id
+            setStageId(data.id || data.stage_id); 
             setStageSaved(true);
-            setActiveTab('exercises'); // Move to exercises tab
+            setActiveTab('exercises'); 
             toast.success('Stage saved successfully!');
         } catch (error) {
             toast.error('Error saving stage');
         }
     };
-
-    // Save exercises for the stage (call this when user saves exercises)
     const handleSaveExercises = async () => {
         if (!stageId) return;
         const token = localStorage.getItem('authToken');
@@ -430,7 +419,6 @@ const AddStagePage: React.FC = () => {
                 if (ex.type === 'multiple-choice') {
                     const hasImageInAnswers = ex.answers.some(ans => ans.imageFile);
                     if (hasImageInAnswers) {
-                        // Use FormData for multiple-choice with images
                         const formData = new FormData();
                         formData.append('title', ex.title);
                         formData.append('exercise_type', 'multiple-choice');
@@ -439,14 +427,12 @@ const AddStagePage: React.FC = () => {
                             prompt: ex.prompt,
                             word_to_learn: ex.wordToLearn,
                         }));
-                        // For answers with images, include image references in the JSON
                         const answersMetadata = ex.answers.map((ans, idx) => ({
                             text: ans.text,
                             is_correct: ans.isCorrect,
                             image: ans.imageFile ? `answer_${idx}_image` : null,
                         }));
                         formData.append('answers', JSON.stringify(answersMetadata));
-                        // Append each image file with the referenced key name
                         ex.answers.forEach((ans, idx) => {
                             if (ans.imageFile) {
                                 formData.append(`answer_${idx}_image`, ans.imageFile);
@@ -458,7 +444,6 @@ const AddStagePage: React.FC = () => {
                             body: formData,
                         });
                     } else {
-                        // Use JSON for multiple-choice without images
                         const exercisePayload = {
                             title: ex.title,
                             exercise_type: 'multiple-choice',
@@ -506,7 +491,6 @@ const AddStagePage: React.FC = () => {
                     });
                 } else if (ex.type === 'translate') {
                     if (ex.imageFile) {
-                        // Use FormData for translate with image
                         const formData = new FormData();
                         formData.append('title', ex.title);
                         formData.append('exercise_type', 'translate');
@@ -526,7 +510,6 @@ const AddStagePage: React.FC = () => {
                             body: formData,
                         });
                     } else {
-                        // Use JSON for translate without image
                         const exercisePayload = {
                             title: ex.title,
                             exercise_type: 'translate',
@@ -575,11 +558,9 @@ const AddStagePage: React.FC = () => {
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
             <div className="flex flex-1">
-                {/* Sidebar */}
                 <div className="hidden lg:block w-64 bg-white border-r border-gray-200">
                     <Sidebar />
                 </div>
-                {/* Main Content */}
                 <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
                     <main className="max-w-6xl mx-auto">
                         <SelectExerciseTypeModal isOpen={isTypeModalOpen} onClose={() => setIsTypeModalOpen(false)} onSelect={handleSelectExerciseType} />
@@ -624,17 +605,10 @@ const AddStagePage: React.FC = () => {
                                   <p className="text-xs text-slate-400 mt-1">Max. of 16 points</p>
                                 </div>
                               </div>
-                              {/* <div className="mt-8 pt-6">
-                                <button className="flex items-center justify-center w-full max-w-xs mx-auto px-6 py-2.5 border border-blue-600 text-blue-600 text-sm font-semibold rounded-lg hover:bg-blue-50">
-                                  Save Details & Continue
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                </button>
-                              </div> */}
                             </div>
                           )}
                           {activeTab === 'exercises' && (
                             <div className="flex gap-6">
-                              {/* Sidebar: All Exercises */}
                               <div className="w-full max-w-xs bg-white border border-slate-200 rounded-xl p-4 flex flex-col" style={{ minHeight: 600 }}>
                                 <h3 className="font-semibold text-slate-700 mb-2">All Exercises</h3>
                                 <p className="text-xs text-slate-500 mb-4">Create & manage exercises from this panel</p>
@@ -658,13 +632,11 @@ const AddStagePage: React.FC = () => {
                                 </button>
                               </div>
 
-                              {/* Main Editor */}
                               <div className="flex-1 bg-white rounded-xl p-6 border border-slate-200 min-h-[600px]">
                                 {activeExercise ? (
                                   <>
                                     {activeExercise?.type === 'multiple-choice' && (
                                       <div className="flex flex-col gap-6">
-                                        {/* Prompt */}
                                         <input
                                           type="text"
                                           placeholder="Enter the prompt for this exercise here"
@@ -673,7 +645,6 @@ const AddStagePage: React.FC = () => {
                                           onChange={e => handleUpdateExercise({ ...activeExercise, prompt: e.target.value })}
                                         />
 
-                                        {/* Word to Learn */}
                                         <div className="w-full flex items-center justify-center mb-2">
                                           <button
                                             onClick={() => speak(activeExercise.wordToLearn, 'en-US')}
@@ -690,7 +661,6 @@ const AddStagePage: React.FC = () => {
                                           />
                                         </div>
 
-                                        {/* Answers */}
                                         <div className="mt-4">
                                           <h3 className="font-semibold text-slate-700 mb-1">Answers</h3>
                                           <p className="text-sm text-slate-500 mb-4">
@@ -764,7 +734,6 @@ const AddStagePage: React.FC = () => {
                                     )}
                                     {activeExercise?.type === 'word-match' && (
                                       <div className="flex flex-col gap-6">
-                                        {/* Prompt */}
                                         <input
                                           type="text"
                                           placeholder="Match the accurate translation"

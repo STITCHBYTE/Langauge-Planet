@@ -17,7 +17,7 @@ function LessonCard({
   imageUrl,
   instructorImage,
   studentsImage,
-  buttons, // Changed from individual button props
+  buttons,
   title,
   description,
   instructorName,

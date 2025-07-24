@@ -23,16 +23,12 @@ const Character: React.FC<CharacterProps> = ({
 }) => {
   const [x, setX] = useState<number>(initialX);
   const [spriteSheetSize, setSpriteSheetSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
-
-  // Provide safe default values to prevent crashes on the first render.
   const safeAction = currentAction || 'idle';
   const safeDirection = direction || 'right';
 
   useEffect(() => {
     setX(initialX);
   }, [initialX]);
-
-  // This hook determines all animation properties, including looping or one-shot.
   const { animationName, animationDuration, frameCountValue, iterationCount, fillMode } = useMemo(() => {
     const action = safeAction;
     
@@ -42,8 +38,6 @@ const Character: React.FC<CharacterProps> = ({
     
     const mappedAction = actionMap[action] || action;
     const count = frameCounts?.[mappedAction] || frameCounts?.idle || 6;
-    
-    // Define which actions should only play once and then stop.
     const oneShotActions = new Set(['attack1', 'attack2', 'hit', 'ko', 'death', 'jump', 'dodge']);
     
     let determinedIterationCount = 'infinite';

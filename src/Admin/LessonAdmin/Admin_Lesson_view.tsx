@@ -3,39 +3,32 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from "react-toastify";
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
-import Server_url from '../../config'; // Your server URL import
+import Server_url from '../../config';
 
-// --- 1. TYPE DEFINITION for the fetched lesson data ---
 interface Lesson {
     id: number;
     title: string;
     description: string;
-    image: string; // URL for the image
+    image: string;
     is_private: boolean;
     lesson_level: string;
-    quizzes?: Quiz[]; // Add this line
-    // Add any other fields your API returns
+    quizzes?: Quiz[];
 }
 
-// Add Quiz interface to your existing interfaces
 interface Quiz {
     id: number;
     title: string;
     exercise_type: string;
     created_at: string;
-    // Add other quiz fields as needed
 }
 
-// Add Stage interface
 interface Stage {
     id: number;
     title: string;
     description?: string;
     order?: number;
-    // Add other fields as needed
 }
 
-// --- Reusable Sub-Components (No changes needed) ---
 
 const ActionButton = ({ children, primary = false, destructive = false, onClick = () => {} }) => {
     const baseClasses = "px-4 py-2 text-sm font-semibold rounded-lg flex items-center";
@@ -55,7 +48,6 @@ const EmptyStateCard = ({ icon, title, subtitle, buttonText, onButtonClick }) =>
     </div>
 );
 
-// Add Quiz Card Component
 const QuizCard = ({ quiz, onEdit, onDelete }) => (
     <div className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50">
         <div className="flex items-start justify-between">
@@ -72,15 +64,6 @@ const QuizCard = ({ quiz, onEdit, onDelete }) => (
                 </p>
             </div>
             <div className="flex items-center gap-2">
-                {/* <button 
-                    onClick={() => onEdit(quiz.id)}
-                    className="p-1 text-slate-400 hover:text-blue-600"
-                    title="Edit Quiz"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                </button> */}
                 <button 
                     onClick={() => onDelete(quiz.id)}
                     className="p-1 text-slate-400 hover:text-red-600"
@@ -94,9 +77,6 @@ const QuizCard = ({ quiz, onEdit, onDelete }) => (
         </div>
     </div>
 );
-
-
-// Add Dropdown Menu Component
 const DropdownMenu: React.FC<{ 
     isOpen: boolean; 
     onClose: () => void; 
@@ -158,7 +138,6 @@ const DropdownMenu: React.FC<{
     );
 };
 
-// Add Confirmation Modal Component
 const ConfirmationModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
@@ -194,15 +173,11 @@ const ConfirmationModal: React.FC<{
     );
 };
 
-// --- Main Component ---
+
 const LessonDetailsPage: React.FC = () => {
     const { lesson_id } = useParams<{ lesson_id: string }>();
     const navigate = useNavigate();
-
-    // Ref for the dropdown button
     const dropdownButtonRef = useRef<HTMLButtonElement>(null) as React.RefObject<HTMLButtonElement>;
-
-    // State for lesson data, loading, and errors
     const [lesson, setLesson] = useState<Lesson | null>(null);
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [stages, setStages] = useState<Stage[]>([]);
@@ -210,12 +185,9 @@ const LessonDetailsPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
     const [stageDeleteId, setStageDeleteId] = useState<number | null>(null);
-    
-    // Add new state for lesson dropdown and delete modal
     const [isLessonDropdownOpen, setIsLessonDropdownOpen] = useState(false);
     const [showDeleteLessonModal, setShowDeleteLessonModal] = useState(false);
 
-    // Fetch lesson data when the component mounts
     useEffect(() => {
         const fetchLessonDetails = async () => {
             if (!lesson_id) {
@@ -226,7 +198,6 @@ const LessonDetailsPage: React.FC = () => {
             const token = localStorage.getItem('authToken');
             setIsLoading(true);
             try {
-                // Fetch lesson details
                 const lessonResponse = await fetch(`${Server_url}/api/lessons/lesson/${lesson_id}/`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -235,7 +206,6 @@ const LessonDetailsPage: React.FC = () => {
                 }
                 const lessonData: Lesson = await lessonResponse.json();
                 setLesson(lessonData);
-                // Fetch quizzes for this lesson
                 const quizResponse = await fetch(`${Server_url}/api/lessons/lesson/${lesson_id}/quizzes/`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -243,15 +213,13 @@ const LessonDetailsPage: React.FC = () => {
                     const quizData = await quizResponse.json();
                     setQuizzes(quizData.results || quizData || []);
                 }
-                // Fetch stages for this lesson
                 const stageResponse = await fetch(`${Server_url}/api/lessons/lesson/${lesson_id}/stages/`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (stageResponse.ok) {
                     const stageData = await stageResponse.json();
-                    console.log('Stages API response:', stageData); // Log the full API response
+                    console.log('Stages API response:', stageData);
                     const stagesArr = stageData.results || stageData || [];
-                    // console.log('Stages array:', stagesArr); // Log the array that will be set
                     setStages(stagesArr);
                 }
             } catch (err) {
@@ -262,8 +230,6 @@ const LessonDetailsPage: React.FC = () => {
         };
         fetchLessonDetails();
     }, [lesson_id]);
-
-    // Add handlers for quiz actions
     const handleEditQuiz = (quizId: number) => {
         navigate(`/admin/lesson/edit-quiz/${lesson_id}/${quizId}`);
     };
@@ -283,74 +249,48 @@ const LessonDetailsPage: React.FC = () => {
                 toast.error('Failed to delete quiz');
             }
         } catch (error) {
-            console.error('Error deleting quiz:', error);
             toast.error('Error deleting quiz');
         }
     };
-
-    // Enhanced function to get full image URL with debugging
     const getImageUrl = (imagePath: string | null | undefined): string | undefined => {
-        // console.log('Raw image path from backend:', imagePath); // Debug log
-        
         if (!imagePath) {
-            console.log('No image path provided');
             return undefined;
         }
-        
-        // Handle different image path formats
         let fullUrl: string;
         
         if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-            // Already a full URL
             fullUrl = imagePath;
         } else if (imagePath.startsWith('/media/') || imagePath.startsWith('media/')) {
-            // Backend media path
             fullUrl = `${Server_url}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
         } else if (imagePath.startsWith('/')) {
-            // Absolute path
             fullUrl = `${Server_url}${imagePath}`;
         } else {
-            // Relative path
             fullUrl = `${Server_url}/${imagePath}`;
         }
-        
-        console.log('Constructed image URL:', fullUrl); // Debug log
         return fullUrl;
     };
-
-    // Add image error handler
     const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-        console.error('Image failed to load:', e.currentTarget.src);
         e.currentTarget.style.display = 'none';
         const fallback = e.currentTarget.nextElementSibling as HTMLElement;
         if (fallback) {
             fallback.style.display = 'flex';
         }
     };
-
-    // Add image load handler for debugging
     const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-        console.log('Image loaded successfully:', e.currentTarget.src);
     };
-
-    // Handle lesson dropdown toggle
     const handleLessonDropdownToggle = () => {
         setIsLessonDropdownOpen(!isLessonDropdownOpen);
     };
-
-    // Handle edit lesson
     const handleEditLesson = () => {
         setIsLessonDropdownOpen(false);
         navigate(`/admin/lesson/edit/${lesson_id}`);
     };
 
-    // Handle delete lesson
     const handleDeleteLesson = () => {
         setIsLessonDropdownOpen(false);
         setShowDeleteLessonModal(true);
     };
 
-    // Confirm delete lesson
     const confirmDeleteLesson = async () => {
         const token = localStorage.getItem('authToken');
         try {
@@ -362,29 +302,24 @@ const LessonDetailsPage: React.FC = () => {
             if (response.ok) {
                 setShowDeleteLessonModal(false);
                 toast.success('Lesson deleted successfully!');
-                navigate('/admin/lesson/display'); // Redirect to lessons list
+                navigate('/admin/lesson/display');
             } else {
                 const errorData = await response.text();
-                console.error('Delete failed:', errorData);
                 toast.error('Failed to delete lesson');
             }
         } catch (error) {
-            console.error('Error deleting lesson:', error);
             toast.error('Error deleting lesson');
         }
     };
 
-    // Handler for editing a stage
     const handleEditStage = (stageId: number) => {
         navigate(`/admin/lesson/edit-stage/${lesson?.id}/${stageId}`);
     };
 
-    // Handler for deleting a stage
     const handleDeleteStage = (stageId: number) => {
         setStageDeleteId(stageId);
     };
 
-    // Confirm delete stage
     const confirmDeleteStage = async () => {
         if (!stageDeleteId) return;
         const token = localStorage.getItem('authToken');
@@ -420,14 +355,11 @@ const LessonDetailsPage: React.FC = () => {
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
             <div className="flex flex-1">
-              {/* Sidebar */}
               <div className="hidden lg:block w-64 bg-white border-r border-gray-200">
                 <Sidebar />
               </div>
-              {/* Main Content */}
               <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
                 <main className="max-w-7xl mx-auto">
-                  {/* Breadcrumbs */}
                   <div className="flex items-center text-sm mb-6 flex-wrap">
                     <button onClick={() => navigate('/teacher-lesson-view')} className="flex items-center text-gray-500 hover:text-gray-700">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -438,29 +370,21 @@ const LessonDetailsPage: React.FC = () => {
                     <span className="mx-2 text-gray-400">/</span>
                     <span className="text-gray-800 font-medium">{lesson.title}</span>
                   </div>
-
-                  {/* Action Button Bar */}
                   <div className="flex flex-row flex-wrap items-center justify-between gap-2 mb-6">
                     <div className="flex flex-row flex-wrap gap-2">
                       <ActionButton onClick={() => navigate(`/admin/lesson/students/${lesson.id}`)}>View Students</ActionButton>
                      <ActionButton onClick={() => navigate(`/admin/lesson/report/${lesson.id}`)}>View Quiz Report</ActionButton>
                       <ActionButton destructive onClick={handleDeleteLesson}>Delete Lesson</ActionButton>
-                      {/* <ActionButton>Student View</ActionButton> */}
                      <ActionButton primary onClick={() => toast.success('Your lesson is published successfully!')}>
                         Publish Lesson
                       </ActionButton>
                     </div>
                   </div>
-
-                  {/* Main Content Grid */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Left Column */}
                     <div className="lg:col-span-2 flex flex-col gap-6">
-                      {/* Lesson Details Card */}
                       <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                           <div className="flex items-start gap-5">
-                            {/* Image */}
                             <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden relative">
                               {lesson.image && getImageUrl(lesson.image) ? (
                                 <>
@@ -483,7 +407,6 @@ const LessonDetailsPage: React.FC = () => {
                               <p className="text-sm text-slate-500 mt-2 leading-relaxed">{lesson.description}</p>
                             </div>
                           </div>
-                          {/* Edit Dropdown */}
                           <div className="relative mt-4 sm:mt-0">
                             <button 
                               ref={dropdownButtonRef}
@@ -515,8 +438,6 @@ const LessonDetailsPage: React.FC = () => {
                           </span>
                         </div>
                       </div>
-
-                      {/* Lesson Stages Card */}
                       <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="text-lg font-semibold text-slate-800">Lesson Stages</h3>
@@ -538,15 +459,6 @@ const LessonDetailsPage: React.FC = () => {
                                                 {stage.description && <p className="text-sm text-slate-500 mt-1">{stage.description}</p>}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                              {/* <button
-                                                onClick={() => handleEditStage(stage.id)}
-                                                className="p-1 text-slate-400 hover:text-blue-600"
-                                                title="Edit Stage"
-                                              >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-                                              </button> */}
                                               <button
                                                 onClick={() => handleDeleteStage(stage.id)}
                                                 className="p-1 text-slate-400 hover:text-red-600"
@@ -573,8 +485,6 @@ const LessonDetailsPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-
-                    {/* Right Column */}
                     <div className="lg:col-span-1">
                       <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center justify-between mb-4">
@@ -589,7 +499,6 @@ const LessonDetailsPage: React.FC = () => {
                         <p className="text-sm text-slate-500 mb-4">
                           Quizzes are locked to student until they complete all the stages in the lesson.
                         </p>
-                        {/* Display Quizzes or Empty State */}
                         {quizzes.length > 0 ? (
                           <div className="space-y-3">
                             {quizzes.map(quiz => (
@@ -616,7 +525,6 @@ const LessonDetailsPage: React.FC = () => {
                 </main>
               </div>
             </div>
-            {/* Delete Confirmation Modal */}
             <ConfirmationModal
               isOpen={showDeleteLessonModal}
               onClose={() => setShowDeleteLessonModal(false)}
@@ -626,7 +534,6 @@ const LessonDetailsPage: React.FC = () => {
               confirmText="Delete Lesson"
               confirmButtonClass="bg-red-600 hover:bg-red-700"
             />
-            {/* Stage Delete Confirmation Modal */}
             <ConfirmationModal
               isOpen={stageDeleteId !== null}
               onClose={() => setStageDeleteId(null)}

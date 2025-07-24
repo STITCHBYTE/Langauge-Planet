@@ -52,7 +52,7 @@ export default function StudentProfile() {
   const [classesData, setClassesData] = useState<ClassItem[]>([]);
   const [lessonsData, setLessonsData] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
-  const { studentId } = useParams<{ studentId: string }>(); // Changed from classId to studentId
+  const { studentId } = useParams<{ studentId: string }>();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -79,16 +79,11 @@ export default function StudentProfile() {
         setLoading(true);
         const token = localStorage.getItem('authToken');
         
-        console.log('Fetching student data for studentId:', studentId);
-        
         if (!studentId) {
-          console.error('No studentId provided');
           toast.error('No student ID provided');
           setLoading(false);
           return;
         }
-        
-        // 1. First try to get student info directly
         let studentInfo: StudentInfo | null = null;
         try {
           const studentResponse = await fetch(`${Server_url}/api/users/${studentId}/`, {
@@ -100,9 +95,6 @@ export default function StudentProfile() {
           
           if (studentResponse.ok) {
             const studentData = await studentResponse.json();
-            console.log('Direct student data:', studentData);
-            
-            // Set student info directly
             studentInfo = {
               id: studentData.id || studentId,
               name: `${studentData.first_name || ''} ${studentData.last_name || ''}`.trim() || 
@@ -117,16 +109,10 @@ export default function StudentProfile() {
               learningPoints: studentData.learning_points ?? studentData.points ?? 0,
               lessonsCompleted: studentData.lessons_completed ?? studentData.completed_lessons ?? 0,
               averageLearningTime: studentData.avg_learning_time || studentData.average_time || '0 Mins',
-              status: 'Active', // Default status
+              status: 'Active',
             };
-            
-            // Set student info immediately
-            console.log('Setting student info:', studentInfo);
             setStudentInfoData(studentInfo);
           } else {
-            console.error('Failed to fetch student directly:', await studentResponse.text());
-            
-            // Create a fallback student info with basic details
             studentInfo = {
               id: studentId,
               name: 'Loading...',
@@ -140,9 +126,6 @@ export default function StudentProfile() {
             setStudentInfoData(studentInfo);
           }
         } catch (error) {
-          console.error('Error fetching student directly:', error);
-          
-          // Create a fallback student info
           studentInfo = {
             id: studentId,
             name: 'Student',
@@ -155,8 +138,6 @@ export default function StudentProfile() {
           };
           setStudentInfoData(studentInfo);
         }
-        
-        // Fetch all submissions for this student to calculate total points
         try {
           const submissionsResponse = await fetch(`${Server_url}/api/classrooms/assignment-submissions/?student=${studentId}`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -164,20 +145,13 @@ export default function StudentProfile() {
           if (submissionsResponse.ok) {
             const submissions = await submissionsResponse.json();
             const totalPoints = submissions.reduce((acc, sub) => acc + (sub.score || 0), 0);
-            
-            // Update student info with the calculated points
             setStudentInfoData(prevInfo => prevInfo ? { ...prevInfo, learningPoints: totalPoints } : null);
-            
-            // Also update the local variable if it exists, for subsequent logic
             if (studentInfo) {
               studentInfo.learningPoints = totalPoints;
             }
           }
         } catch (error) {
-          console.error('Error fetching assignment submissions for points calculation:', error);
         }
-        
-        // 2. Fetch all teacher's classes
         const classesResponse = await fetch(`${Server_url}/api/classrooms/my-classrooms/`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -187,17 +161,11 @@ export default function StudentProfile() {
         
         if (!classesResponse.ok) throw new Error('Failed to fetch classes');
         const teacherClasses = await classesResponse.json();
-        console.log('Teacher classes:', teacherClasses);
-
-        // 3. Try multiple approaches to find the student
         const studentClasses: ClassItem[] = [];
         const studentAssignments: Assignment[] = [];
         const studentLessons: Lesson[] = [];
 
         for (const classItem of teacherClasses) {
-          console.log(`\n=== Checking class: ${classItem.title} (ID: ${classItem.id}) ===`);
-          
-          // Approach 1: Try enrolled-students endpoint
           try {
             const studentsResponse = await fetch(
               `${Server_url}/api/classrooms/classroom/${classItem.id}/enrolled-students/`,
@@ -208,18 +176,8 @@ export default function StudentProfile() {
 
             if (studentsResponse.ok) {
               const studentsData = await studentsResponse.json();
-              const students = studentsData.results || studentsData; // Handle pagination
-              console.log(`Students in class ${classItem.id} (enrolled-students):`, students);
-              
-              // Find the student in this class with more flexible matching
+              const students = studentsData.results || studentsData;
               const foundStudent = students.find((student: any) => {
-                console.log('Checking enrolled student:', {
-                  id: student.id,
-                  email: student.email,
-                  username: student.username,
-                  first_name: student.first_name,
-                  last_name: student.last_name
-                });
                 
                 return String(student.id) === String(studentId) || 
                        student.email === studentId || 
@@ -227,9 +185,6 @@ export default function StudentProfile() {
               });
 
               if (foundStudent) {
-                console.log('✅ Found student in class via enrolled-students:', foundStudent);
-                
-                // Update student info with more complete data if available
                 if (foundStudent.first_name || foundStudent.last_name) {
                   const updatedStudentInfo: StudentInfo = {
                     ...studentInfo!,
@@ -242,8 +197,6 @@ export default function StudentProfile() {
                   setStudentInfoData(updatedStudentInfo);
                   studentInfo = updatedStudentInfo;
                 }
-                
-                // Add class to student's classes
                 studentClasses.push({
                   id: classItem.id,
                   title: classItem.title,
@@ -254,16 +207,11 @@ export default function StudentProfile() {
                   studentStatus: 'ENROLLED'
                 });
               } else {
-                console.log('❌ Student not found in enrolled-students');
               }
             } else {
-              console.error(`Failed to fetch enrolled-students for class ${classItem.id}`);
             }
           } catch (error) {
-            console.error(`Error fetching enrolled-students for class ${classItem.id}:`, error);
           }
-
-          // Approach 2: Try memberships endpoint
           try {
             const membershipsResponse = await fetch(
               `${Server_url}/api/classrooms/classroom/${classItem.id}/memberships/`,
@@ -274,17 +222,8 @@ export default function StudentProfile() {
 
             if (membershipsResponse.ok) {
               const memberships = await membershipsResponse.json();
-              console.log(`Memberships in class ${classItem.id}:`, memberships);
               
               const foundMembership = memberships.find((membership: any) => {
-                console.log('Checking membership:', {
-                  full_membership: membership,
-                  student: membership.student,
-                  user: membership.user,
-                  id: membership.id
-                });
-                
-                // Check various possible structures
                 const memberUserId = membership.student?.id || membership.user?.id || membership.student_id || membership.user_id;
                 const memberEmail = membership.student?.email || membership.user?.email || membership.email;
                 const memberUsername = membership.student?.username || membership.user?.username || membership.username;
@@ -296,8 +235,6 @@ export default function StudentProfile() {
               });
 
               if (foundMembership && studentClasses.length === 0) {
-                console.log('✅ Found student in class via memberships:', foundMembership);
-                
                 const memberData = foundMembership.student || foundMembership.user || foundMembership;
                 
                 studentClasses.push({
@@ -310,22 +247,14 @@ export default function StudentProfile() {
                   studentStatus: foundMembership.status || 'ENROLLED'
                 });
               } else if (!foundMembership) {
-                console.log('❌ Student not found in memberships');
               }
             } else {
-              console.error(`Failed to fetch memberships for class ${classItem.id}:`, await membershipsResponse.text());
             }
           } catch (error) {
-            console.error(`Error fetching memberships for class ${classItem.id}:`, error);
           }
-
-          // If student found in this class, fetch assignments and lessons
           const isStudentInClass = studentClasses.some(sc => sc.id === classItem.id);
           
           if (isStudentInClass) {
-            console.log(`📚 Fetching assignments and lessons for class ${classItem.id}`);
-            
-            // Fetch assignments for this class
             try {
               const assignmentsResponse = await fetch(
                 `${Server_url}/api/classrooms/classroom/${classItem.id}/assignments/`,
@@ -334,9 +263,6 @@ export default function StudentProfile() {
 
               if (assignmentsResponse.ok) {
                 const assignments = await assignmentsResponse.json();
-                console.log(`Assignments in class ${classItem.id}:`, assignments);
-                
-                // Fetch submissions for this class
                 const submissionsResponse = await fetch(
                   `${Server_url}/api/classrooms/classroom/${classItem.id}/assignment-submissions/`,
                   { headers: { Authorization: `Bearer ${token}` } }
@@ -345,10 +271,7 @@ export default function StudentProfile() {
                 let submissions = [];
                 if (submissionsResponse.ok) {
                   submissions = await submissionsResponse.json();
-                  console.log(`Submissions in class ${classItem.id}:`, submissions);
                 }
-
-                // Process assignments for this student
                 for (const assignment of assignments) {
                   const submission = submissions.find((sub: any) => {
                     const subStudentId = sub.student?.id || sub.student_id || sub.student;
@@ -371,12 +294,8 @@ export default function StudentProfile() {
                 }
               }
             } catch (error) {
-              console.error(`Error fetching assignments for class ${classItem.id}:`, error);
             }
-
-            // Fetch lessons assigned to this class
             if (classItem.lessons && classItem.lessons.length > 0) {
-              console.log(`Lessons in class ${classItem.id}:`, classItem.lessons);
               
               for (const lessonId of classItem.lessons) {
                 try {
@@ -391,37 +310,23 @@ export default function StudentProfile() {
                     studentLessons.push({
                       id: lesson.id,
                       title: lesson.title,
-                      status: 'Not Started', // Default - would need progress API
+                      status: 'Not Started',
                       className: classItem.title
                     });
                   }
                 } catch (error) {
-                  console.error(`Error fetching lesson ${lessonId}:`, error);
                 }
               }
             }
           }
         }
-
-        console.log('\n=== FINAL RESULTS ===');
-        console.log('Student info set:', studentInfo);
-        console.log('Student classes found:', studentClasses);
-        console.log('Student assignments found:', studentAssignments);
-        console.log('Student lessons found:', studentLessons);
-
-        // Set the collected data
         setClassesData(studentClasses);
         setAssignmentsData(studentAssignments);
         setLessonsData(studentLessons);
-
-        // Only show error message if no classes found
         if (studentClasses.length === 0) {
           toast.error('Student not found in any of your classes. Please check the student ID.');
         }
-        // Removed the success toast message
-
       } catch (err: any) {
-        console.error("Error fetching student data:", err);
         toast.error(`Error fetching student data: ${err.message}`);
       } finally {
         setLoading(false);
@@ -434,9 +339,7 @@ export default function StudentProfile() {
       setLoading(false);
       toast.error('No student ID provided in URL');
     }
-  }, [studentId]); // Changed from classId
-
-  // Filter functions
+  }, [studentId]);
   const filteredAssignments = assignmentsData.filter(assignment =>
     assignment.title.toLowerCase().includes(assignmentSearch.toLowerCase()) ||
     assignment.className.toLowerCase().includes(assignmentSearch.toLowerCase())
@@ -472,9 +375,7 @@ export default function StudentProfile() {
         <div className="flex-1 flex flex-col md:ml-64 transition-all duration-300">
           <div className="p-3 sm:p-4 md:p-6 lg:p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Column: Student Info + Assignments */}
               <div className="space-y-6">
-                {/* Student Info Section */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                   {studentInfoData && (
                     <div key={studentInfoData.id} className="mb-8">
@@ -523,8 +424,6 @@ export default function StudentProfile() {
                     </div>
                   )}
                 </div>
-
-                {/* Assignments Section */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
                     <div>
@@ -546,8 +445,6 @@ export default function StudentProfile() {
                       />
                     </div>
                   </div>
-                  
-                  {/* Assignments List */}
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {filteredAssignments.length === 0 ? (
                       <div className="text-center py-8 text-gray-500">
@@ -583,10 +480,7 @@ export default function StudentProfile() {
                   </div>
                 </div>
               </div>
-
-              {/* Right Column: Classes + Lessons */}
               <div className="space-y-6">
-                {/* Classes Section */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
                     <div>
@@ -608,8 +502,6 @@ export default function StudentProfile() {
                       />
                     </div>
                   </div>
-                  
-                  {/* Classes List */}
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {filteredClasses.length === 0 ? (
                       <div className="text-center py-8 text-gray-500">
@@ -633,8 +525,6 @@ export default function StudentProfile() {
                     )}
                   </div>
                 </div>
-
-                {/* Lessons Section */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
                     <div>
@@ -656,8 +546,6 @@ export default function StudentProfile() {
                       />
                     </div>
                   </div>
-                  
-                  {/* Lessons List */}
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {filteredLessons.length === 0 ? (
                       <div className="text-center py-8 text-gray-500">

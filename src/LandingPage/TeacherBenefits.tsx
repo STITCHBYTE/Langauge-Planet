@@ -51,7 +51,6 @@ export function TeacherBenefits() {
             </p>
           </header>
           <div className="mt-12 flex flex-col md:flex-row gap-10 w-full items-center">
-            {/* Teacher Illustration */}
             <div className="w-full md:w-1/2 flex justify-center">
               <img
                 src="https://cdn.builder.io/api/v1/image/assets/TEMP/1f81dd040ee49095677ce252d82d1eb4c821587b?placeholderIfAbsent=true&apiKey=b25fbc87d9254d4c96237d8f2fb90e0d"
@@ -59,7 +58,6 @@ export function TeacherBenefits() {
                 alt="Teacher Illustration"
               />
             </div>
-            {/* Perks List */}
             <div className="w-full md:w-1/2 flex flex-col gap-8">
               {perks.map((perk, index) => (
                 <article key={index} className="flex gap-4 items-start">

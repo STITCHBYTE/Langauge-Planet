@@ -1,49 +1,49 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-// import './App.css'; // Import your CSS styles
+
 import CarSelection from './CarSelection.tsx';
 import Car3D from './Car3D.tsx';
 import type { CarOption } from './CarSelection.tsx';
 
-// Types
+
 interface QuizQuestion {
     question: string;
     answer: string;
 }
 
-// Main App component
+
 const CarGame = () => {
-    // Game state variables
-    const [userCarPosition, setUserCarPosition] = useState(0); // User car's horizontal progress (0 = start, 100 = finish)
-    const [botCarsPositions, setBotCarsPositions] = useState([0, 0, 0]); // Progress for 3 bot cars
-    const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null); // Current quiz question
-    const [userInput, setUserInput] = useState(''); // User's input for the quiz
-    const [feedbackMessage, setFeedbackMessage] = useState(''); // Feedback for quiz answers
-    const [gameStarted, setGameStarted] = useState(false); // Game started flag
-    const [gameEnded, setGameEnded] = useState(false); // Game ended flag
-    const [winner, setWinner] = useState(''); // Name of the winner
-    const [userSpeedBoost, setUserSpeedBoost] = useState(0); // Temporary speed boost for user
-    const [userBaseSpeed, setUserBaseSpeed] = useState(0.5); // Base speed for user car
-    const [botBaseSpeed, setBotBaseSpeed] = useState(0.4); // Base speed for bot cars (slightly slower than user's base)
-    const gameIntervalRef = useRef<NodeJS.Timeout | null>(null); // Ref to store the game loop interval
-    const quizInputRef = useRef<HTMLInputElement>(null); // Ref for the quiz input field
-    const [roadScrollX, setRoadScrollX] = useState(0); // State for road background horizontal scroll (world offset)
-    const [isCheering, setIsCheering] = useState(false); // State for cheering animation
-    const [isQuestionCooldown, setIsQuestionCooldown] = useState(false); // New state to manage question delay
-    const [questionsAnsweredCount, setQuestionsAnsweredCount] = useState(0); // Track answered questions
-    const [winningCarOffset, setWinningCarOffset] = useState(0); // New state for winning car's post-win offset
-    const [showConfetti, setShowConfetti] = useState(false); // New state to control confetti animation
-    const [showCountdown, setShowCountdown] = useState(false); // New state for countdown visibility
-    const [countdownNumber, setCountdownNumber] = useState<number | 'GO!'>(3); // Countdown number, can be 'GO!'
-    const [selectedCarId, setSelectedCarId] = useState<string>(''); // Selected car ID
-    const [showCarSelection, setShowCarSelection] = useState(true); // Show car selection screen
+    
+    const [userCarPosition, setUserCarPosition] = useState(0); 
+    const [botCarsPositions, setBotCarsPositions] = useState([0, 0, 0]); 
+    const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null); 
+    const [userInput, setUserInput] = useState(''); 
+    const [feedbackMessage, setFeedbackMessage] = useState(''); 
+    const [gameStarted, setGameStarted] = useState(false); 
+    const [gameEnded, setGameEnded] = useState(false); 
+    const [winner, setWinner] = useState(''); 
+    const [userSpeedBoost, setUserSpeedBoost] = useState(0); 
+    const [userBaseSpeed, setUserBaseSpeed] = useState(0.5); 
+    const [botBaseSpeed, setBotBaseSpeed] = useState(0.4); 
+    const gameIntervalRef = useRef<NodeJS.Timeout | null>(null); 
+    const quizInputRef = useRef<HTMLInputElement>(null); 
+    const [roadScrollX, setRoadScrollX] = useState(0); 
+    const [isCheering, setIsCheering] = useState(false); 
+    const [isQuestionCooldown, setIsQuestionCooldown] = useState(false); 
+    const [questionsAnsweredCount, setQuestionsAnsweredCount] = useState(0); 
+    const [winningCarOffset, setWinningCarOffset] = useState(0); 
+    const [showConfetti, setShowConfetti] = useState(false); 
+    const [showCountdown, setShowCountdown] = useState(false); 
+    const [countdownNumber, setCountdownNumber] = useState<number | 'GO!'>(3); 
+    const [selectedCarId, setSelectedCarId] = useState<string>(''); 
+    const [showCarSelection, setShowCarSelection] = useState(true); 
 
-    // Constants for visual positioning
-    const USER_CAR_FIXED_SCREEN_LEFT = 20; // User car visually fixed at 20% from left of game area
-    const TOTAL_SCROLL_DISTANCE_PX = 4000; // Increased total scroll distance to accommodate more repetitions
-    const SECTION_LENGTH_PX = 800; // Length of one repeating section of background elements
-    const GRASS_OFFSET_X = -200; // Offset for grass elements to appear to the left of the road
+    
+    const USER_CAR_FIXED_SCREEN_LEFT = 20; 
+    const TOTAL_SCROLL_DISTANCE_PX = 4000; 
+    const SECTION_LENGTH_PX = 800; 
+    const GRASS_OFFSET_X = -200; 
 
-    // Car options data
+    
     const carOptions: CarOption[] = [
         {
             id: 'race',
@@ -89,36 +89,36 @@ const CarGame = () => {
         }
     ];
 
-    // Get selected car data
+    
     const selectedCar = carOptions.find(car => car.id === selectedCarId);
 
-    // Bot car models
+    
     const botCarModels = [
         carOptions.find(car => car.id === 'race'),
         carOptions.find(car => car.id === 'sedan-sports'),
         carOptions.find(car => car.id === 'suv-luxury')
     ];
 
-    // Array of simple quiz questions
+    
     const quizQuestions: QuizQuestion[] = [
         { question: 'What is 5 + 7?', answer: '12' },
-        // { question: 'What is the capital of France?', answer: 'Paris' },
-        // { question: 'How many legs does a dog have?', answer: '4' },
-        // { question: 'Is the sky blue? (yes/no)', answer: 'yes' },
-        // { question: 'What is 10 * 3?', answer: '30' },
-        // { question: 'Which planet is known as the Red Planet?', answer: 'Mars' },
-        // { question: 'What is the opposite of "hot"?', answer: 'cold' },
-        // { question: 'What is 20 / 4?', answer: '5' },
-        // { question: 'What animal says "moo"?', answer: 'cow' },
-        // { question: 'What color is a banana?', answer: 'yellow' },
+        
+        
+        
+        
+        
+        
+        
+        
+        
     ];
 
-    // Function to generate a random question
+    
     const generateQuestion = useCallback(() => {
-        // Check if all questions have been answered
+        
         if (questionsAnsweredCount >= quizQuestions.length) {
             setGameEnded(true);
-            // Determine winner based on current positions
+            
             const finalPositions = [userCarPosition, ...botCarsPositions];
             const maxPos = Math.max(...finalPositions);
             if (userCarPosition === maxPos) {
@@ -145,26 +145,26 @@ const CarGame = () => {
         }, 0);
     }, [quizQuestions, questionsAnsweredCount, userCarPosition, botCarsPositions]);
 
-    // Game loop function
+    
     const gameLoop = useCallback(() => {
         if (gameEnded) return;
 
-        // Update car progress (0-100%)
+        
         setUserCarPosition(prevPos => prevPos + userBaseSpeed + userSpeedBoost);
         setBotCarsPositions(prevPositions => {
             return prevPositions.map(pos => pos + botBaseSpeed + (Math.random() * 0.1 - 0.05));
         });
 
-        // Decay user speed boost over time
+        
         setUserSpeedBoost(prevBoost => Math.max(0, prevBoost - 0.005));
 
-        // Update road/world scroll based on user car's progress
-        // As userCarPosition goes from 0 to 100, roadScrollX goes from 0 to -TOTAL_SCROLL_DISTANCE_PX
+        
+        
         setRoadScrollX(-(userCarPosition / 100) * TOTAL_SCROLL_DISTANCE_PX);
 
     }, [gameEnded, userBaseSpeed, userSpeedBoost, botBaseSpeed, userCarPosition]);
 
-    // Effect to start and clear the game interval
+    
     useEffect(() => {
         if (gameStarted && !gameEnded) {
             gameIntervalRef.current = setInterval(gameLoop, 50);
@@ -180,15 +180,15 @@ const CarGame = () => {
         };
     }, [gameStarted, gameEnded, gameLoop]);
 
-    // Effect for winning car animation and confetti after game ends
+    
     useEffect(() => {
         if (gameEnded && winner) {
             let animationProgress = 0;
-            const animationDuration = 1500; // 1.5 seconds for the winning car to move forward
-            const maxOffset = 50; // Move 50% further
+            const animationDuration = 1500; 
+            const maxOffset = 50; 
 
             const interval = setInterval(() => {
-                animationProgress += 50; // Increment by a small amount
+                animationProgress += 50; 
                 const currentOffset = (animationProgress / animationDuration) * maxOffset;
 
                 if (animationProgress >= animationDuration) {
@@ -197,17 +197,17 @@ const CarGame = () => {
                 } else {
                     setWinningCarOffset(currentOffset);
                 }
-            }, 50); // Update every 50ms
+            }, 50); 
 
-            // Show confetti when game ends and winner is declared
+            
             setShowConfetti(true);
-            setTimeout(() => setShowConfetti(false), 3000); // Confetti lasts for 3 seconds
+            setTimeout(() => setShowConfetti(false), 3000); 
 
             return () => clearInterval(interval);
         }
     }, [gameEnded, winner]);
 
-    // Effect for 3-2-1 countdown
+    
     useEffect(() => {
         let countdownInterval: NodeJS.Timeout | null = null;
         if (showCountdown && countdownNumber !== 'GO!' && countdownNumber > 0) {
@@ -216,20 +216,20 @@ const CarGame = () => {
                     if (typeof prevNum === 'number' && prevNum > 1) {
                         return prevNum - 1;
                     } else if (prevNum === 1) {
-                        return 'GO!'; // Change to 'GO!'
+                        return 'GO!'; 
                     } else {
-                        // This case should ideally not be reached if logic is correct
+                        
                         return 0;
                     }
                 });
-            }, 1000); // Update every 1 second
+            }, 1000); 
         } else if (showCountdown && countdownNumber === 'GO!') {
-            // After 'GO!' is displayed, start the game
+            
             setTimeout(() => {
                 setShowCountdown(false);
-                setGameStarted(true); // Start the game after countdown
-                generateQuestion(); // Generate the first question
-            }, 1000); // Display "GO!" for 1 second
+                setGameStarted(true); 
+                generateQuestion(); 
+            }, 1000); 
         }
 
         return () => {
@@ -239,12 +239,12 @@ const CarGame = () => {
         };
     }, [showCountdown, countdownNumber, generateQuestion]);
 
-    // Handle user input for the quiz
+    
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setUserInput(e.target.value);
     };
 
-    // Handle quiz submission
+    
     const handleSubmitQuiz = (e: React.FormEvent) => {
         e.preventDefault();
         if (isQuestionCooldown) return;
@@ -267,7 +267,7 @@ const CarGame = () => {
         }
     };
 
-    // Start the game initiation (triggers countdown)
+    
     const startGame = () => {
         setUserCarPosition(0);
         setBotCarsPositions([0, 0, 0]);
@@ -278,12 +278,12 @@ const CarGame = () => {
         setQuestionsAnsweredCount(0);
         setWinningCarOffset(0);
         setShowConfetti(false);
-        setGameStarted(false); // Ensure gameStarted is false before countdown
-        setCountdownNumber(3); // Initialize countdown number
-        setShowCountdown(true); // Start the countdown
+        setGameStarted(false); 
+        setCountdownNumber(3); 
+        setShowCountdown(true); 
     };
 
-    // Reset the game
+    
     const resetGame = () => {
         setGameStarted(false);
         setGameEnded(false);
@@ -300,50 +300,35 @@ const CarGame = () => {
         setQuestionsAnsweredCount(0);
         setWinningCarOffset(0);
         setShowConfetti(false);
-        setShowCountdown(false); // Reset countdown state
-        setCountdownNumber(3); // Reset countdown number
-        setShowCarSelection(true); // Show car selection again
-        setSelectedCarId(''); // Reset selected car
+        setShowCountdown(false); 
+        setCountdownNumber(3); 
+        setShowCarSelection(true); 
+        setSelectedCarId(''); 
         if (gameIntervalRef.current) {
             clearInterval(gameIntervalRef.current);
         }
     };
 
-    // Function to render a single set of static background elements
+    
     const renderBackgroundElements = (offsetX: number) => (
         <>
-            {/* Banner Towers */}
-            {/* <img src="/images/bannerTowerGreen_NE.png" alt="Green Banner Tower" className="absolute h-1/2 top-1/4" style={{ left: `${offsetX + 100}px`, transform: 'translateY(-50%)', zIndex: 5 }} />
-            <img src="/images/bannerTowerRed_NW.png" alt="Red Banner Tower" className="absolute h-1/2 top-1/4" style={{ left: `${offsetX + 400}px`, transform: 'translateY(-50%)', zIndex: 5 }} /> */}
-
-            {/* Barriers */}
             <img src="/images/barrierRed_NE.png" alt="Red Barrier" className="absolute h-1/6 top-[-8%]" style={{ left: `${offsetX + 50}px`, zIndex: 5 }} />
             <img src="/images/barrierRed_NW.png" alt="Red Barrier" className="absolute h-1/6 top-[-8%]" style={{ left: `${offsetX + 250}px`, zIndex: 5 }} />
             <img src="/images/barrierRed_NW.png" alt="Red Barrier" className="absolute h-1/6 top-[-8%]" style={{ left: `${offsetX + 550}px`, zIndex: 5 }} />
             <img src="/images/barrierRed_NE.png" alt="Red Barrier" className="absolute h-1/6 bottom-[-4%]" style={{ left: `${offsetX + 100}px`, zIndex: 5 }} />
             <img src="/images/barrierRed_NE.png" alt="Red Barrier" className="absolute h-1/6 bottom-[-4%]" style={{ left: `${offsetX + 300}px`, zIndex: 5 }} />
             <img src="/images/barrierRed_NW.png" alt="Red Barrier" className="absolute h-1/6 bottom-[-4%]" style={{ left: `${offsetX + 570}px`, zIndex: 5 }} />
-
-            {/* Light Colored (Traffic Lights) */}
             <img src="/images/lightColored_NE.png" alt="Traffic Light NE" className="absolute h-1/4 top-0" style={{ left: `${offsetX + 100}px`, transform: 'translateY(-50%)', zIndex: 5 }} />
             <img src="/images/lightColored_NW.png" alt="Traffic Light NW" className="absolute h-1/4 top-0" style={{ left: `${offsetX + 500}px`, transform: 'translateY(-50%)', zIndex: 5 }} />
-
-            {/* Light Posts */}
             <img src="/images/lightPost_exclusive_SE.png" alt="Light Post SE" className="absolute h-1/2 bottom-[-19%]" style={{ left: `${offsetX + 300}px`, transform: 'translateY(-50%)', zIndex: 4 }} />
             <img src="/images/lightPost_exclusive_SW.png" alt="Light Post SW" className="absolute h-1/2 bottom-[-19%]" style={{ left: `${offsetX + 700}px`, transform: 'translateY(-50%)', zIndex: 4 }} />
-
-            {/* Grass elements - positioned on the left side of the road */}
-            {/* <img src="/images/grass_NE.png" alt="Grass NE" className="absolute h-1/3 top-1/2" style={{ left: `${offsetX + GRASS_OFFSET_X + 50}px`, transform: 'translateY(-50%)', zIndex: 4 }} />
-            <img src="/images/grass_NW.png" alt="Grass NW" className="absolute h-1/3 top-1/2" style={{ left: `${offsetX + GRASS_OFFSET_X + 200}px`, transform: 'translateY(-50%)', zIndex: 4 }} />
-            <img src="/images/grass_SE.png" alt="Grass SE" className="absolute h-1/3 bottom-0" style={{ left: `${offsetX + GRASS_OFFSET_X + 100}px`, transform: 'translateY(50%)', zIndex: 4 }} />
-            <img src="/images/grass_SW.png" alt="Grass SW" className="absolute h-1/3 bottom-0" style={{ left: `${offsetX + GRASS_OFFSET_X + 300}px`, transform: 'translateY(50%)', zIndex: 4 }} /> */}
-        </>
+            </>
     );
 
-    // Calculate number of repetitions needed for background elements
-    const numRepetitions = Math.ceil(TOTAL_SCROLL_DISTANCE_PX / SECTION_LENGTH_PX) + 1; // +1 to ensure overlap for seamless loop
+    
+    const numRepetitions = Math.ceil(TOTAL_SCROLL_DISTANCE_PX / SECTION_LENGTH_PX) + 1; 
 
-    // Car selection handlers
+    
     const handleCarSelect = (carId: string) => {
         setSelectedCarId(carId);
     };
@@ -359,8 +344,6 @@ const CarGame = () => {
     return (
         <div className="min-h-screen bg-gray-900 text-white font-inter flex flex-col items-center justify-center p-4">
             <h1 className="text-5xl font-extrabold mb-8 text-yellow-400 drop-shadow-lg">Language Planet</h1>
-
-            {/* Winner Overlay - Appears on game end */}
             {gameEnded && (
                 <div className="absolute inset-0 bg-gray-900 bg-opacity-90 flex flex-col items-center justify-center z-50">
                     <p className="text-8xl font-extrabold text-yellow-300 mb-8 animate-bounce">
@@ -368,7 +351,7 @@ const CarGame = () => {
                     </p>
                     {showConfetti && (
                         <img
-                            src="/2979685.png" // Path to your confetti image
+                            src="/2979685.png" 
                             alt="Confetti"
                             className="absolute inset-0 w-full h-full object-cover animate-confetti-burst"
                         />
@@ -381,8 +364,6 @@ const CarGame = () => {
                     </button>
                 </div>
             )}
-
-            {/* Car Selection Screen */}
             {showCarSelection && (
                 <CarSelection
                     onCarSelect={handleCarSelect}
@@ -390,8 +371,6 @@ const CarGame = () => {
                     onStartGame={handleStartGameFromSelection}
                 />
             )}
-
-            {/* Start Button & Game Area (conditional rendering) */}
             {!gameStarted && !gameEnded && !showCountdown && !showCarSelection && (
                 <button
                     onClick={startGame}
@@ -401,49 +380,40 @@ const CarGame = () => {
                 </button>
             )}
 
-            {(gameStarted || showCountdown) && !gameEnded && ( // Show game area if game started or countdown is active
+            {(gameStarted || showCountdown) && !gameEnded && ( 
                 <div className="flex flex-col w-full max-w-6xl bg-gray-800 rounded-xl shadow-2xl overflow-hidden h-[calc(100vh-160px)]">
-                    {/* Game Area - Top Half of the container */}
                     <div className="relative w-full h-1/2 overflow-hidden rounded-t-xl">
-                        {/* Scrolling World Container */}
                         <div
                             className="absolute inset-0"
                             style={{
-                                transform: `translateX(${roadScrollX % SECTION_LENGTH_PX}px)`, // Loop the transform
-                                width: `${TOTAL_SCROLL_DISTANCE_PX}px` // Ensure container is wide enough
+                                transform: `translateX(${roadScrollX % SECTION_LENGTH_PX}px)`, 
+                                width: `${TOTAL_SCROLL_DISTANCE_PX}px` 
                             }}
                         >
-                            {/* 2D Road Background */}
                             <div
                                 className="absolute inset-0"
                                 style={{
                                     backgroundImage: `url('/road_0.png')`,
                                     backgroundRepeat: 'repeat-x',
                                     backgroundSize: 'auto 100%',
-                                    backgroundPositionX: `${roadScrollX}px`, // Road image scrolls with the world
-                                    width: '100%', // Ensure it fills the scrolling container width
+                                    backgroundPositionX: `${roadScrollX}px`, 
+                                    width: '100%', 
                                 }}
                             ></div>
-
-                            {/* Render multiple sets of static background elements */}
                             {Array.from({ length: numRepetitions }).map((_, i) => (
                                 <div key={i} style={{ position: 'absolute', left: `${i * SECTION_LENGTH_PX}px`, width: `${SECTION_LENGTH_PX}px`, height: '100%' }}>
-                                    {renderBackgroundElements(0)} {/* Pass 0 as offsetX since the parent div handles the offset */}
+                                    {renderBackgroundElements(0)}
                                 </div>
                             ))}
 
-                        </div> {/* End Scrolling World Container */}
-
-                        {/* 3-2-1 Countdown Display (inside game area) */}
+                        </div>
                         {showCountdown && (
-                            <div className="absolute inset-0 flex items-center justify-center z-40"> {/* Higher z-index than cars */}
+                            <div className="absolute inset-0 flex items-center justify-center z-40">
                                 <p className={`text-9xl font-extrabold text-yellow-400 countdown-pop ${countdownNumber === 'GO!' ? 'text-green-400' : ''}`}>
                                     {countdownNumber}
                                 </p>
                             </div>
                         )}
-
-                        {/* Audience Area (fixed relative to game area, on top of scrolling world) */}
                         <div className="absolute inset-x-0 top-0 h-1/6 flex items-center justify-center overflow-hidden z-20">
                             {isCheering && (
                                 <img
@@ -453,8 +423,6 @@ const CarGame = () => {
                                 />
                             )}
                         </div>
-
-                        {/* User Car (fixed relative to game area) */}
                         <div
                             className="absolute w-28 h-16 flex items-center justify-center text-sm font-bold z-1"
                             style={{
@@ -480,13 +448,10 @@ const CarGame = () => {
                                     className="w-full h-full"
                                 />
                             )}
-                            {/* Smoke animation for user car */}
                             {gameStarted && !gameEnded && (
                                 <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-8 h-4 bg-gray-400 rounded-full blur-sm opacity-0 animate-smoke" style={{ animationDelay: '0s' }}></div>
                             )}
                         </div>
-
-                        {/* Bot Cars (positioned relative to user car's progress) */}
                         {botCarsPositions.map((pos, index) => {
                             let botEffectiveLeft = `max(0%, calc(${USER_CAR_FIXED_SCREEN_LEFT}% + ${(pos - userCarPosition)}%))`;
                             if (gameEnded && winner === `Bot ${index + 1}`) {
@@ -515,7 +480,6 @@ const CarGame = () => {
                                             className="w-full h-full"
                                         />
                                     )}
-                                    {/* Smoke animation for bot cars */}
                                     {gameStarted && !gameEnded && (
                                         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-8 h-4 bg-gray-400 rounded-full blur-sm opacity-0 animate-smoke" style={{ animationDelay: `${index * 0.2}s` }}></div>
                                     )}
@@ -523,8 +487,6 @@ const CarGame = () => {
                             );
                         })}
                     </div>
-
-                    {/* Quiz Area - Bottom Half of the container */}
                     <div className="w-full h-1/2 p-6 flex flex-col justify-center items-center bg-gray-700 rounded-b-xl">
                         <h2 className="text-3xl font-bold mb-6 text-yellow-300">Quiz Time!</h2>
                         <p className="text-xl mb-2 text-center">Question {questionsAnsweredCount + 1} of {quizQuestions.length}</p>
@@ -558,8 +520,6 @@ const CarGame = () => {
                     </div>
                 </div>
             )}
-
-            {/* CSS for animations */}
             <style>{`
                 @keyframes cheer-fade {
                     0% { opacity: 0; }
@@ -607,7 +567,7 @@ const CarGame = () => {
                     100% { transform: scale(1); }
                 }
                 .animate-win {
-                    animation: win-animation 0.5s ease-out; /* Apply once for visual pop */
+                    animation: win-animation 0.5s ease-out;
                 }
 
                 @keyframes confetti-burst {

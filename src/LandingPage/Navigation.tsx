@@ -14,7 +14,6 @@ export function Navigation() {
           alt="Background"
         />
         <nav className="flex flex-row flex-wrap gap-4 sm:gap-8 justify-between items-center w-full max-w-[1292px] mx-auto relative z-10">
-          {/* Logo */}
           <div className="flex gap-2 items-center py-2 text-2xl font-semibold rounded text-blue-950">
             <img
               src="https://cdn.builder.io/api/v1/image/assets/TEMP/38c2f2aaebbc362a76e260b7e7db0b3d11e2ea0f?placeholderIfAbsent=true&apiKey=b25fbc87d9254d4c96237d8f2fb90e0d"
@@ -23,15 +22,11 @@ export function Navigation() {
             />
             <span>Language Planet</span>
           </div>
-
-          {/* Desktop Nav Links */}
           <div className="hidden md:flex flex-row gap-2 sm:gap-6 items-center text-xl text-gray-600">
             <a href="#" className="whitespace-nowrap rounded-lg px-2 py-1 hover:bg-blue-100 transition">Home</a>
             <a href="#" className="whitespace-nowrap rounded-lg px-2 py-1 hover:bg-blue-100 transition">Pricing</a>
             <a href="#" className="rounded-lg px-2 py-1 hover:bg-blue-100 transition">Contact Us</a>
           </div>
-
-          {/* Desktop Auth Buttons */}
           <div className="hidden md:flex flex-row gap-2 sm:gap-4 items-center text-base">
             <button
               className="px-6 py-2 text-blue-600 bg-white rounded-lg border border-blue-600 hover:bg-blue-50 transition"
@@ -46,8 +41,6 @@ export function Navigation() {
               Get Started
             </button>
           </div>
-
-          {/* Mobile Hamburger Button */}
           <button
             className="md:hidden flex flex-col items-center justify-center w-8 h-8 space-y-1"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -58,8 +51,6 @@ export function Navigation() {
             <span className={`block w-6 h-0.5 bg-blue-950 transition-transform ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
           </button>
         </nav>
-
-        {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden relative z-20 mt-4 bg-white rounded-lg shadow-lg p-4">
             <div className="flex flex-col space-y-4">

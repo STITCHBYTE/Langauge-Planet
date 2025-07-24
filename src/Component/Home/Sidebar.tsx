@@ -3,8 +3,6 @@ import { useView } from '../../Context/ViewContext.tsx';
 import UserProfile from './UserProfile.tsx';
 import './Style.css';
 import { useNavigate, useLocation } from 'react-router-dom';
-
-// --- NEW: Import icons from react-icons library ---
 import { 
   FiHome, 
   FiUsers, 
@@ -12,12 +10,8 @@ import {
   FiClipboard, 
   FiPlayCircle 
 } from 'react-icons/fi';
-
-// =================================================================
-// Sidebar Menu Item Component
-// =================================================================
 interface SidebarMenuItemProps {
-  icon: React.ReactNode; // Type is now React.ReactNode to accept components
+  icon: React.ReactNode;
   label: string;
   onNavigate?: () => void;
   isTeacher: boolean;
@@ -70,17 +64,11 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
       className={`sidebar-menu-item ${isActive ? 'active' : ''}`}
       onClick={handleClick}
     >
-      {/* The icon is now rendered as a component inside a span */}
       <span className="sidebar-menu-icon">{icon}</span>
       <span className="sidebar-menu-label">{label}</span>
     </div>
   );
 };
-
-
-// =================================================================
-// Main Sidebar Component
-// =================================================================
 const Sidebar: React.FC = () => {
   const { 
     studentView, 
@@ -110,8 +98,6 @@ const Sidebar: React.FC = () => {
   if (isLoadingUser && !isMobileMenuOpen) {
     return <div className="sidebar-container">Loading...</div>;
   }
-  
-  // --- UPDATED: Menus now use icon components instead of image URLs ---
   const teacherMenu = [
     { icon: <FiHome />, label: "Dashboard" },
     { icon: <FiUsers />, label: "Student" },

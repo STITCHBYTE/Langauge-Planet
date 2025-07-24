@@ -42,16 +42,11 @@ const ChevronDownIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
     </svg>
 );
 
-// --- Component Props & Type Interfaces ---
-
 interface NavItemProps {
   icon: React.ReactNode;
   label: string;
   active?: boolean;
 }
-
-// NOTE: This is an assumed structure based on the new screenshot.
-// You may need to adjust field names to match your actual API response.
 interface Teacher {
     id: string;
     name: string;
@@ -62,9 +57,6 @@ interface Teacher {
     languages_count: number;
     students_count: number;
 }
-
-// --- Reusable Components ---
-
 const NavItem: React.FC<NavItemProps> = ({ icon, label, active = false }) => (
   <a href="#" className={`flex items-center px-4 py-3 text-gray-700 rounded-lg transition-colors duration-200 ${active ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200'}`}>
     {React.cloneElement(icon as React.ReactElement, { className: `w-5 h-5 ${active ? 'text-blue-600' : 'text-gray-500'}`})}
@@ -74,7 +66,6 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active = false }) => (
 
 const TeacherTableRow: React.FC<{ teacher: Teacher }> = ({ teacher }) => {
     const initial = teacher.first_name ? teacher.first_name.charAt(0).toUpperCase() : (teacher.name ? teacher.name.charAt(0).toUpperCase() : '?');
-    // Simple logic to cycle through a few colors for variety
     const colors = ['bg-blue-100 text-blue-600', 'bg-green-100 text-green-600', 'bg-purple-100 text-purple-600', 'bg-yellow-100 text-yellow-600'];
     const avatarColor = colors[teacher.id.charCodeAt(0) % colors.length];
 
@@ -114,10 +105,6 @@ const Pagination: React.FC = () => (
         <button className="px-3 py-1 rounded-md hover:bg-gray-200 text-gray-500">&gt;</button>
     </div>
 );
-
-
-// --- Main Page Component ---
-
 const App: React.FC = () => {
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -128,7 +115,6 @@ const App: React.FC = () => {
             setLoading(true);
             setError(null);
             try {
-                // Get token from localStorage (adjust if you store it elsewhere)
                 const token = localStorage.getItem('authToken');
                 const response = await fetch(`${Server_url}/api/users/teachers/`, {
                     headers: {
@@ -153,12 +139,8 @@ const App: React.FC = () => {
 
     return (
         <div className="flex h-screen bg-gray-50 font-sans">
-            {/* Sidebar */}
             <Sidebar activePage="Teachers" />
-
-            {/* Main Content */}
             <main className="flex-1 flex flex-col">
-                {/* Header */}
                 <header className="h-20 bg-white border-b flex items-center px-8 justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-gray-800">Teachers</h1>
@@ -170,8 +152,6 @@ const App: React.FC = () => {
                         <img src="https://placehold.co/40x40/E0E7FF/4F46E5?text=VA" alt="User Avatar" className="w-10 h-10 rounded-full" />
                     </div>
                 </header>
-
-                {/* Content Area */}
                 <div className="flex-1 p-8 overflow-y-auto">
                     <div className="flex justify-between items-center mb-6">
                         <div className="relative w-full max-w-xs">

@@ -35,21 +35,17 @@ function Game() {
         <Header />
       </div>
       <div className="flex flex-1">
-        {/* Sidebar */}
         <aside className="w-64 bg-white border-r border-gray-200 min-h-screen">
           <Sidebar />
         </aside>
-        {/* Main Content */}
         <main className="flex-1 flex justify-center items-start py-12 px-8 bg-[#f8fafc]">
           <div className="flex gap-8 w-full max-w-[1400px]">
-            {/* Games Container */}
             <div className="bg-white rounded-2xl shadow-lg p-8 flex flex-col gap-8 w-[520px]">
               <SectionA
                 onCarGameClick={handleCarGameClick}
                 onFightingGameClick={handleFightingGameClick}
               />
             </div>
-            {/* Friends Panel */}
             <div className="bg-white rounded-2xl shadow-lg p-8 w-[520px] min-h-[600px]">
               <AddFriends />
             </div>

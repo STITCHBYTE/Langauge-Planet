@@ -14,9 +14,7 @@ import Header from '../../Component/Home/Header.tsx';
 import { useParams, useNavigate } from 'react-router-dom';
 import Server_url from '../../config.js';
 import { toast } from "react-toastify";
-import { Dialog } from '@headlessui/react'; // If you use headlessui for modal, otherwise use your own modal
-
-// Dropdown Menu Component
+import { Dialog } from '@headlessui/react'; 
 const DropdownMenu = ({ 
   isOpen, 
   onClose, 
@@ -74,7 +72,6 @@ const DropdownMenu = ({
   );
 };
 
-// Confirmation Modal Component
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirmText }) => {
   if (!isOpen) return null;
 
@@ -102,11 +99,10 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirm
   );
 };
 
-// Discussion Item Component
 const DiscussionItem = ({ discussion, onEdit, onDelete }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownButtonRef = useRef(null);
-  const navigate = useNavigate(); // Add navigate hook
+  const navigate = useNavigate(); 
 
   const handleDropdownToggle = (e) => {
     e.stopPropagation();
@@ -124,7 +120,6 @@ const DiscussionItem = ({ discussion, onEdit, onDelete }) => {
   };
 
   const handleNavigateToForum = (e) => {
-    // Stop propagation if the click is on the dropdown button
     if (dropdownButtonRef.current && dropdownButtonRef.current.contains(e.target)) {
       return;
     }
@@ -165,7 +160,6 @@ const DiscussionItem = ({ discussion, onEdit, onDelete }) => {
   );
 };
 
-// Assignment Item Component
 const AssignmentItem = ({ assignment, onEdit, onDelete }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownButtonRef = useRef(null);
@@ -186,7 +180,6 @@ const AssignmentItem = ({ assignment, onEdit, onDelete }) => {
     onDelete(assignment);
   };
 
-  // Add click outside functionality
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -224,8 +217,6 @@ const AssignmentItem = ({ assignment, onEdit, onDelete }) => {
         >
           <FiMoreVertical />
         </button>
-        
-        {/* Updated dropdown with ref and click outside handling */}
         <div 
           ref={dropdownRef}
           className={`absolute right-0 bottom-full mb-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-50 ${isDropdownOpen ? 'block' : 'hidden'}`}
@@ -306,16 +297,14 @@ const ClassPage = () => {
   const [classData, setClassData] = useState(null);
   const [discussions, setDiscussions] = useState([]);
   const [assignments, setAssignments] = useState([]);
-  const [assignedLessons, setAssignedLessons] = useState([]); // <-- NEW
+  const [assignedLessons, setAssignedLessons] = useState([]); 
   const [loadingDiscussions, setLoadingDiscussions] = useState(true);
   const [loadingAssignments, setLoadingAssignments] = useState(true);
 
-  // Modal state
   const [showAssignLessonModal, setShowAssignLessonModal] = useState(false);
   const [teacherLessons, setTeacherLessons] = useState([]);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
 
-  // State for delete modals
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeleteDiscussionModal, setShowDeleteDiscussionModal] = useState(false);
   const [showDeleteAssignmentModal, setShowDeleteAssignmentModal] = useState(false);
@@ -340,7 +329,6 @@ const ClassPage = () => {
         const data = await response.json();
         setClassData(data);
 
-        // Fetch assigned lessons using lesson IDs from class data
         if (Array.isArray(data.lessons) && data.lessons.length > 0) {
           const lessonPromises = data.lessons.map(async (lessonId) => {
             const lessonRes = await fetch(`${Server_url}/api/lessons/lesson/${lessonId}/`, {
@@ -359,7 +347,6 @@ const ClassPage = () => {
       } catch (error) {
         setClassData(null);
         setAssignedLessons([]);
-        console.error('Error fetching class data:', error);
       }
     };
 
@@ -377,7 +364,6 @@ const ClassPage = () => {
         const data = await response.json();
         setDiscussions(data);
       } catch (error) {
-        console.error('Error fetching discussions:', error);
       } finally {
         setLoadingDiscussions(false);
       }
@@ -397,7 +383,6 @@ const ClassPage = () => {
         const data = await response.json();
         setAssignments(data);
       } catch (error) {
-        console.error('Error fetching assignments:', error);
       } finally {
         setLoadingAssignments(false);
       }
@@ -410,7 +395,6 @@ const ClassPage = () => {
     }
   }, [classId]);
 
-  // Fetch teacher's lessons for modal
   const openAssignLessonModal = async () => {
     setShowAssignLessonModal(true);
     const token = localStorage.getItem('authToken');
@@ -427,7 +411,6 @@ const ClassPage = () => {
     }
   };
 
-  // Assign lesson to class
   const handleAssignLesson = async () => {
     if (!selectedLessonId) return;
     const token = localStorage.getItem('authToken');
@@ -441,7 +424,6 @@ const ClassPage = () => {
         body: JSON.stringify({ lesson_id: selectedLessonId })
       });
       if (res.ok) {
-        // Refresh assigned lessons
         const updated = await res.json();
         setAssignedLessons(updated.results || updated);
         setShowAssignLessonModal(false);
@@ -455,42 +437,27 @@ const ClassPage = () => {
     }
   };
 
-  // Handle edit class
   const handleEditClass = () => {
-    console.log(`🔧 Navigating to edit class: ${classId}`);
     navigate(`/edit-class/${classId}`);
   };
-
-  // Handle delete class
   const handleDeleteClass = () => {
     setShowDeleteModal(true);
   };
-
-  // Handle edit discussion
   const handleEditDiscussion = (discussionId) => {
-    console.log(`🔧 Editing discussion: ${discussionId}`);
     navigate(`/edit-discussion/${discussionId}`);
   };
-
-  // Handle delete discussion
   const handleDeleteDiscussion = (discussion) => {
     setItemToDelete(discussion);
     setShowDeleteDiscussionModal(true);
   };
-
-  // Handle edit assignment
   const handleEditAssignment = (assignmentId) => {
-    console.log(`🔧 Editing assignment: ${assignmentId}`);
     navigate(`/edit-assignment/${assignmentId}`);
   };
 
-  // Handle delete assignment
   const handleDeleteAssignment = (assignment) => {
     setItemToDelete(assignment);
     setShowDeleteAssignmentModal(true);
   };
-
-  // Confirm delete class
   const confirmDeleteClass = async () => {
     if (!classData) return;
 
@@ -498,7 +465,6 @@ const ClassPage = () => {
     const token = localStorage.getItem('authToken');
     
     try {
-      console.log(`🗑️ Attempting to delete class: ${classId}`);
       
       const response = await fetch(`${Server_url}/api/classrooms/classroom/${classId}/delete/`, {
         method: 'DELETE',
@@ -508,7 +474,6 @@ const ClassPage = () => {
         }
       });
 
-      console.log(`Delete response status: ${response.status}`);
 
       if (response.ok || response.status === 204) {
         setShowDeleteModal(false);
@@ -516,18 +481,14 @@ const ClassPage = () => {
         navigate('/teacher-classes');
       } else {
         const errorData = await response.text();
-        console.error('Delete failed:', errorData);
         throw new Error(`Failed to delete class: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error deleting class:', error);
       alert(`An error occurred while deleting the class: ${error.message}`);
     } finally {
       setIsDeleting(false);
     }
   };
-
-  // Confirm delete discussion
   const confirmDeleteDiscussion = async () => {
     if (!itemToDelete) return;
 
@@ -535,7 +496,6 @@ const ClassPage = () => {
     const token = localStorage.getItem('authToken');
     
     try {
-      console.log(`🗑️ Attempting to delete discussion: ${itemToDelete.id}`);
       
       const response = await fetch(`${Server_url}/api/classrooms/discussions/${itemToDelete.id}/delete/`, {
         method: 'DELETE',
@@ -554,14 +514,12 @@ const ClassPage = () => {
         throw new Error(`Failed to delete discussion: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error deleting discussion:', error);
       alert(`An error occurred while deleting the discussion: ${error.message}`);
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Confirm delete assignment
   const confirmDeleteAssignment = async () => {
     if (!itemToDelete) return;
 
@@ -569,7 +527,6 @@ const ClassPage = () => {
     const token = localStorage.getItem('authToken');
     
     try {
-      console.log(`🗑️ Attempting to delete assignment: ${itemToDelete.id}`);
       
       const response = await fetch(`${Server_url}/api/classrooms/assignments/${itemToDelete.id}/delete/`, {
         method: 'DELETE',
@@ -588,14 +545,12 @@ const ClassPage = () => {
         throw new Error(`Failed to delete assignment: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error deleting assignment:', error);
       alert(`An error occurred while deleting the assignment: ${error.message}`);
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Publish class handler
   const handlePublishClass = async () => {
     const token = localStorage.getItem('authToken');
     try {
@@ -611,7 +566,6 @@ const ClassPage = () => {
       );
       if (res.ok) {
         toast.success("Class published status updated!");
-        // Optionally, refresh class data
         const updated = await res.json();
         setClassData((prev) => ({ ...prev, ...updated }));
       } else {
@@ -640,10 +594,8 @@ const ClassPage = () => {
       {/* Sidebar */}
       <Sidebar className="hidden lg:block fixed left-0 top-0 h-full w-[17%] z-10" />
 
-      {/* Main Content - Single scroll container */}
       <div className="flex-1 bg-gray-50/50 p-3 sm:p-4 md:p-6 lg:p-8 text-gray-800 ml-0 min-h-screen">
 
-        {/* Top buttons */}
         <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:justify-between sm:items-center">
           <div className="flex flex-row gap-2 w-full sm:w-auto">
             <button 
@@ -674,10 +626,8 @@ const ClassPage = () => {
           </div>
         </div>
 
-        {/* Responsive Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
           <div className="md:col-span-2 flex flex-col gap-4 md:gap-6 lg:gap-8">
-            {/* Class Details */}
             <div className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm relative">
               <button 
                 onClick={handleEditClass}
@@ -710,7 +660,6 @@ const ClassPage = () => {
               </div>
             </div>
 
-            {/* Discussions Section */}
             <div className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm">
               <h2 className="text-base md:text-lg font-bold text-gray-900">Class Discussions</h2>
               <p className="text-xs md:text-sm text-gray-500 mt-1">
@@ -750,9 +699,7 @@ const ClassPage = () => {
             </div>
           </div>
 
-          {/* Right Panel: Assignments & Lessons */}
           <div className="flex flex-col gap-4 md:gap-6 lg:gap-8">
-            {/* Assignments */}
             <div className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-visible">
               <h2 className="text-base md:text-lg font-bold text-gray-900">Class Assignments</h2>
               <p className="text-xs md:text-sm text-gray-500 mt-1">
@@ -793,8 +740,6 @@ const ClassPage = () => {
                 Add Assignment
               </button>
             </div>
-
-            {/* Lessons */}
             <div className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-base md:text-lg font-bold text-gray-900">Lesson Assigned</h2>
@@ -821,7 +766,6 @@ const ClassPage = () => {
           </div>
         </div>
 
-        {/* Assign Lesson Modal */}
         {showAssignLessonModal && (
           <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
@@ -858,7 +802,6 @@ const ClassPage = () => {
           </div>
         )}
 
-        {/* Modals (unchanged) */}
         <ConfirmationModal
           isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}

@@ -1,24 +1,19 @@
 .game-container {
-  position: relative; /*This is crucial for absolute positioning of children */
+  position: relative;
   width: 100vw;
   height: 100vh;
   background-image: url('/public/assets/images/background/background.png');
-  /* background-size: cover; */
   background-position: center;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  /* overflow: hidden; Prevent content from spilling out */
-  font-family: 'Orbitron', sans-serif; /* Ensure font is applied */
-  /* Add CSS variables for screen shake */
+  font-family: 'Orbitron', sans-serif;
   --screen-shake-x: 0px;
   --screen-shake-y: 0px;
   transform: translate(var(--screen-shake-x), var(--screen-shake-y));
-  transition: transform 0.05s linear; /* Smooth shake transition */
+  transition: transform 0.05s linear;
 }
-
-/* Background shake effect when fighting */
 .game-container.shake {
   animation: screenShake 0.2s ease-out, backgroundShake 0.2s ease-out;
 }
@@ -31,14 +26,10 @@ h1 {
   margin-top: 20px;
   z-index: 10;
 }
-
-/* Container for the main message and room info */
 .game-message-container {
   text-align: center;
   margin-bottom: 20px;
 }
-
-/* Container for the Room ID, copy button, and feedback message */
 .room-info {
   display: inline-flex;
   align-items: center;
@@ -54,12 +45,10 @@ h1 {
 .room-info span {
   margin-right: 10px;
 }
-
-/* Style for the copy button */
 .copy-button {
   background: #555;
   border: none;
-  border-radius: 50%; /* Makes it a circle */
+  border-radius: 50%;
   width: 30px;
   height: 30px;
   display: inline-flex;
@@ -72,21 +61,15 @@ h1 {
 .copy-button:hover {
   background: #777;
 }
-
-/* Styles the SVG icon inside the button */
 .copy-button svg {
   fill: #fff;
 }
-
-/* "Copied!" feedback message style */
 .copy-feedback {
-  color: #2ecc71; /* Green color */
+  color: #2ecc71;
   font-weight: bold;
   margin-left: 10px;
   animation: fade-in-out 2s forwards;
 }
-
-/* Simple fade animation for the feedback text */
 @keyframes fade-in-out {
   0% { opacity: 0; }
   20% { opacity: 1; }
@@ -153,13 +136,9 @@ h1 {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
 }
-
-/* Character action animation (e.g., slight jump/squash) */
 .action-animation {
-  animation: characterAction 0.3s ease-out; /* Matches the resetAction timeout */
+  animation: characterAction 0.3s ease-out;
 }
-
-/* NEW: Keyframes for screen shake */
 @keyframes screenShake {
   0% { transform: translate(0, 0); }
   25% { transform: translate(var(--screen-shake-x), var(--screen-shake-y)); }
@@ -168,7 +147,6 @@ h1 {
   100% { transform: translate(0, 0); }
 }
 
-/* NEW: Keyframes for background shake */
 @keyframes backgroundShake {
   0% { background-position: center center; }
   10% { background-position: calc(50% + 5px) calc(50% + 3px); }
@@ -183,7 +161,6 @@ h1 {
   100% { background-position: center center; }
 }
 
-/* NEW: Platform bounce effect on KO */
 .game-container.platform-bounce {
   animation: platformBounce 0.6s ease-out;
 }
@@ -197,31 +174,27 @@ h1 {
   75% { transform: translate(var(--screen-shake-x), var(--screen-shake-y)) translateY(-1px); }
   100% { transform: translate(var(--screen-shake-x), var(--screen-shake-y)) translateY(0px); }
 }
-
-/* NEW: Keyframes for character action animation (e.g., a slight punch forward or dodge back) */
 @keyframes characterAction {
   0% { transform: translateX(0) scaleX(var(--char-scale, 1)); }
-  50% { transform: translateX(var(--char-offset, 20px)) scaleX(var(--char-scale, 1)); } /* Adjust offset as needed */
+  50% { transform: translateX(var(--char-offset, 20px)) scaleX(var(--char-scale, 1)); } 
   100% { transform: translateX(0) scaleX(var(--char-scale, 1)); }
 }
 
-/* NEW: Keyframes for hit effect pulse */
+
 @keyframes hitPulse {
   0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.7; }
   50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
   100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
 }
 
-/* To ensure correct transform origin for character flipping and animation */
-/* Add this to your Character component's main div style or target it */
-.character-container { /* You would add this class to your Character's main div */
+
+
+.character-container {
   transform-origin: center center;
 }
-
-/* Health indicators at the top of screen */
 .health-container {
   position: absolute;
-  top: 70px; /* Below the title */
+  top: 70px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -267,18 +240,16 @@ h1 {
   transition: width 0.3s ease, background-color 0.3s ease;
   border-radius: 8px;
 }
-
-/* Health bar color classes */
 .health-fill.high-health {
-  background: linear-gradient(90deg, #4CAF50, #8BC34A); /* Green gradient */
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
 }
 
 .health-fill.medium-health {
-  background: linear-gradient(90deg, #FF9800, #FFC107); /* Orange gradient */
+  background: linear-gradient(90deg, #FF9800, #FFC107);
 }
 
 .health-fill.low-health {
-  background: linear-gradient(90deg, #F44336, #E91E63); /* Red gradient */
+  background: linear-gradient(90deg, #F44336, #E91E63);
 }
 
 .health-text {
@@ -287,22 +258,20 @@ h1 {
   font-weight: bold;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
-
-/* Controls instruction text */
 .controls-instruction {
   position: absolute;
-  top: 150px; /* Increased space below health bars */
+  top: 150px;
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
   z-index: 15;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(10px);
-  padding: 12px 24px; /* Increased padding */
+  padding: 12px 24px;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  margin-bottom: 20px; /* Add bottom margin */
+  margin-bottom: 20px;
 }
 
 .controls-text {
@@ -320,8 +289,6 @@ h1 {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
   margin: 0 20px;
 }
-
-/* Audio enable prompt */
 .audio-prompt {
   position: absolute;
   top: 60px;
@@ -344,8 +311,6 @@ h1 {
   50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
   100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
 }
-
-/* Hit flash overlay */
 .hit-flash {
   position: fixed;
   top: 0;
@@ -369,8 +334,6 @@ h1 {
   z-index: 30;
   animation: criticalHitFlash 0.4s ease-out;
 }
-
-/* Slow motion effect */
 .slow-motion {
   animation-duration: 2s !important;
   transition-duration: 2s !important;
@@ -380,8 +343,6 @@ h1 {
   animation-duration: 2s !important;
   transition-duration: 2s !important;
 }
-
-/* Combo display */
 .combo-display {
   position: absolute;
   top: 150px;
@@ -400,8 +361,6 @@ h1 {
 .combo-display.right {
   right: 20%;
 }
-
-/* Critical hit text */
 .critical-hit-text {
   position: absolute;
   top: 200px;
@@ -414,8 +373,6 @@ h1 {
   z-index: 25;
   animation: criticalHitText 1s ease-out forwards;
 }
-
-/* Particle container */
 .particles-container {
   position: fixed;
   top: 0;
@@ -448,7 +405,6 @@ h1 {
   animation: criticalParticleGlow 0.3s ease-out;
 }
 
-/* Enhanced character effects */
 .character-hit-effect {
   filter: brightness(200%) saturate(150%);
   animation: characterHitFlash 0.3s ease-out;
@@ -468,7 +424,6 @@ h1 {
   animation: walkingBob 0.6s ease-in-out infinite;
 }
 
-/* Enhanced health bars with damage indicators */
 .health-damage-indicator {
   position: absolute;
   top: -30px;
@@ -486,8 +441,6 @@ h1 {
   font-size: 2em;
   animation: criticalDamageIndicator 1.2s ease-out forwards;
 }
-
-/* NEW KEYFRAMES */
 
 @keyframes hitFlash {
   0% { opacity: 0; }
@@ -554,8 +507,6 @@ h1 {
   20% { transform: translateX(-50%) translateY(-10px) scale(1.2); }
   100% { opacity: 0; transform: translateX(-50%) translateY(-60px) scale(0.8); }
 }
-
-/* Enhanced game container with more dynamic effects */
 .game-container.critical-moment {
   filter: contrast(120%) saturate(130%);
   animation: criticalMoment 0.5s ease-out;
@@ -566,8 +517,6 @@ h1 {
   50% { filter: contrast(150%) saturate(160%); }
   100% { filter: contrast(120%) saturate(130%); }
 }
-
-/* Round start screen */
 .round-start-screen {
   position: fixed;
   top: 0;
@@ -616,11 +565,9 @@ h1 {
   50% { opacity: 1; transform: translateY(0); }
   100% { opacity: 1; transform: translateY(0); }
 }
-
-/* KO fall animation */
 .character-ko-fall {
   animation: koFall 1.2s ease-out forwards;
-  z-index: 1 !important; /* Make sure KO'd character is behind the winner */
+  z-index: 1 !important;
 }
 
 @keyframes koFall {
@@ -650,8 +597,6 @@ h1 {
     filter: brightness(0.6) saturate(0.5);
   }
 }
-
-/* Walking animation keyframes */
 @keyframes walkingBob {
   0% {
     transform: translateY(0px) scaleX(var(--char-scale, 1));
@@ -669,8 +614,6 @@ h1 {
     transform: translateY(0px) scaleX(var(--char-scale, 1));
   }
 }
-
-/* Game mode controls */
 .game-mode-controls {
   position: absolute;
   top: 60px;
@@ -711,34 +654,28 @@ h1 {
   border-radius: 5px;
   font-size: 0.9em;
 }
-
-/* --- Quiz Elements Styling --- */
-
-/* Dim overlay that appears when quiz is active */
 .game-dim-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-  z-index: 95; /* Between characters (10) and quiz elements (100) */
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 95;
   animation: fadeIn 0.3s ease-out forwards;
-  pointer-events: none; /* Don't block interaction with quiz elements */
+  pointer-events: none;
 }
-
-/* Container for the question, now centered vertically and horizontally */
 .quiz-top-question-area {
   position: absolute;
-  top: 50%; /* Center vertically */
+  top: 50%;
   left: 50%;
-  transform: translate(-50%, calc(-50% - 100px)); /* Adjust translateY to push it up slightly from true center */
-  z-index: 100; /* Above health bars and characters */
+  transform: translate(-50%, calc(-50% - 100px));
+  z-index: 100;
   width: 80%;
-  max-width: 900px; /* Control max width for readability */
+  max-width: 900px;
   text-align: center;
-  pointer-events: none; /* Allows clicks to pass through its background */
-  box-sizing: border-box; /* Include padding in width calculation */
+  pointer-events: none;
+  box-sizing: border-box;
 }
 
 .quiz-question-display {
@@ -749,40 +686,34 @@ h1 {
   border: 2px solid #292929;
   backdrop-filter: blur(1px);
   background: rgba(0, 0, 0, 0.2);
-  font-size: 2.5em; /* Larger font for main question */
+  font-size: 2.5em;
   font-weight: 700;
-  /* text-shadow: 0 0 15px rgba(190, 216, 112, 0.8); */ /* Original from screenshot, removed below for new style */
   line-height: 1.3;
   animation: quizFadeIn 0.3s ease-out forwards;
-  pointer-events: all; /* Make content clickable/selectable if needed (e.g. for text selection) */
-
-  /* New glow/shadow for the question display */
+  pointer-events: all;
   box-shadow: 0 0 30px rgba(0, 247, 255, 0.5), inset 0 0 10px rgba(0, 247, 255, 0.2);
   text-shadow: 0 0 15px rgba(0, 247, 255, 0.8);
 }
-
-/* Container for options, now centered vertically and horizontally, below the question */
 .quiz-options-area {
   margin-top: 290px;
-  flex-direction: row; /* Display options horizontally */
-  justify-content: center; /* Center options horizontally */
-  gap: 30px; /* Space between option buttons */
+  flex-direction: row;
+  justify-content: center;
+  gap: 30px;
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%); /* Centered both horizontally and vertically */
+  transform: translate(-50%, -50%);
   z-index: 100;
   display: flex;
-  /* flex-direction: column; Stack question above options */
-  align-items: center; /* Center items horizontally within this column */
-  width: 90%; /* Max width for the whole quiz block */
+  align-items: center;
+  width: 90%;
   max-width: 1000px;
   box-sizing: border-box;
-  padding: 20px; /* Overall padding for the centered block */
+  padding: 20px;
   pointer-events: none;
 }
 
-.quiz-option-button { /* Styling for individual option buttons */
+.quiz-option-button {
   color: #ffffff;
   background-color: #1A1A1A;
   border-radius: 15px;
@@ -800,7 +731,7 @@ h1 {
   transition: all 0.3s ease;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
-  pointer-events: all; /* Make buttons clickable */
+  pointer-events: all;
 }
 
 .quiz-option-button:hover {
@@ -811,19 +742,15 @@ h1 {
   color: #ffffff;
 }
 
-.quiz-instruction-bottom { /* Instruction text below options */
-  /* This needs to be part of the .quiz-options-area's flow, not absolute to the screen */
-  grid-column: 1 / -1; /* Span across all columns in the grid */
-  margin-top: 15px; /* Spacing from buttons */
+.quiz-instruction-bottom { 
+  grid-column: 1 / -1;
+  margin-top: 15px;
   color: #A0A0A0;
   font-size: 0.9em;
   font-style: italic;
   text-align: center;
-  pointer-events: none; /* Text only, not interactive */
+  pointer-events: none;
 }
-
-
-/* New Keyframes for the slide-in effect */
 @keyframes quizSlideInUp {
   0% {
     transform: translateY(100%);
@@ -834,19 +761,15 @@ h1 {
     opacity: 1;
   }
 }
-
-/* Existing @keyframes quizFadeIn is used for the top question area */
 @keyframes quizFadeIn {
   0% { opacity: 0; transform: scale(0.9); }
   100% { opacity: 1; transform: scale(1); }
 }
 
-@keyframes fadeIn { /* Reusing/defining fadeIn for the dim overlay */
+@keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
-
-/* ADD THESE KEYFRAMES TO YOUR FIGHTINGGAME.CSS */
 
 @keyframes sprite-anim-idle {
   to { transform: translateX(-100%); }
@@ -872,8 +795,6 @@ h1 {
 @keyframes sprite-anim-ko {
   to { transform: translateX(-100%); }
 }
-/* A single, generic keyframe for all horizontal sprite sheet animations.
-   This is more efficient than creating a keyframe for every single action. */
 @keyframes sprite-sheet-animation {
   from {
     background-position-x: 0%;
@@ -882,9 +803,6 @@ h1 {
     background-position-x: 100%;
   }
 }
-
-/* "Juice" Effect: A keyframe for a quick, impactful shake.
-   We'll apply this when a character gets hit. */
 @keyframes shake-effect {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-5px) rotate(-2deg); }
@@ -892,8 +810,6 @@ h1 {
   60% { transform: translateX(-5px) rotate(-2deg); }
   80% { transform: translateX(5px) rotate(2deg); }
 }
-
-/* Healthbar UI container */
 .healthbar-ui-container {
   position: absolute;
   top: 70px;
@@ -914,7 +830,6 @@ h1 {
   flex-direction: column;
   align-items: center;
 }
-/* Bottom center controls bar */
 .controls-bar-ui {
   position: absolute;
   left: 50%;
@@ -922,15 +837,12 @@ h1 {
   transform: translateX(-50%);
   display: flex;
   gap: 10px;
-  /* background: #eaffea; */
-  /* border: 3px solid #2ecc40; */
   border-radius: 18px;
   padding: 0px 0px;
   box-shadow: 0 2px 12px rgba(46, 204, 64, 0.12);
   z-index: 30;
   align-items: center;
 }
-/* Glass effect for individual control keys */
 .controls-key-glass {
   display: inline-block;
   min-width: 32px;
@@ -940,7 +852,6 @@ h1 {
   border-radius: 10px;
   border: 2px solid #2ecc40;
   background: rgba(230, 255, 230, 0.45);
-  /* box-shadow: 0 2px 10px 0 rgba(46,204,64,0.10), 0 1.5px 0 0 #b6fcb6 inset; */
   backdrop-filter: blur(6px);
   color: #218c3a;
   font-family: 'Orbitron', monospace;
@@ -957,8 +868,6 @@ h1 {
   background: rgba(46, 204, 64, 0.18);
   box-shadow: 0 0 0 2px #2ecc40;
 }
-
-/* Health Bar UI Container */
 .ff-healthbar-ui-container {
   position: absolute;
   top: 70px;
@@ -990,7 +899,7 @@ h1 {
 
 .ff-health-bar-container {
   width: 100%;
-  max-width: 350px; /* Increased from 220px to 350px */
+  max-width: 350px;
   margin-bottom: 4px;
 }
 
@@ -1029,32 +938,25 @@ h1 {
   margin-top: 2px;
   letter-spacing: 1px;
 }
-
-
-/* Base style for each character card */
 .character-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #78b5947d; /* Dark blue-grey */
-  border: 4px solid transparent; /* Transparent border to prevent layout shift on selection */
+  background-color: #78b5947d;
+  border: 4px solid transparent;
   border-radius: 12px;
   padding: 1rem;
   text-align: center;
-  color: #ecf0f1; /* Light grey text */
+  color: #ecf0f1;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
-  position: relative; /* For positioning tags if needed later */
+  position: relative;
 }
-
-/* A subtle lift effect when hovering over a card */
 .character-card:hover {
   transform: translateY(-5px);
-  border-color: #3498db; /* Blue highlight on hover */
+  border-color: #3498db;
 }
-
-/* Style for the character's sprite image */
 .char-select-sprite {
   width: 90px;
   height: 90px;
@@ -1062,40 +964,28 @@ h1 {
   margin-bottom: 0.75rem;
 }
 
-/* Style for the character's name */
 .character-card h3 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
 }
 
-/* --- Selection Indicator Styles --- */
-/*
- * Main message banner for in-game announcements like "FIGHT!"
- */
 .game-message-banner {
-  /* Positioning */
   position: absolute;
   top: 40%;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
-
-  /* Text Styling */
   color: #ffffff;
-  font-size: 7rem; /* Big font size */
+  font-size: 7rem;
   font-weight: bold;
   font-family: 'Impact', 'Arial Black', sans-serif;
   text-transform: uppercase;
-  -webkit-text-stroke: 4px #c0392b; /* Red stroke */
+  -webkit-text-stroke: 4px #c0392b;
   text-shadow: 6px 6px 10px rgba(0, 0, 0, 0.7);
-
-  /* Animation */
   animation: message-pop-in 2s forwards;
-  pointer-events: none; /* Make it unclickable */
+  pointer-events: none;
 }
-
-/* Animation keyframes */
 @keyframes message-pop-in {
   0% {
     opacity: 0;
@@ -1117,56 +1007,41 @@ h1 {
     transform: translateX(-50%) scale(0.8);
   }
 }
-
-/*
- * Styling for the message in the CONNECTING screen
- */
 .lobby-container .game-message {
   font-size: 1.5rem;
   color: #ecf0f1;
   text-align: center;
 }
-
-/*
- * Styling for the message in the CHARACTER_SELECT screen
- */
 .character-select-container h2 {
   font-size: 2rem;
   color: #d6e73c;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
-/* Style for YOUR selected character */
 .character-card.selected-me {
-  border-color: #2ecc71; /* Bright green */
+  border-color: #2ecc71;
   background-color: #2c5b40;
-  transform: scale(1.05); /* Make it pop */
+  transform: scale(1.05);
 }
-
-/* Style for the OPPONENT's selected character */
 .character-card.selected-opponent {
-  border-color: #e74c3c; /* Bright red */
+  border-color: #e74c3c;
   background-color: #6e332f;
-  transform: scale(1.05); /* Make it pop */
+  transform: scale(1.05);
 }
-
-/* --- Tag Styles --- */
-
-/* Base style for the "You" and "Opponent" tags */
 .selection-tag {
   padding: 0.25rem 0.75rem;
-  border-radius: 20px; /* Pill shape */
+  border-radius: 20px;
   font-size: 0.8rem;
   font-weight: bold;
   margin-top: 0.75rem;
   color: white;
 }
 
-/* Specific color for your selection tag */
+
 .my-tag {
-  background-color: #2ecc71; /* Bright green */
+  background-color: #2ecc71;
 }
 
-/* Specific color for the opponent's selection tag */
+
 .opponent-tag {
-  background-color: #e74c3c; /* Bright red */
+  background-color: #e74c3c;
 }

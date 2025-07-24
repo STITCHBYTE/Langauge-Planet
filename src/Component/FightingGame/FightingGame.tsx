@@ -13,7 +13,7 @@ interface PlayerState {
   isDodging: boolean;
   isHealing: boolean;
   consecutiveAttacks: number;
-  health: number; // Ensure health is included as it's used
+  health: number; 
 }
 
 interface TranslationQuestion {
@@ -103,13 +103,13 @@ const FightingGame: React.FC<FightingGameProps> = ({
 
   const calculateInitialPositions = useCallback(() => {
     const screenWidth = window.innerWidth;
-    const offsetFromEdge = 50; // Pixels from the edge of the screen
+    const offsetFromEdge = 50; 
 
     return {
-      player1X: offsetFromEdge, // Player 1 starts from the left edge
-      player2X: screenWidth - characterWidth - offsetFromEdge, // Player 2 starts from the right edge
+      player1X: offsetFromEdge, 
+      player2X: screenWidth - characterWidth - offsetFromEdge, 
     };
-  }, [characterWidth]); // characterWidth is needed for player2X calculation
+  }, [characterWidth]); 
 
 
   const [player1, setPlayer1] = useState<PlayerState>(() => ({
@@ -139,7 +139,7 @@ const FightingGame: React.FC<FightingGameProps> = ({
       return () => clearTimeout(timer);
   }, []);
 
-  // Re-introduced the useEffect for cooldown reduction
+  
   useEffect(() => {
     const interval = setInterval(() => {
       const reduceCooldowns = (setter: React.Dispatch<React.SetStateAction<PlayerState>>) => {
@@ -158,7 +158,7 @@ const FightingGame: React.FC<FightingGameProps> = ({
   }, []);
 
   const handleHit = useCallback((targetPlayerNum: number, damage: number, attackerPlayerNum: number) => {
-    const punchSound = new Audio('/sounds/punch.mp3'); // Sound effect
+    const punchSound = new Audio('/sounds/punch.mp3'); 
     punchSound.play().catch(e => console.log(e));
 
     const targetSetter = targetPlayerNum === 1 ? setPlayer1 : setPlayer2;
@@ -188,12 +188,12 @@ const FightingGame: React.FC<FightingGameProps> = ({
     setWinner(null);
     setRoundStart(true);
 
-    // Log all images used for both characters
+    
     console.log('[resetGame] Character 1 images:', character1Images);
     console.log('[resetGame] Character 2 images:', character2Images);
   }, [calculateInitialPositions, initialMaxHealth, character1Images, character2Images]);
 
-  // Optionally, log images every render for debugging
+  
   useEffect(() => {
     console.log('[render] Character 1 images:', character1Images);
     console.log('[render] Character 2 images:', character2Images);
@@ -202,7 +202,7 @@ const FightingGame: React.FC<FightingGameProps> = ({
   const handleMovement = useCallback((playerNum: number, direction: 'left' | 'right') => {
     const setter = playerNum === 1 ? setPlayer1 : setPlayer2;
     const currentPlayer = playerNum === 1 ? player1 : player2;
-    // Keep 'jump' check for movement during dodge/heal animations to prevent visual glitches
+    
     if (['attack1', 'attack2', 'hit', 'ko', 'jump'].includes(currentPlayer.action)) return;
     const moveDistance = playerNum === 1 ? moveSpeed : difficultySettings.botMoveSpeed;
     setter(prev => {
@@ -211,62 +211,62 @@ const FightingGame: React.FC<FightingGameProps> = ({
     });
   }, [player1, player2, difficultySettings.botMoveSpeed]);
 
-  // Helper to get animation duration based on character's frameCounts
+  
   const getAnimationDuration = useCallback((playerNum: number, actionType: string) => {
     const char = playerNum === 1 ? selectedCharacter : botCharacter;
-    // Map 'dodge' and 'heal' to 'jump' for frame counts, as per Character.tsx logic
+    
     const mappedAction = { 'dodge': 'jump', 'heal': 'jump' }[actionType] || actionType;
-    // Default to idle frames if specific action frames not found, but prefer known action types
+    
     const frameCount = char?.frameCounts?.[mappedAction] || char?.frameCounts?.[actionType] || char?.frameCounts?.['idle'] || 6;
-    return frameCount * 100; // 0.1s per frame = 100ms per frame
+    return frameCount * 100; 
   }, [selectedCharacter, botCharacter]);
 
 
-  // DEFINE executeAttack, executeDodge, executeHeal HERE (before startTranslationQuiz and handleTranslationAnswer)
+  
   const executeAttack = useCallback((attackerNum: number, attackType: 'attack1' | 'attack2') => {
     const attacker = attackerNum === 1 ? player1 : player2;
     const target = attackerNum === 1 ? player2 : player1;
     const attackerSetter = attackerNum === 1 ? setPlayer1 : setPlayer2;
 
-    // Define isInRange and isFacingTarget locally within executeAttack
+    
     const distance = Math.abs((attacker.x + characterWidth / 2) - (target.x + characterWidth / 2));
     const isInRange = distance <= attackRange + characterWidth / 2;
     const isFacingTarget = (attacker.direction === 'right' && attacker.x < target.x) || (attacker.direction === 'left' && attacker.x > target.x);
 
-    // Re-added cooldown checks for attacks
-    // These checks should ideally occur BEFORE calling executeAttack
-    // if the intention is to prevent the action entirely if on cooldown.
-    // However, if called from handleTranslationAnswer (which has already bypassed initial input check),
-    // we might allow the animation but still check for hit logic.
-    // For now, we keep the check here for direct calls to executeAttack (e.g., bot)
+    
+    
+    
+    
+    
+    
     if (attackerNum === 1 && ( (attackType === 'attack1' && attacker.cooldowns.attack1 > 0) || (attackType === 'attack2' && attacker.cooldowns.attack2 > 0) ) ) {
         console.log(`Attack blocked for player ${attackerNum} due to cooldown.`);
-        return; // Prevent action if player is on cooldown
+        return; 
     }
 
 
-    attackerSetter(prev => ({ ...prev, action: attackType, triggerActionAnim: prev.triggerActionAnim + 1 })); // Set action and trigger animation
+    attackerSetter(prev => ({ ...prev, action: attackType, triggerActionAnim: prev.triggerActionAnim + 1 })); 
 
-    // IMPORTANT: The actual hit/damage logic should only happen if the attack is meant to connect
-    // This part ensures that only if the quiz was passed AND the conditions (range, facing, not dodging) are met, damage is applied.
-    // This is especially crucial for bot attacks or when re-triggering from quiz.
+    
+    
+    
     if (isInRange && isFacingTarget && !target.isDodging) {
       const damage = attackerNum === 1 ? difficultySettings.playerAttackDamage : difficultySettings.botAttackDamage;
       const finalDamage = attackType === 'attack1' ? damage : damage + 10;
-      handleHit(attackerNum === 1 ? 2 : 1, finalDamage, attackerNum); // Target is opponent, attacker is this player
+      handleHit(attackerNum === 1 ? 2 : 1, finalDamage, attackerNum); 
     } else {
-        // If attack animation plays but misses (e.g., bot out of range, or player answered quiz correctly but opponent dodged)
-        // No damage, but ensure hitEffect is not triggered for target if no hit
+        
+        
         console.log(`Attack animation for player ${attackerNum} but no hit registered (out of range/facing wrong way/target dodged).`);
     }
 
-    // Re-added cooldown application for attacks
+    
     const cooldownTime = attackType === 'attack1' ? 500 : 900;
     attackerSetter(prev => ({ ...prev, cooldowns: { ...prev.cooldowns, [attackType]: cooldownTime } }));
 
-    // Use dynamic animation duration for attack reset
+    
     const animDuration = getAnimationDuration(attackerNum, attackType);
-    setTimeout(() => attackerSetter(prev => ({ ...prev, action: 'idle' })), animDuration); // Reset to idle after animation
+    setTimeout(() => attackerSetter(prev => ({ ...prev, action: 'idle' })), animDuration); 
   }, [player1, player2, difficultySettings, handleHit, attackRange, characterWidth, getAnimationDuration]);
 
   const executeDodge = useCallback((playerNum: number) => {
@@ -274,7 +274,7 @@ const FightingGame: React.FC<FightingGameProps> = ({
     const setter = playerNum === 1 ? setPlayer1 : setPlayer2;
     const currentPlayer = playerNum === 1 ? player1 : player2;
 
-    // Re-added cooldown check for dodge, and check if already dodging
+    
     if (currentPlayer.cooldowns.dodge > 0 || currentPlayer.isDodging) {
       console.log('[executeDodge] Dodge blocked due to cooldown or already dodging.');
       return;
@@ -283,30 +283,30 @@ const FightingGame: React.FC<FightingGameProps> = ({
     console.log('[executeDodge] Dodge allowed, updating state...');
     setter(prev => ({
       ...prev,
-      action: 'dodge', // Set action explicitly to 'dodge' for better clarity and consistency
+      action: 'dodge', 
       isDodging: true,
-      triggerActionAnim: prev.triggerActionAnim + 1, // Trigger animation
-      cooldowns: { ...prev.cooldowns, dodge: 1250 } // Re-added cooldown application for dodge
+      triggerActionAnim: prev.triggerActionAnim + 1, 
+      cooldowns: { ...prev.cooldowns, dodge: 1250 } 
     }));
 
-    const woahSound = new Audio('/sounds/swoosh.mp3'); // Sound effect
+    const woahSound = new Audio('/sounds/swoosh.mp3'); 
     woahSound.play()
       .then(() => console.log('[executeDodge] Dodge sound played.'))
       .catch(e => console.log("[executeDodge] Dodge sound error:", e));
 
-    // Reset isDodging and action to 'idle' after the dodge animation duration
+    
     const animDuration = getAnimationDuration(playerNum, 'dodge');
     setTimeout(() => {
       console.log('[executeDodge] Dodge duration ended, resetting state.');
       setter(prev => ({ ...prev, isDodging: false, action: 'idle' }));
-    }, animDuration); // Use dynamic duration for dodge reset
+    }, animDuration); 
   }, [player1, player2, getAnimationDuration]);
 
   const executeHeal = useCallback((playerNum: number) => {
     const setter = playerNum === 1 ? setPlayer1 : setPlayer2;
     const currentPlayer = playerNum === 1 ? player1 : player2;
 
-    // Re-added cooldown check for heal, and check if already healing or health is full
+    
     if (currentPlayer.cooldowns.heal > 0 || currentPlayer.health >= initialMaxHealth || currentPlayer.isHealing) {
         console.log('[executeHeal] Cannot heal: Cooldown, Health full, or already healing.');
         return;
@@ -314,23 +314,23 @@ const FightingGame: React.FC<FightingGameProps> = ({
 
     setter(prev => ({
       ...prev,
-      action: 'heal', // Set action explicitly to 'heal'
-      health: Math.min(initialMaxHealth, prev.health + 20), // Heal amount
+      action: 'heal', 
+      health: Math.min(initialMaxHealth, prev.health + 20), 
       isHealing: true,
-      triggerActionAnim: prev.triggerActionAnim + 1, // Trigger animation
-      cooldowns: { ...prev.cooldowns, heal: 5000 } // Re-added cooldown application for heal
+      triggerActionAnim: prev.triggerActionAnim + 1, 
+      cooldowns: { ...prev.cooldowns, heal: 5000 } 
     }));
 
-    // Reset isHealing and action to 'idle' after the heal animation duration
+    
     const animDuration = getAnimationDuration(playerNum, 'heal');
     setTimeout(() => {
         setter(prev => ({ ...prev, isHealing: false, action: 'idle' }));
-    }, animDuration); // Use dynamic duration for heal reset
+    }, animDuration); 
   }, [player1, player2, initialMaxHealth, getAnimationDuration]);
 
 
   const startTranslationQuiz = useCallback((attackerNum: number, targetNum: number, damage: number, attackType: 'attack1' | 'attack2') => {
-    // Only start quiz if game is not already paused by another quiz instance
+    
     if (gamePaused) {
         console.log("Quiz already active or game paused. Not starting new quiz.");
         return;
@@ -343,19 +343,19 @@ const FightingGame: React.FC<FightingGameProps> = ({
 
 
   const handleTranslationAnswer = useCallback((selectedOption: number) => {
-    if (!currentQuestion || !pendingAttack) return; // Ensure quiz data exists before proceeding
+    if (!currentQuestion || !pendingAttack) return; 
 
     if (selectedOption === currentQuestion.correct) {
-      // On correct answer, trigger the attack animation and logic for player 1
-      // Use pendingAttack.attackType to re-trigger the correct attack
-      executeAttack(pendingAttack.attackerPlayer, pendingAttack.attackType); // Call executeAttack directly
+      
+      
+      executeAttack(pendingAttack.attackerPlayer, pendingAttack.attackType); 
     } else {
-      setPlayer1(prev => ({...prev, cooldowns: {...prev.cooldowns, wrongAnswer: 1500}})); // Re-added wrongAnswer cooldown
+      setPlayer1(prev => ({...prev, cooldowns: {...prev.cooldowns, wrongAnswer: 1500}})); 
     }
     setGamePaused(false);
     setQuizActive(false);
-    setCurrentQuestion(null); // Clear current question
-    setPendingAttack(null); // Clear pending attack
+    setCurrentQuestion(null); 
+    setPendingAttack(null); 
   }, [pendingAttack, currentQuestion, executeAttack]);
 
 
@@ -366,7 +366,7 @@ const FightingGame: React.FC<FightingGameProps> = ({
     const inAttackRange = distance <= attackRange + characterWidth / 2;
     const random = Math.random();
 
-    // Re-added bot cooldown checks
+    
     if ((player1.action === 'attack1' || player1.action === 'attack2') && inAttackRange) {
       const dodgeChance = initialDifficulty === 'easy' ? 0.3 : initialDifficulty === 'medium' ? 0.6 : 0.8;
       if (random < dodgeChance && player2.cooldowns.dodge === 0) return 'dodge';
@@ -402,17 +402,17 @@ const FightingGame: React.FC<FightingGameProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameOver || gamePaused) return; // If game is paused, stop all input (except quiz answers)
-      if (quizActive) { // If quiz is active, only process quiz answers
+      if (gameOver || gamePaused) return; 
+      if (quizActive) { 
         if (['1', '2', '3', '4'].includes(e.key)) handleTranslationAnswer(parseInt(e.key, 10) - 1);
         return;
       }
-      // Re-added 'jump' for movement/attack checks to ensure consistency with dodge/heal animations
+      
       const canMove = !['attack1', 'attack2', 'hit', 'ko', 'jump', 'dodge', 'heal'].includes(player1.action);
       const canAttack = !['hit', 'ko', 'jump', 'dodge', 'heal'].includes(player1.action);
 
-      // Determine if player is in range and facing opponent for a potential hit
-      const target = player2; // Opponent is always player2 in single-player
+      
+      const target = player2; 
       const distance = Math.abs((player1.x + characterWidth / 2) - (target.x + characterWidth / 2));
       const isInRange = distance <= attackRange + characterWidth / 2;
       const isFacingTarget = (player1.direction === 'right' && player1.x < target.x) || (player1.direction === 'left' && player1.x > target.x);
@@ -422,31 +422,31 @@ const FightingGame: React.FC<FightingGameProps> = ({
       switch (e.key.toLowerCase()) {
         case 'a': case 'arrowleft': if (canMove) handleMovement(1, 'left'); break;
         case 'd': case 'arrowright': if (canMove) handleMovement(1, 'right'); break;
-        case 'w': case 'arrowup': executeDodge(1); break; // Trigger dodge
-        case 's': case 'arrowdown': executeDodge(1); break; // Trigger dodge
-        // Re-added cooldown checks for attack keys
+        case 'w': case 'arrowup': executeDodge(1); break; 
+        case 's': case 'arrowdown': executeDodge(1); break; 
+        
         case 'j':
           if (canAttack && player1.cooldowns.attack1 === 0) {
-              if (willHit) { // Only start quiz if attack will actually hit
+              if (willHit) { 
                   startTranslationQuiz(1, 2, difficultySettings.playerAttackDamage, 'attack1');
               } else {
-                  // Play attack animation even if out of range/not facing, but no quiz
-                  executeAttack(1, 'attack1'); // Call executeAttack to play animation, it will determine if damage occurs
+                  
+                  executeAttack(1, 'attack1'); 
               }
           }
           break;
         case 'k':
           if (canAttack && player1.cooldowns.attack2 === 0) {
-              if (willHit) { // Only start quiz if attack will actually hit
+              if (willHit) { 
                   startTranslationQuiz(1, 2, difficultySettings.playerAttackDamage + 10, 'attack2');
               } else {
-                  // Play attack animation even if out of range/not facing, but no quiz
-                  executeAttack(1, 'attack2'); // Call executeAttack to play animation
+                  
+                  executeAttack(1, 'attack2'); 
               }
           }
           break;
-        // Re-added cooldown check for heal key
-        case 'h': if (player1.cooldowns.heal === 0) executeHeal(1); break; // Only check heal cooldown, 'canAttack' is not applicable
+        
+        case 'h': if (player1.cooldowns.heal === 0) executeHeal(1); break; 
       }
     };
 
@@ -464,7 +464,7 @@ const FightingGame: React.FC<FightingGameProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [gameOver, gamePaused, player1, quizActive, executeAttack, handleMovement, executeDodge, executeHeal, handleTranslationAnswer, startTranslationQuiz, difficultySettings, attackRange, characterWidth]); // Added necessary dependencies
+  }, [gameOver, gamePaused, player1, quizActive, executeAttack, handleMovement, executeDodge, executeHeal, handleTranslationAnswer, startTranslationQuiz, difficultySettings, attackRange, characterWidth]); 
 
   if (!selectedCharacter || !botCharacter) {
     return <div>Loading fighters...</div>;

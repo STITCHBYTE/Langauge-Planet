@@ -11,9 +11,7 @@ import { toast } from 'react-toastify';
 
 export default function AddDiscussionPage() {
     const { classId } = useParams<{ classId: string }>();
-    console.log("classId:", classId);
-    
-    // State to hold form data
+ 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [files, setFiles] = useState<FileList | null>(null);
@@ -21,7 +19,6 @@ export default function AddDiscussionPage() {
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    // Function to get file icon based on type
     const getFileIcon = (fileName: string) => {
         const extension = fileName.split('.').pop()?.toLowerCase();
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
@@ -30,7 +27,6 @@ export default function AddDiscussionPage() {
         return <FiFile className="text-red-500" size={24} />;
     };
 
-    // Function to validate file type and size
     const validateFile = (file: File): string | null => {
         const allowedTypes = [
             'image/jpeg',
@@ -44,7 +40,7 @@ export default function AddDiscussionPage() {
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         ];
         
-        const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+        const maxSize = 10 * 1024 * 1024; 
         
         if (!allowedTypes.includes(file.type)) {
             return 'File type not supported. Please upload PDF, PNG, JPG, GIF, WEBP, TXT, DOC, or DOCX files.';
@@ -57,7 +53,7 @@ export default function AddDiscussionPage() {
         return null;
     };
 
-    // Handle file selection with validation
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = e.target.files;
         if (selectedFiles && selectedFiles.length > 0) {
@@ -66,7 +62,7 @@ export default function AddDiscussionPage() {
             
             if (validationError) {
                 setError(validationError);
-                e.target.value = ''; // Clear the input
+                e.target.value = ''; 
                 setFiles(null);
                 return;
             }
@@ -76,7 +72,6 @@ export default function AddDiscussionPage() {
         }
     };
 
-    // Handler for form submission
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setIsLoading(true);
@@ -129,16 +124,13 @@ export default function AddDiscussionPage() {
             }
 
             const result = await response.json();
-            console.log('Success:', result);
             toast.success('Discussion added successfully!');
             navigate(`/Class_info_Page/${classId}`);
-            // Clear the form
             setTitle('');
             setDescription('');
             setFiles(null);
 
         } catch (err: any) {
-            console.error('Error submitting form:', err);
             if (!error) {
                 setError(err.message);
                 toast.error(err.message);
@@ -150,24 +142,19 @@ export default function AddDiscussionPage() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-100">
-            {/* Header */}
             
             <div className="flex flex-1">
-                {/* Sidebar */}
                 <div>
                     <Sidebar />
                 </div>
 <div className="w-full ml-[17%]">
                 <Header />
   
-
-                {/* Main Content */}
                 <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto">
                     <main className="w-full min-h-screen flex items-center justify-center">
                         <div className="bg-white p-4 sm:p-6 md:p-8 rounded-xl border border-gray-200 shadow-sm w-full max-w-5xl mx-auto">
                             <form onSubmit={handleSubmit}>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                                    {/* === LEFT COLUMN: DISCUSSION DETAILS FORM === */}
                                     <div className="md:col-span-2">
                                         <h2 className="text-lg sm:text-xl font-bold text-gray-800">Discussion Details</h2>
                                         <p className="text-xs sm:text-sm text-gray-500 mt-1">
@@ -204,8 +191,6 @@ export default function AddDiscussionPage() {
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* === RIGHT COLUMN: MEDIA UPLOADER === */}
                                     <div>
                                         <h2 className="text-lg sm:text-xl font-bold text-gray-800">Discussion Media</h2>
                                         <p className="text-xs sm:text-sm text-gray-500 mt-1">
@@ -240,7 +225,6 @@ export default function AddDiscussionPage() {
                                                 onChange={handleFileChange}
                                                 accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,image/*,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                             />
-                                            {/* Remove file button */}
                                             {files && files.length > 0 && (
                                                 <button
                                                     type="button"
@@ -258,7 +242,6 @@ export default function AddDiscussionPage() {
                                     </div>
                                 </div>
 
-                                {/* === ACTION BUTTONS SECTION === */}
                                 <div className="flex flex-col sm:flex-row justify-end items-center mt-8 pt-6 border-t border-gray-200 gap-3">
                                     {error && <p className="w-full text-xs sm:text-sm text-red-500 text-left">{error}</p>}
                                     <button 

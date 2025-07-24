@@ -3,9 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from "react-toastify";
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
-import Server_url from '../../config'; // Your server URL import
-
-// Interface for lesson data
+import Server_url from '../../config'; 
 interface Lesson {
     id: string;
     title: string;
@@ -18,7 +16,6 @@ interface Lesson {
     updated_at?: string;
 }
 
-// A reusable component for form input fields for cleaner code
 const FormInput = ({ label, placeholder, type = "text", value, onChange }) => (
     <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">{label}*</label>
@@ -33,7 +30,6 @@ const FormInput = ({ label, placeholder, type = "text", value, onChange }) => (
     </div>
 );
 
-// A reusable component for dropdown/select fields
 const FormSelect = ({ label, children, value, onChange }) => (
      <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">{label}*</label>
@@ -48,19 +44,16 @@ const FormSelect = ({ label, children, value, onChange }) => (
     </div>
 );
 
-// Loading component
 const LoadingSpinner = () => (
     <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
     </div>
 );
 
-// Main Component
 const EditLessonComponent: React.FC = () => {
     const navigate = useNavigate();
     const { lesson_id } = useParams<{ lesson_id: string }>();
 
-    // State management for form fields
     const [title, setTitle] = useState('');
     const [isPrivate, setIsPrivate] = useState(false);
     const [level, setLevel] = useState('BEGINNER');
@@ -70,17 +63,14 @@ const EditLessonComponent: React.FC = () => {
     const [isFetching, setIsFetching] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // State for the image file and its preview
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
     
-    // Ref for the hidden file input
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const wordCount = description.trim().split(/\s+/).filter(Boolean).length;
 
-    // Function to get full image URL
     const getImageUrl = (imagePath: string | null | undefined): string | undefined => {
         if (!imagePath) return undefined;
         
@@ -95,7 +85,6 @@ const EditLessonComponent: React.FC = () => {
         }
     };
 
-    // Fetch lesson details on component mount
     useEffect(() => {
         const fetchLessonDetails = async () => {
             if (!lesson_id) {
@@ -134,9 +123,7 @@ const EditLessonComponent: React.FC = () => {
                 }
 
                 const lessonData: Lesson = await response.json();
-                console.log('Fetched lesson data:', lessonData);
 
-                // Populate form fields with existing data
                 setTitle(lessonData.title || '');
                 setIsPrivate(lessonData.is_private || false);
                 setLevel(lessonData.lesson_level || 'BEGINNER');
@@ -150,7 +137,6 @@ const EditLessonComponent: React.FC = () => {
                 }
 
             } catch (err) {
-                console.error('Error fetching lesson:', err);
                 setError(err instanceof Error ? err.message : 'Failed to fetch lesson details');
             } finally {
                 setIsFetching(false);
@@ -160,25 +146,22 @@ const EditLessonComponent: React.FC = () => {
         fetchLessonDetails();
     }, [lesson_id]);
 
-    // Handler for image selection
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            setImageFile(file); // Store the actual file
+            setImageFile(file); 
             const reader = new FileReader();
             reader.onloadend = () => {
-                setImagePreview(reader.result as string); // Set preview URL
+                setImagePreview(reader.result as string); 
             };
             reader.readAsDataURL(file);
         }
     };
 
-    // Handler to trigger the hidden file input
     const handleUploadClick = () => {
         fileInputRef.current?.click();
     };
 
-    // Handler to delete the image
     const handleDeleteImage = () => {
         setImageFile(null);
         setImagePreview(null);
@@ -188,7 +171,6 @@ const EditLessonComponent: React.FC = () => {
         }
     };
 
-    // Main submit handler
     const handleUpdate = async () => {
         if (!title.trim() || !description.trim()) {
             toast.error('Please fill out all required fields.');
@@ -205,7 +187,6 @@ const EditLessonComponent: React.FC = () => {
         }
 
         try {
-            // Use FormData to send both text and file data
             const formData = new FormData();
             formData.append('title', title);
             formData.append('is_private', isPrivate.toString());
@@ -213,22 +194,18 @@ const EditLessonComponent: React.FC = () => {
             formData.append('points', points.toString());
             formData.append('description', description);
             
-            // Only append image if a new one was selected
             if (imageFile) {
                 formData.append('image', imageFile);
             }
 
-            console.log("--- Updating Lesson ---");
             for (const pair of formData.entries()) {
                 if (pair[1] instanceof File) {
-                    console.log(`${pair[0]}: ${(pair[1] as File).name}`);
                 } else {
-                    console.log(`${pair[0]}: ${pair[1]}`);
                 }
             }
 
             const response = await fetch(`${Server_url}/api/lessons/lesson/${lesson_id}/update/`, {
-                method: 'PUT', // or 'PATCH' depending on your backend
+                method: 'PUT', 
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -237,29 +214,23 @@ const EditLessonComponent: React.FC = () => {
 
             if (!response.ok) {
                 const errorData = await response.text();
-                console.error('Update failed:', errorData);
                 throw new Error(`Failed to update lesson: ${response.status}`);
             }
 
             const result = await response.json();
-            console.log('Lesson updated successfully:', result);
             alert('Lesson updated successfully!');
             navigate(`/lesson-view/${lesson_id}`);
 
         } catch (error) {
-            console.error('Error updating lesson:', error);
             alert(`An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setIsLoading(false);
         }
     };
-
-    // Show loading spinner while fetching data
     if (isFetching) {
         return <LoadingSpinner />;
     }
 
-    // Show error message if fetch failed
     if (error) {
         return (
             <div className="min-h-screen flex flex-col bg-gray-50">
@@ -288,14 +259,11 @@ const EditLessonComponent: React.FC = () => {
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
             <div className="flex flex-1">
-                {/* Sidebar */}
                 <div className="hidden lg:block w-64 bg-white border-r border-gray-200">
                     <Sidebar />
                 </div>
-                {/* Main Content */}
                 <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
                     <main className="max-w-5xl mx-auto">
-                        {/* Breadcrumbs */}
                         <div className="flex items-center text-sm mb-6">
                             <button onClick={() => navigate('/lessons')} className="flex items-center text-gray-500 hover:text-gray-700">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -311,7 +279,6 @@ const EditLessonComponent: React.FC = () => {
 
                         <div className="bg-white p-4 sm:p-8 rounded-xl shadow-sm">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                {/* Left: Basic Details */}
                                 <div className="md:col-span-2 space-y-6">
                                     <div>
                                         <h2 className="text-xl font-semibold text-slate-800">Edit Lesson Details</h2>
@@ -364,7 +331,6 @@ const EditLessonComponent: React.FC = () => {
                                         <p className="text-right text-xs text-slate-400 mt-1">{wordCount}/100 words</p>
                                     </div>
                                 </div>
-                                {/* Right: Image Upload */}
                                 <div className="md:col-span-1">
                                     <div>
                                         <h3 className="text-lg font-semibold text-slate-800">Lesson Display Image</h3>
@@ -408,7 +374,6 @@ const EditLessonComponent: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            {/* Buttons */}
                             <div className="flex flex-col sm:flex-row justify-end items-center gap-4 mt-8 pt-6 border-t border-slate-200">
                                 <button 
                                     onClick={() => navigate(`/lesson-view/${lesson_id}`)} 

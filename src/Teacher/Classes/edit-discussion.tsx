@@ -1,4 +1,4 @@
-'use client'; // Required for using hooks in Next.js App Router
+'use client';
 
 import React, { useState, useEffect, FormEvent } from 'react';
 import { FiCheck, FiUploadCloud, FiImage, FiFile } from 'react-icons/fi';
@@ -8,7 +8,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Server_url from '../../config';
 import { toast } from 'react-toastify';
 
-// Interface for discussion data
 interface Discussion {
   id: string;
   title: string;
@@ -19,7 +18,6 @@ interface Discussion {
   updated_at?: string;
 }
 
-// Loading component
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -30,68 +28,54 @@ export default function EditDiscussionPage() {
   const { discussionId } = useParams<{ discussionId: string }>();
   const navigate = useNavigate();
 
-  // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<FileList | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
   const [currentFileName, setCurrentFileName] = useState<string | null>(null);
   const [classroomId, setClassroomId] = useState<string>('');
-  
-  // Loading and error states
+
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Function to get full image URL
   const getImageUrl = (imagePath: string | null | undefined): string | undefined => {
     if (!imagePath) return undefined;
     
-    // If it's already a full URL, return as is
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     } 
-    // If it starts with /media/ or media/, construct full URL
     else if (imagePath.startsWith('/media/') || imagePath.startsWith('media/')) {
       return `${Server_url}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
     } 
-    // If it starts with /, assume it's a path from server root
     else if (imagePath.startsWith('/')) {
       return `${Server_url}${imagePath}`;
     } 
-    // If it's just a filename, assume it's in the media directory
     else {
       return `${Server_url}/media/${imagePath}`;
     }
   };
 
-  // Function to get full file URL
   const getFileUrl = (filePath: string | null | undefined): string | undefined => {
     if (!filePath) return undefined;
     
-    // If it's already a full URL, return as is
     if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
       return filePath;
     } 
-    // If it's just a filename, prepend the media path
     else if (!filePath.includes('/')) {
       return `${Server_url}/media/${filePath}`;
     }
-    // If it starts with /media/ or media/, construct full URL
     else if (filePath.startsWith('/media/') || filePath.startsWith('media/')) {
       return `${Server_url}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
     } 
-    // If it starts with /, assume it's a path from server root
     else if (filePath.startsWith('/')) {
       return `${Server_url}${filePath}`;
     } 
-    // Default case: prepend media path
     else {
       return `${Server_url}/media/${filePath}`;
     }
   };
 
-  // Function to get file icon based on file extension or type
   const getFileIcon = (fileName: string) => {
     const extension = fileName.split('.').pop()?.toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
@@ -102,7 +86,6 @@ export default function EditDiscussionPage() {
     return <FiFile className="text-gray-500" size={24} />;
   };
 
-  // Fetch discussion details on component mount
   useEffect(() => {
     const fetchDiscussionDetails = async () => {
       if (!discussionId) {
@@ -140,28 +123,21 @@ export default function EditDiscussionPage() {
           }
         }
 
-        const discussionData = await response.json(); // Define type for discussionData if you haven't
-        console.log('Fetched discussion data:', discussionData);
+        const discussionData = await response.json();
 
-        // Populate form fields with existing data
         setTitle(discussionData.title || '');
         setDescription(discussionData.description || '');
         setClassroomId(discussionData.classroom || '');
 
-        // Handle existing file/image
-        if (discussionData.file) { // Use discussionData.file
-          console.log('Original file path:', discussionData.file);
-          const fullFileUrl = getFileUrl(discussionData.file); // Use discussionData.file
-          console.log('Constructed file URL:', fullFileUrl);
+        if (discussionData.file) {
+          const fullFileUrl = getFileUrl(discussionData.file);
           setCurrentImageUrl(fullFileUrl || null);
           
-          // Extract filename from path
-          const fileName = discussionData.file.split('/').pop() || discussionData.file; // Use discussionData.file
+          const fileName = discussionData.file.split('/').pop() || discussionData.file;
           setCurrentFileName(fileName);
         }
 
       } catch (err) {
-        console.error('Error fetching discussion details:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setIsFetching(false);
@@ -177,7 +153,6 @@ export default function EditDiscussionPage() {
     setCurrentFileName(null);
   };
 
-  // Handler for form submission
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
@@ -201,23 +176,16 @@ export default function EditDiscussionPage() {
     formData.append('title', title);
     formData.append('description', description);
     
-    // Handle file upload/removal
     if (files && files.length > 0) {
-      // New file selected
       formData.append('image', files[0]);
     } else if (!currentImageUrl) {
-      // File was removed, send empty string to clear it
       formData.append('remove_image', 'true');
     }
-    // If currentImageUrl exists and no new file, keep existing file (don't append anything)
 
     try {
-      console.log("--- Updating Discussion ---");
       for (const pair of formData.entries()) {
         if (pair[1] instanceof File) {
-          console.log(`${pair[0]}: ${(pair[1] as File).name}`);
         } else {
-          console.log(`${pair[0]}: ${pair[1]}`);
         }
       }
 
@@ -243,12 +211,10 @@ export default function EditDiscussionPage() {
       }
 
       const result = await response.json();
-      console.log('Success:', result);
       toast.success('Discussion updated successfully!');
       navigate(`/Class_info_Page/${classroomId}`);
 
     } catch (err: any) {
-      console.error('Error submitting form:', err);
       if (!error) {
         setError(err.message);
         toast.error(err.message);
@@ -258,12 +224,10 @@ export default function EditDiscussionPage() {
     }
   };
 
-  // Show loading spinner while fetching data
   if (isFetching) {
     return <LoadingSpinner />;
   }
 
-  // Show error message if fetch failed
   if (error && isFetching === false && !title) {
     return (
       <div className="flex flex-1">
@@ -290,15 +254,12 @@ export default function EditDiscussionPage() {
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
       <div className="flex flex-1">
-        {/* Sidebar */}
         <div className="hidden lg:block w-64 bg-white shadow-md">
           <Sidebar />
         </div>
-        {/* Main Content */}
         <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto">
           <main className="w-full min-h-screen flex items-center justify-center">
             <div className="bg-white p-4 sm:p-6 md:p-8 rounded-xl border border-gray-200 shadow-sm w-full max-w-5xl mx-auto">
-              {/* Breadcrumbs */}
               <div className="flex items-center text-xs sm:text-sm mb-6">
                 <button onClick={() => navigate(`/Class_info_Page/${classroomId}`)} className="flex items-center text-gray-500 hover:text-gray-700">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -313,7 +274,6 @@ export default function EditDiscussionPage() {
               </div>
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-                  {/* === LEFT COLUMN: DISCUSSION DETAILS FORM === */}
                   <div className="lg:col-span-2">
                     <h2 className="text-lg sm:text-xl font-bold text-gray-800">Edit Discussion Details</h2>
                     <p className="text-xs sm:text-sm text-gray-500 mt-1">
@@ -350,14 +310,12 @@ export default function EditDiscussionPage() {
                       </div>
                     </div>
                   </div>
-                  {/* === RIGHT COLUMN: MEDIA UPLOADER === */}
                   <div>
                     <h2 className="text-lg sm:text-xl font-bold text-gray-800">Discussion Media</h2>
                     <p className="text-xs sm:text-sm text-gray-500 mt-1">
                       Upload an image or file for this discussion. PDF, PNG, JPG, GIF, WEBP, TXT, DOC, DOCX | 10MB max.
                     </p>
                     <div className="mt-6">
-                      {/* Show current file if exists */}
                       {currentImageUrl && currentFileName && !files && (
                         <div className="mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
                           <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Current File:</p>
@@ -422,7 +380,6 @@ export default function EditDiscussionPage() {
                         }}
                         accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,image/*,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       />
-                      {/* Remove new file button */}
                       {files && files.length > 0 && (
                         <button
                           type="button"
@@ -439,7 +396,6 @@ export default function EditDiscussionPage() {
                     </div>
                   </div>
                 </div>
-                {/* === ACTION BUTTONS SECTION === */}
                 <div className="flex flex-col sm:flex-row justify-end items-center mt-8 pt-6 border-t border-gray-200 gap-3">
                   {error && <p className="w-full text-xs sm:text-sm text-red-500 text-left">{error}</p>}
                   <button 

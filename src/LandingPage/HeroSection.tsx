@@ -5,7 +5,6 @@ export function HeroSection() {
   return (
     <section className="relative flex justify-center items-center mt-16 md:mt-24 w-full px-2 sm:px-4 md:px-8 max-w-[1322px] mx-auto">
       <div className="flex flex-col md:flex-row gap-8 md:gap-5 w-full items-center">
-        {/* Left: Text Content */}
         <div className="w-full md:w-3/5 flex flex-col items-start">
           <header className="w-full">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-blue-900 leading-tight md:leading-[90px]">

@@ -22,8 +22,6 @@ const ChevronRightIcon = ({ className = "w-5 h-5" }: { className?: string }) => 
     </svg>
 );
 
-// --- Component Props Interfaces ---
-
 interface NavItemProps {
   icon: React.ReactNode;
   label: string;
@@ -40,9 +38,6 @@ interface MetricCardProps {
 interface BarChartProps {
     data: { day: string; lesson: number; class: number; quiz: number }[];
 }
-
-
-// --- Reusable Components ---
 
 const NavItem: React.FC<NavItemProps> = ({ icon, label, active = false }) => (
   <a className={`flex items-center px-4 py-3 text-gray-700 rounded-lg transition-colors duration-200 ${active ? 'bg-blue-500 text-white' : 'hover:bg-gray-200'}`}>
@@ -95,9 +90,6 @@ const BarChart: React.FC<BarChartProps> = ({ data }) => {
     );
 };
 
-
-// --- Main Page Component ---
-
 const App: React.FC = () => {
     const navigate = useNavigate();
     const [totalStudents, setTotalStudents] = useState<number>(0);
@@ -106,7 +98,6 @@ const App: React.FC = () => {
     useEffect(() => {
         const fetchCounts = async () => {
             const token = localStorage.getItem('authToken');
-            // Fetch students
             const studentsRes = await fetch(`${Server_url}/api/users/students/`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -114,7 +105,6 @@ const App: React.FC = () => {
                 const studentsData = await studentsRes.json();
                 setTotalStudents(Array.isArray(studentsData.results) ? studentsData.results.length : studentsData.length);
             }
-            // Fetch teachers
             const teachersRes = await fetch(`${Server_url}/api/users/teachers/`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -140,7 +130,6 @@ const App: React.FC = () => {
         <div className="flex h-screen bg-gray-100 font-sans">
             <Sidebar />
             <main className="flex-1 flex flex-col">
-                {/* Header */}
                 <header className="h-20 bg-white border-b flex items-center px-8 justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-gray-800">Dashboard</h1>
@@ -153,13 +142,9 @@ const App: React.FC = () => {
                         <img src="https://placehold.co/40x40/E0E7FF/4F46E5?text=VA" alt="User Avatar" className="w-10 h-10 rounded-full" />
                     </div>
                 </header>
-
-                {/* Content Area */}
                 <div className="flex-1 p-8 overflow-y-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Left and Center Column */}
                         <div className="lg:col-span-2 space-y-8">
-                            {/* Quick Actions */}
                             <div className="bg-white p-6 rounded-lg shadow-sm">
                                 <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -174,8 +159,6 @@ const App: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-
-                            {/* Student's Average Learning Time */}
                             <div className="bg-white p-6 rounded-lg shadow-sm">
                                 <div className="flex justify-between items-center mb-2">
                                     <div>
@@ -190,7 +173,6 @@ const App: React.FC = () => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {/* Your Popular Language */}
                                 <div className="bg-white p-6 rounded-lg shadow-sm">
                                     <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Popular Language</h2>
                                     <table className="w-full text-left text-sm">
@@ -208,8 +190,6 @@ const App: React.FC = () => {
                                         </tbody>
                                     </table>
                                 </div>
-                                
-                                {/* Your Popular Lessons */}
                                 <div className="bg-white p-6 rounded-lg shadow-sm">
                                     <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Popular Lessons</h2>
                                     <div className="space-y-3">
@@ -233,8 +213,6 @@ const App: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Right Column */}
                         <div className="lg:col-span-1">
                             <div className="bg-white p-6 rounded-lg shadow-sm">
                                 <div className="flex justify-between items-center mb-4">

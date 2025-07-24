@@ -3,9 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Server_url from "../../config";
 import { toast , ToastContainer} from "react-toastify";
-// import toast, { Toaster } from "react-hot-toast";
 
-// InputField Component
 const InputField: React.FC<{
   label: string;
   type: string;
@@ -57,7 +55,6 @@ const InputField: React.FC<{
   );
 };
 
-// Logo Component
 const Logo: React.FC = () => (
   <div className="flex gap-2 items-center text-2xl font-semibold text-white">
     <img
@@ -69,7 +66,6 @@ const Logo: React.FC = () => (
   </div>
 );
 
-// TestimonialCard Component
 const TestimonialCard: React.FC = () => (
   <div className="flex flex-col p-4 w-full rounded-xl bg-zinc-700 text-sm">
     <p className="text-zinc-100">
@@ -90,7 +86,6 @@ const TestimonialCard: React.FC = () => (
   </div>
 );
 
-// SocialLoginButtons Component (placeholder, no functionality)
 const SocialLoginButtons: React.FC = () => (
   <div className="flex gap-3 w-full text-base font-semibold text-gray-600">
     <button className="flex-1 flex justify-center items-center gap-3 p-3 bg-white rounded-md border border-gray-300">
@@ -112,7 +107,6 @@ const SocialLoginButtons: React.FC = () => (
   </div>
 );
 
-// DividerWithText Component
 const DividerWithText: React.FC = () => (
   <div className="flex items-center my-4 text-sm text-slate-500">
     <div className="flex-grow border-t border-gray-200" />
@@ -128,7 +122,7 @@ const LoginForm: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(""); // Add this state if you want confirm password
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -144,8 +138,6 @@ const LoginForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     resetMessages();
-
-    // Convert email and username to lowercase
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedUsername = username.trim().toLowerCase();
 
@@ -253,7 +245,7 @@ const LoginForm: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }; // ✅ Correctly ends the async function
+  };
 
   return (
     <div className="w-full max-md:mt-6">
@@ -414,7 +406,6 @@ const LoginForm: React.FC = () => {
   );
 };
 
-// LeftPanel Component
 const LeftPanel: React.FC = () => (
   <div className="relative flex flex-col justify-between px-6 py-8 bg-[#122B59] bg-blend-overlay h-full rounded-l-lg overflow-hidden">
     <img
@@ -434,15 +425,12 @@ const LeftPanel: React.FC = () => (
         </p>
       </div>
     </div>
-
-    {/* Testimonial card pinned to bottom */}
     <div className="absolute bottom-6 left-6 right-6 z-10">
       <TestimonialCard />
     </div>
   </div>
 );
 
-// AuthenticationScreen (main component)
 const AuthenticationScreen: React.FC = () => {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
@@ -459,7 +447,6 @@ const AuthenticationScreen: React.FC = () => {
 };
 
 function isStrongPassword(password: string): boolean {
-  // At least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(password);
 }
 

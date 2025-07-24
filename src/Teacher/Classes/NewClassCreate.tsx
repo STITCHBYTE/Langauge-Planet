@@ -36,41 +36,33 @@ const ClassForm: React.FC = () => {
     formData.append('image', image);
   }
 
-  // Retrieve access token from storage
-  const token = localStorage.getItem('authToken'); // or wherever you store it
+  const token = localStorage.getItem('authToken');
 
   try {
     const response = await fetch(`${Server_url}/api/classrooms/classroom/create/`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`, // add token here
+        Authorization: `Bearer ${token}`, 
       },
       body: formData,
     });
-    console.log('Response status:', response); // log the response status
 
     if (response.ok) {
-       const data = await response.json(); // get the response data
-       console.log('Class created successfully:', data);
-       const classId = data.id; // use as room id
+       const data = await response.json();
+       const classId = data.id;
        toast.success('Class created successfully!');
 
-       // Google Classroom sync
        const googleToken = localStorage.getItem('google_access_token');
        let googleUserId = localStorage.getItem('google_user_id');
        if (googleToken) {
          try {
-           console.log('[Google Sync] Checking Google token validity...');
-           // Check token validity by fetching userinfo
            let tokenValid = false;
            if (!googleUserId) {
              const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                headers: { Authorization: `Bearer ${googleToken}` }
              });
-             console.log('[Google Sync] User info response:', userInfoRes);
              if (userInfoRes.ok) {
                const userInfo = await userInfoRes.json();
-               console.log('[Google Sync] User info:', userInfo);
                googleUserId = userInfo.sub;
                if (googleUserId) {
                  localStorage.setItem('google_user_id', googleUserId);
@@ -78,11 +70,8 @@ const ClassForm: React.FC = () => {
                }
              } else {
                const errText = await userInfoRes.text();
-               console.error('[Google Sync] Invalid Google token. userinfo error:', errText);
                toast.error('Your Google login has expired or is invalid. Please reconnect your Google account.');
-               // Optionally, clear the token and prompt re-login
-              //  localStorage.removeItem('google_access_token');
-              //  localStorage.removeItem('google_user_id');
+               
                return;
              }
            } else {
@@ -90,7 +79,6 @@ const ClassForm: React.FC = () => {
            }
 
            if (tokenValid && googleUserId) {
-             console.log('[Google Sync] Creating class in Google Classroom...');
              const gcRes = await fetch('https://classroom.googleapis.com/v1/courses', {
                method: 'POST',
                headers: {
@@ -101,20 +89,16 @@ const ClassForm: React.FC = () => {
                  name: title,
                  description,
                  ownerId: googleUserId,
-                 section: classId, // use 'section' to store your backend id
+                 section: classId, 
                  courseState: 'PROVISIONED',
                })
              });
-             console.log('[Google Sync] Classroom API response:', gcRes);
 
              if (gcRes.ok) {
                const gcData = await gcRes.json();
                toast.success('Class also created in Google Classroom!');
-               console.log('[Google Sync] Google Classroom class:', gcData);
              } else {
                const errData = await gcRes.json();
-               console.error('[Google Sync] Classroom API error:', errData);
-               // Delete the class from backend if Google Classroom creation fails
                try {
                  const axios = (await import('axios')).default;
                  await axios.delete(`${Server_url}/api/classrooms/classroom/${classId}/delete/`, {
@@ -125,19 +109,16 @@ const ClassForm: React.FC = () => {
                    'Google API Error: ' + (errData.error?.message || JSON.stringify(errData))
                  );
                } catch (deleteErr) {
-                 console.error('[Google Sync] Failed to delete class from backend:', deleteErr);
                  toast.error('Failed to create class in Google Classroom, and failed to delete from database. Please contact support.');
                }
                return;
              }
            }
          } catch (gcErr) {
-           console.error('[Google Sync] Unexpected error during Google Classroom sync:', gcErr);
            toast.error('Unexpected error syncing with Google Classroom: ' + (gcErr.message || gcErr));
            return;
          }
        } else {
-         console.log('[Google Sync] No Google token found. Skipping Google Classroom sync.');
        }
 
        setTitle('');
@@ -148,39 +129,32 @@ const ClassForm: React.FC = () => {
        navigate(`/Class_info_Page/${classId}`);
     } else {
       const errorData = await response.json();
-      console.error('Server Error:', errorData);
       toast.error('Failed to create class.');
     }
   } catch (error) {
-    console.error('Network Error:', error);
     toast.error('Something went wrong. Try again.');
   }
 };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
-      {/* Header */}
       <div className="w-full">
         <Header />
       </div>
 
       <div className="flex flex-1">
-        {/* Sidebar */}
         <div className="hidden lg:block w-64 bg-white shadow-md">
           <Sidebar />
         </div>
 
-        {/* Main Content */}
         <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto">
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                {/* Left column */}
                 <div>
                   <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Basic Details</h2>
                   <p className="text-xs sm:text-sm text-gray-500 mb-6">Fill out the basic details for this class</p>
 
-                  {/* Class Title */}
                   <div className="mb-6">
                     <label htmlFor="title" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Class Title<span className="text-red-500">*</span>
@@ -196,7 +170,6 @@ const ClassForm: React.FC = () => {
                     />
                   </div>
 
-                  {/* Access Type */}
                   <div className="mb-6">
   <label htmlFor="accessType" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
     Access Type<span className="text-red-500">*</span>
@@ -212,7 +185,6 @@ const ClassForm: React.FC = () => {
   </select>
 </div>
 
-                  {/* Class Description */}
                   <div className="mb-6">
                     <label htmlFor="description" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Class Description<span className="text-red-500">*</span>
@@ -230,8 +202,6 @@ const ClassForm: React.FC = () => {
                     <p className="mt-1 text-xs text-gray-500">{descriptionWordCount}/100 words</p>
                   </div>
                 </div>
-
-                {/* Right column - Image upload */}
                 <div>
                   <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Class Display Image</h2>
                   <p className="text-xs sm:text-sm text-gray-500 mb-6">Upload a display image for this class</p>
@@ -267,12 +237,10 @@ const ClassForm: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Buttons */}
               <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => console.log('Cancelled')}
+                  onClick={() => 
                   className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                 >
                   Cancel

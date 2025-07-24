@@ -1,4 +1,3 @@
-/* Base container setup */
 .character-select-container {
     width: 100%;
     height: 100%;
@@ -11,8 +10,6 @@
     color: #ffffff;
     font-family: 'Orbitron', sans-serif;
 }
-
-/* Title with animated glow */
 .title-container {
     position: relative;
     text-align: center;
@@ -27,8 +24,6 @@
     text-shadow: 0 0 20px #000000, 0 0 30px #007cf0;
     letter-spacing: 2px;
 }
-
-/* Grid of characters */
 .character-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -37,8 +32,6 @@
     max-width: 960px;
     margin-bottom: 40px;
 }
-
-/* Each character card with 3D hover effect */
 .character-card-select {
     position: relative;
     border: 2px solid transparent;
@@ -60,8 +53,6 @@
     border-color: #ff007a;
     box-shadow: 0 0 25px rgba(255, 0, 122, 0.6);
 }
-
-/* Sprite container */
 .character-preview-select {
     width: 100%;
     height: 150px;
@@ -72,8 +63,6 @@
     align-items: center;
     justify-content: center;
 }
-
-/* Sprite style */
 .character-sprite {
     width: 100%;
     height: 100%;

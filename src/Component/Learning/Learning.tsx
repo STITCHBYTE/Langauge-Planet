@@ -92,45 +92,35 @@ const LearningPage: React.FC = () => {
   useEffect(() => {
     const fetchClassesAndLessons = async () => {
       setLoading(true);
-      console.log('--- Fetching classes and lessons ---');
       try {
         const token = localStorage.getItem('authToken');
-        console.log('Auth Token:', token);
         if (!token) throw new Error('Authentication token not found.');
 
         const classesRes = await fetch(`${Server_url}/api/classrooms/classroom/`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
-        console.log('Classes API response status:', classesRes.status);
 
         if (!classesRes.ok) {
           const errorData = await classesRes.json();
-          console.error('Failed to fetch classrooms:', errorData);
           throw new Error('Failed to fetch classrooms.');
         }
 
         const classesData = await classesRes.json();
-        console.log('Classes Data:', classesData);
 
         const enrolledClasses = classesData.results || classesData;
-        console.log('Enrolled Classes:', enrolledClasses);
 
         if (enrolledClasses.length === 0) {
-          console.log('No enrolled classes found.');
           setLessons([]);
           setLoading(false);
           return;
         }
 
         const lessonPromises = enrolledClasses.map(async (cls: { id: string, lessons: string[] }) => {
-          console.log(`Class ${cls.id} lessons:`, cls.lessons);
           if (!cls.lessons || cls.lessons.length === 0) return [];
           const lessonDetailPromises = cls.lessons.map(lessonId => {
-            console.log(`Fetching lesson ${lessonId} for class ${cls.id}`);
             return fetch(`${Server_url}/api/lessons/lesson/${lessonId}/`, {
               headers: { 'Authorization': `Bearer ${token}` },
             }).then(res => {
-              console.log(`Lesson ${lessonId} response status:`, res.status);
               return res.ok ? res.json() : null;
             });
           });
@@ -138,34 +128,26 @@ const LearningPage: React.FC = () => {
         });
 
         const lessonsByClass = await Promise.all(lessonPromises);
-        console.log('Lessons by class:', lessonsByClass);
 
         const allLessons = lessonsByClass.flat().filter(lesson => lesson !== null);
-        console.log('All lessons:', allLessons);
 
         setLessons(allLessons);
       } catch (err) {
-        console.error('Error in fetchClassesAndLessons:', err);
         setLessons([]);
       } finally {
         setLoading(false);
-        console.log('--- Fetching complete ---');
       }
     };
     fetchClassesAndLessons();
   }, []);
 
-  // Filter lessons by mapped backend level and status
   const filteredLessons = lessons.filter(lesson => {
     const backendLevel = backendLevelMap[activeLevel];
     const levelMatch = lesson.lesson_level === backendLevel;
     const statusMatch = status === "All Lessons" || lesson.status === status;
     const result = levelMatch && statusMatch;
-    console.log(`Filtering lesson ${lesson.id}: lesson_level=${lesson.lesson_level}, backendLevel=${backendLevel}, levelMatch=${levelMatch}, statusMatch=${statusMatch}, result=${result}`);
     return result;
   });
-
-  console.log('Filtered lessons:', filteredLessons);
 
   return (
     <div className="learning-container">

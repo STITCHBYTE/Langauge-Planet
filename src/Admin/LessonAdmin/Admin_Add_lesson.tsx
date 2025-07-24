@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
-import Server_url from '../../config'; // Your server URL import
+import Server_url from '../../config';
 
-// A reusable component for form input fields for cleaner code
+
 const FormInput = ({ label, placeholder, type = "text", value, onChange }) => (
     <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">{label}*</label>
@@ -20,7 +20,6 @@ const FormInput = ({ label, placeholder, type = "text", value, onChange }) => (
     </div>
 );
 
-// A reusable component for dropdown/select fields
 const FormSelect = ({ label, children, value, onChange }) => (
      <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">{label}*</label>
@@ -36,46 +35,34 @@ const FormSelect = ({ label, children, value, onChange }) => (
 );
 
 
-// Main Component
 const CreateLessonComponent: React.FC = () => {
-    const navigate = useNavigate(); // Hook for navigation
-
-    // State management for form fields
+    const navigate = useNavigate(); 
     const [title, setTitle] = useState('');
-    const [isPrivate, setIsPrivate] = useState(false); // **CHANGED**: Handles access type as a boolean
-    const [level, setLevel] = useState('BEGINNER'); // Default level set to 'BEGINNER'
+    const [isPrivate, setIsPrivate] = useState(false); 
+    const [level, setLevel] = useState('BEGINNER');
     const [points, setPoints] = useState(10);
     const [description, setDescription] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-
-    // State for the image file and its preview
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
-    
-    // Ref for the hidden file input
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const wordCount = description.trim().split(/\s+/).filter(Boolean).length;
-
-    // Handler for image selection
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            setImageFile(file); // Store the actual file
+            setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setImagePreview(reader.result as string); // Set preview URL
+                setImagePreview(reader.result as string);
             };
             reader.readAsDataURL(file);
         }
     };
-
-    // Handler to trigger the hidden file input
     const handleUploadClick = () => {
         fileInputRef.current?.click();
     };
 
-    // Handler to delete the image
     const handleDeleteImage = () => {
         setImageFile(null);
         setImagePreview(null);
@@ -84,43 +71,31 @@ const CreateLessonComponent: React.FC = () => {
         }
     };
 
-    // Main submit handler
     const handleSave = async () => {
         if (!title.trim() || !description.trim()) {
             toast.error('Please fill out all required fields.');
             return;
         }
-
         setIsLoading(true);
-
-        // Use FormData to send both text and file data
         const formData = new FormData();
         formData.append('title', title);
         formData.append('is_private', isPrivate.toString());
         formData.append('lesson_level', level);
         formData.append('points', points.toString());
         formData.append('description', description);
-        
         if (imageFile) {
             formData.append('image', imageFile);
         }
-        const token = localStorage.getItem('authToken'); // Retrieve token from local storage
-        
-        // --- CORRECT DEBUGGING ---
-        // console.log("--- Checking FormData Contents ---");
+        const token = localStorage.getItem('authToken');
         for (const pair of formData.entries()) {
-            // console.log(`${pair[0]}:`, pair[1]);
         }
-        // console.log("---------------------------------");
 
         try {
             const response = await fetch(`${Server_url}/api/lessons/lesson/create/`, {
                 method: 'POST',
                 headers: {
-                    Authorization: `Bearer ${token}`, // Include the token in the headers
+                    Authorization: `Bearer ${token}`,
                 },
-                // Do NOT set Content-Type header when using FormData, 
-                // the browser will do it automatically with the correct boundary.
                 body: formData,
             });
 
@@ -130,12 +105,10 @@ const CreateLessonComponent: React.FC = () => {
             }
 
             const result = await response.json();
-            console.log('Lesson created successfully:', result);
             toast.success('Lesson created successfully!');
             navigate(`/admin/lesson/view/${result.id}`); 
 
         } catch (error) {
-            console.error('Error creating lesson:', error);
             toast.error(`An error occurred: ${error.message}`);
         } finally {
             setIsLoading(false);
@@ -146,14 +119,11 @@ const CreateLessonComponent: React.FC = () => {
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
             <div className="flex flex-1">
-                {/* Sidebar */}
                 <div className="hidden lg:block w-64 bg-white border-r border-gray-200">
                     <Sidebar />
                 </div>
-                {/* Main Content */}
                 <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
                     <main className="max-w-5xl mx-auto">
-                      {/* Breadcrumbs */}
                       <div className="flex items-center text-sm mb-6">
                         <button onClick={() => navigate(-1)} className="flex items-center text-gray-500 hover:text-gray-700">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -169,7 +139,6 @@ const CreateLessonComponent: React.FC = () => {
 
                       <div className="bg-white p-4 sm:p-8 rounded-xl shadow-sm">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                          {/* Left: Basic Details */}
                           <div className="md:col-span-2 space-y-6">
                             <div>
                               <h2 className="text-xl font-semibold text-slate-800">Basic Details</h2>
@@ -202,7 +171,6 @@ const CreateLessonComponent: React.FC = () => {
                               <p className="text-right text-xs text-slate-400 mt-1">{wordCount}/100 words</p>
                             </div>
                           </div>
-                          {/* Right: Image Upload */}
                           <div className="md:col-span-1">
                             <div>
                               <h3 className="text-lg font-semibold text-slate-800">Lesson Display Image</h3>
@@ -228,7 +196,6 @@ const CreateLessonComponent: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                        {/* Buttons */}
                         <div className="flex flex-col sm:flex-row justify-end items-center gap-4 mt-8 pt-6 border-t border-slate-200">
                           <button
                             onClick={() => navigate(-1)}

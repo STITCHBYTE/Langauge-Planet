@@ -8,9 +8,7 @@ html {
 
 body {
   margin: 0;
-  /* Consider setting a base font-family if not done elsewhere, e.g.:
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  */
+ 
 }
 .class-card-button.requested {
   background-color: #6b7280;
@@ -33,12 +31,12 @@ body {
 }
 .dashboard-main {
   flex: 1;
-  overflow: auto; /* Allows content to scroll if it exceeds viewport height */
+  overflow: auto;
 }
 .dashboard-content {
   flex: 1;
-  /* padding: 1.5rem; */
-  margin-left: 17%; /* Space for the fixed sidebar on desktop */
+ 
+  margin-left: 17%;
   transition: margin-left 0.3s ease-in-out;
 }
 .dashboard-sections {
@@ -50,10 +48,10 @@ body {
   display: flex;
   flex-direction: row;
   gap: 1.5rem;
-  align-items: stretch; /* Ensures children stretch to same height */
+  align-items: stretch;
 }
 .sidebar-container {
-  position: fixed; /* Fixed on desktop */
+  position: fixed;
   top: 0;
   left: 0;
   height: 100vh;
@@ -65,17 +63,17 @@ body {
   flex-direction: column;
   justify-content: space-between;
   box-sizing: border-box;
-  z-index: 1000; /* Lower than header */
+  z-index: 1000;
 }
 .sidebar-logo {
   display: flex;
   align-items: center;
-  margin-bottom: 2rem; /* Adjusted from 1rem for better spacing if needed */
+  margin-bottom: 2rem;
 }
 .sidebar-logo-img {
   width: 2rem;
   height: 2rem;
-  flex-shrink: 0; /* Prevent shrinking in flex layout */
+  flex-shrink: 0;
 }
 .sidebar-logo-text {
   margin-left: 0.5rem;
@@ -94,8 +92,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  flex-grow: 1; /* Allows menu to take available space */
-  overflow-y: auto; /* Scroll for long menus */
+  flex-grow: 1;
+  overflow-y: auto;
   margin-bottom: 1rem;
 }
 .sidebar-menu::-webkit-scrollbar {
@@ -105,7 +103,7 @@ body {
   background-color: rgba(0, 0, 0, 0.1);
   border-radius: 3px;
 }
-/* ... other existing styles ... */
+
 
 .barchart-container {
   flex: 1;
@@ -235,7 +233,7 @@ body {
   height: 4rem;
   border-radius: 0.5rem;
   object-fit: cover;
-  flex-shrink: 0; /* Prevent icon from shrinking */
+  flex-shrink: 0;
 }
 .game-card-content {
   margin-left: 1rem;
@@ -292,11 +290,11 @@ body {
 .games-list {
   display: flex;
   flex-direction: row;
-  gap: 20px; /* Adjust the space between cards */
+  gap: 20px;
   width: 100%;
 }
 .new-game-card {
-  flex: 1; /* Makes both cards take up equal space */
+  flex: 1;
 }
 .learning-card {
   background-color: #fff;
@@ -321,7 +319,7 @@ body {
 .icon-wrapper {
   width: 48px;
   height: 48px;
-  flex-shrink: 0; /* Prevent icon from shrinking */
+  flex-shrink: 0;
 }
 .icon-image {
   width: 100%;
@@ -370,17 +368,17 @@ body {
   background-color: transparent;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; /* Added color transition */
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 .sidebar-menu-item:hover {
   background-color: #F3F4F6;
 }
-.sidebar-menu-item.active { /* Style for active menu item */
-  background-color: #e0e7ff; /* Example active color */
-  /* color: #2563eb; */ /* Example active text color */
+.sidebar-menu-item.active {
+  background-color: #e0e7ff;
+ 
 }
 .sidebar-menu-item.active .sidebar-menu-label {
-  /* color: #2563eb; */ /* Example active text color for label */
+ 
   font-weight: 600;
 }
 .sidebar-menu-icon {
@@ -393,8 +391,8 @@ body {
   color: #374151;
   font-size: 1rem;
   user-select: none;
-  flex-grow: 1; /* Allow label to take space */
-  text-align: left; /* Ensure text aligns left */
+  flex-grow: 1;
+  text-align: left;
 }
 .user-profile-container {
   display: flex;
@@ -403,41 +401,41 @@ body {
   padding: 1rem;
   border-top: 1px solid #E5E7EB;
   background-color: white;
-  flex-shrink: 0; /* Prevent shrinking when sidebar is a flex column */
+  flex-shrink: 0;
 }
 .user-profile-info {
   display: flex;
   align-items: center;
-  overflow: hidden; /* Prevent text overflow issues */
+  overflow: hidden;
 }
-.user-profile-avatar { /* This class was not used in HTML, but avatar-text is. Assuming this is for an img */
+.user-profile-avatar {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 9999px;
   object-fit: cover;
-  /* margin-left: -1.75rem; This seems like an odd negative margin */
-  margin-right: 0.75rem; /* Replaced negative margin with positive */
+ 
+  margin-right: 0.75rem;
   flex-shrink: 0;
 }
-.avatar-text { /* Style for initials if no image */
+.avatar-text {
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
-    background-color: #e0e7ff; /* Example background */
-    color: #3730a3; /* Example text color */
+    background-color: #e0e7ff;
+    color: #3730a3;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    font-size: 0.875rem; /* Adjust as needed */
+    font-size: 0.875rem;
     margin-right: 0.75rem;
     flex-shrink: 0;
 }
 .user-profile-text {
-  /* margin-left: 0.75rem; Removed as avatar/initials now have margin-right */
-  overflow: hidden; /* Hide overflow */
-  text-overflow: ellipsis; /* Add ellipsis for long names/emails */
-  white-space: nowrap; /* Prevent wrapping for name/email to use ellipsis */
+ 
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .user-profile-name {
   font-weight: 500;
@@ -530,8 +528,8 @@ body {
   display: flex;
   align-items: center;
   margin-bottom: 1rem;
-  flex-wrap: wrap; /* Allow legend items to wrap */
-  gap: 0.5rem; /* Add gap for wrapped items */
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 .legend-item {
   display: flex;
@@ -561,7 +559,7 @@ body {
   padding: 1.5rem;
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   width: 100%;
-  max-width: 600px; /* This max-width might be too restrictive on wider screens if it's a main column item */
+  max-width: 600px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   flex: 1 1 0;
   height: 100%;
@@ -592,12 +590,12 @@ body {
 .view-all-button:hover {
   opacity: 0.8;
 }
-/* .view-all-text is duplicated, ensure one definition or merge */
+
 .view-all-text {
   margin-right: 0.5rem;
   font-size: 0.875rem;
 }
-.arrow-icon { /* This class is used multiple times, ensure its styling is generic enough or use more specific classes */
+.arrow-icon {
   width: 16px;
   height: 16px;
   object-fit: contain;
@@ -625,9 +623,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  max-width: 65%; /* Can be problematic on small screens if right side is fixed width */
-  flex-grow: 1; /* Allow it to grow */
-  overflow: hidden; /* Prevent content from pushing out */
+  max-width: 65%;
+  flex-grow: 1;
+  overflow: hidden;
 }
 .class-card-icon {
   width: 60px;
@@ -643,20 +641,20 @@ body {
   font-size: 1.125rem;
   color: #111827;
   margin-bottom: 0.25rem;
-  word-break: break-word; /* Allow long topics to wrap */
+  word-break: break-word;
 }
 .class-card-teacher {
   font-size: 0.9rem;
   color: #6B7280; 
-  word-break: break-word; /* Allow long teacher names to wrap */
+  word-break: break-word;
 }
 .class-card-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 3.75rem; /* This large gap might be an issue */
-  min-width: 120px; /* This can cause overflow if .class-card-left doesn't shrink enough */
-  flex-shrink: 0; /* Prevent this part from shrinking too much */
+  gap: 3.75rem;
+  min-width: 120px;
+  flex-shrink: 0;
 }
 .class-card-status {
   background-color: #EFF6FF;
@@ -686,13 +684,13 @@ body {
   position: sticky;
   top: 0;
   background-color: #ffffff;
-  z-index: 1100; /* Higher than sidebar's 1000-1002 */
+  z-index: 1100;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   padding: 1rem 1.5rem;
   transition: all 0.3s ease-in-out;
 }
 .header-title {
-  font-size: 1.125rem; /* Was 1.125rem, ensure consistency */
+  font-size: 1.125rem;
   font-weight: 600;
   margin: 0;
 }
@@ -716,7 +714,7 @@ body {
   align-items: center;
   gap: 0.25rem;
 }
-/* .icon-image is defined twice, merging */
+
 .icon-image {
   display: block;
   object-fit: contain;
@@ -730,74 +728,74 @@ body {
   height: 0.75rem;
 }
 
-/* --- Responsive Adjustments --- */
 
-/* For tablets and below (≤1024px) */
+
+
 @media (max-width: 1024px) {
   .dashboard-content {
-    margin-left: 0; /* Remove sidebar margin */
-    padding-top: 0; /* Header is sticky, no extra padding needed */
+    margin-left: 0;
+    padding-top: 0;
   }
 
   .header-container {
-    z-index: 1100; /* Keep header above sidebar even on mobile */
+    z-index: 1100;
   }
 
   .sidebar-container {
-    z-index: 1050; /* Below header but above content */
+    z-index: 1050;
     transform: translateX(-100%);
   }
 
   .sidebar-container.mobile-menu-open {
     transform: translateX(0);
-    z-index: 1050; /* Still below header */
+    z-index: 1050;
   }
 }
 
-/* For mobile devices (≤768px) */
+
 @media (max-width: 768px) {
   .dashboard-content {
     padding: 1rem 0.75rem;
-    padding-top: 4.5rem; /* Re-evaluate based on header height at this breakpoint */
+    padding-top: 4.5rem;
   }
 
   .header-container {
-    padding: 0.75rem 1rem; /* Consistent padding */
-    flex-wrap: wrap; /* Allow header items to wrap */
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
   }
 
   .header-greeting-wrapper {
     width: 100%;
-    justify-content: space-between; /* Greeting on left, hamburger on right */
-    margin-bottom: 0.75rem; /* Space if header-actions wrap below */
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
   }
   .header-title {
-    font-size: 1.125rem; /* Adjust for readability */
+    font-size: 1.125rem;
   }
 
   .header-actions {
-    width: 100%; /* Take full width if they wrap */
-    justify-content: flex-end; /* Align to the right */
-    gap: 1rem; /* Adjust gap */
+    width: 100%;
+    justify-content: flex-end;
+    gap: 1rem;
   }
 
-  /* Optionally hide or shrink less critical header items */
+ 
   .header-actions .language-group,
   .header-actions .avatar-group {
-    /* display: none; */
+   
   }
   .header-actions .view-toggle-wrapper {
-    /* Consider making it smaller or hiding if space is very limited */
-    /* transform: scale(0.9); */
-    /* gap: 4px; */
+   
+   
+   
   }
-  .label { /* For view toggle */
+  .label {
     font-size: 12px;
   }
 
   .sidebar-container {
-    padding: 1rem; /* Slightly less padding inside the sidebar */
-    width: 260px; /* Can be slightly narrower */
+    padding: 1rem;
+    width: 260px;
   }
 
   .sidebar-menu-label {
@@ -810,11 +808,11 @@ body {
   }
 }
 
-/* For very small mobile devices (≤480px) */
+
 @media (max-width: 480px) {
   .dashboard-content {
     padding: 0.75rem 0.5rem;
-    padding-top: 4rem; /* Re-evaluate based on header height */
+    padding-top: 4rem;
   }
 
   .header-container {
@@ -824,26 +822,26 @@ body {
     font-size: 1rem;
   }
   .header-hamburger-button svg {
-    width: 20px; /* Smaller hamburger icon */
+    width: 20px;
     height: 20px;
   }
 
   .header-actions {
-    gap: 0.5rem; /* Reduce gap further */
-    /* Consider justify-content: space-around or center if few items remain */
+    gap: 0.5rem;
+   
   }
-  /* Hide more items on very small screens */
+ 
   .header-actions .language-group,
   .header-actions .avatar-group,
   .header-actions .student-header-icon {
-     display: none; /* Example: hide more icons */
+     display: none;
   }
    .header-actions .view-toggle-wrapper {
-     /* display: none; */ /* More likely to hide this on very small screens */
+    
    }
 
   .sidebar-container {
-    width: 240px; /* Even narrower sidebar */
+    width: 240px;
     padding: 0.75rem;
   }
   .mobile-menu-close-button {
@@ -854,13 +852,13 @@ body {
   .sidebar-menu-label {
     font-size: 0.85rem;
   }
-  .medium-icon { /* General icon size reduction in header */
+  .medium-icon {
     width: 1.25rem;
     height: 1.25rem;
   }
 }
 
-/* Toggle Switch Styles (already provided, generally okay) */
+
 .view-toggle-wrapper {
   display: flex;
   align-items: center;
@@ -875,7 +873,7 @@ body {
 }
 
 .label.active {
-  color: #28a745; /* Green */
+  color: #28a745;
   font-weight: 600;
 }
 
@@ -884,7 +882,7 @@ body {
   display: inline-block;
   width: 40px;
   height: 22px;
-  flex-shrink: 0; /* Prevent switch from shrinking */
+  flex-shrink: 0;
 }
 
 .switch input {
@@ -924,123 +922,109 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(18px);
 }
-/* ... existing styles ... */
 
-/* Hamburger Button */
-/*
-.hamburger-button {
-  display: none; 
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 1001; 
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 0.375rem;
-  padding: 0.5rem;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-*/
 
-/* New styles for hamburger within Header */
+
+
+
+
 .header-hamburger-button {
-  display: none; /* Hidden by default, shown in mobile media query */
+  display: none;
   background: none;
   border: none;
-  padding: 0.25rem; /* Make it a bit easier to tap */
-  margin-left: 0.75rem; /* Space from greeting */
+  padding: 0.25rem;
+  margin-left: 0.75rem;
   cursor: pointer;
 }
 .header-hamburger-button svg {
-  display: block; /* Prevents extra space below svg */
+  display: block;
 }
 
 .header-greeting-wrapper {
   display: flex;
   align-items: center;
-  flex-grow: 1; /* Allow greeting to take space */
+  flex-grow: 1;
 }
 
 .header-container {
   position: sticky;
   top: 0;
   background-color: #ffffff;
-  z-index: 1100; /* Higher than sidebar's 1000-1002 */
+  z-index: 1100;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   padding: 1rem 1.5rem;
   transition: all 0.3s ease-in-out;
 }
 
 
-/* --- Responsive Adjustments --- */
 
-/* For tablets and below (≤1024px) */
+
+
 @media (max-width: 1024px) {
   .dashboard-content {
-    margin-left: 0; /* Remove sidebar margin */
-    padding-top: 0; /* Header is sticky, no extra padding needed */
+    margin-left: 0;
+    padding-top: 0;
   }
 
   .header-container {
-    z-index: 1100; /* Keep header above sidebar even on mobile */
+    z-index: 1100;
   }
 
   .sidebar-container {
-    z-index: 1050; /* Below header but above content */
+    z-index: 1050;
     transform: translateX(-100%);
   }
 
   .sidebar-container.mobile-menu-open {
     transform: translateX(0);
-    z-index: 1050; /* Still below header */
+    z-index: 1050;
   }
 }
 
-/* For mobile devices (≤768px) */
+
 @media (max-width: 768px) {
   .dashboard-content {
     padding: 1rem 0.75rem;
-    padding-top: 4.5rem; /* Re-evaluate based on header height at this breakpoint */
+    padding-top: 4.5rem;
   }
 
   .header-container {
-    padding: 0.75rem 1rem; /* Consistent padding */
-    flex-wrap: wrap; /* Allow header items to wrap */
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
   }
 
   .header-greeting-wrapper {
     width: 100%;
-    justify-content: space-between; /* Greeting on left, hamburger on right */
-    margin-bottom: 0.75rem; /* Space if header-actions wrap below */
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
   }
   .header-title {
-    font-size: 1.125rem; /* Adjust for readability */
+    font-size: 1.125rem;
   }
 
   .header-actions {
-    width: 100%; /* Take full width if they wrap */
-    justify-content: flex-end; /* Align to the right */
-    gap: 1rem; /* Adjust gap */
+    width: 100%;
+    justify-content: flex-end;
+    gap: 1rem;
   }
 
-  /* Optionally hide or shrink less critical header items */
+ 
   .header-actions .language-group,
   .header-actions .avatar-group {
-    /* display: none; */
+   
   }
   .header-actions .view-toggle-wrapper {
-    /* Consider making it smaller or hiding if space is very limited */
-    /* transform: scale(0.9); */
-    /* gap: 4px; */
+   
+   
+   
   }
-  .label { /* For view toggle */
+  .label {
     font-size: 12px;
   }
 
   .sidebar-container {
-    padding: 1rem; /* Slightly less padding inside the sidebar */
-    width: 260px; /* Can be slightly narrower */
+    padding: 1rem;
+    width: 260px;
   }
 
   .sidebar-menu-label {
@@ -1053,11 +1037,11 @@ input:checked + .slider:before {
   }
 }
 
-/* For very small mobile devices (≤480px) */
+
 @media (max-width: 480px) {
   .dashboard-content {
     padding: 0.75rem 0.5rem;
-    padding-top: 4rem; /* Re-evaluate based on header height */
+    padding-top: 4rem;
   }
 
   .header-container {
@@ -1067,26 +1051,26 @@ input:checked + .slider:before {
     font-size: 1rem;
   }
   .header-hamburger-button svg {
-    width: 20px; /* Smaller hamburger icon */
+    width: 20px;
     height: 20px;
   }
 
   .header-actions {
-    gap: 0.5rem; /* Reduce gap further */
-    /* Consider justify-content: space-around or center if few items remain */
+    gap: 0.5rem;
+   
   }
-  /* Hide more items on very small screens */
+ 
   .header-actions .language-group,
   .header-actions .avatar-group,
   .header-actions .student-header-icon {
-     display: none; /* Example: hide more icons */
+     display: none;
   }
    .header-actions .view-toggle-wrapper {
-     /* display: none; */ /* More likely to hide this on very small screens */
+    
    }
 
   .sidebar-container {
-    width: 240px; /* Even narrower sidebar */
+    width: 240px;
     padding: 0.75rem;
   }
   .mobile-menu-close-button {
@@ -1097,48 +1081,42 @@ input:checked + .slider:before {
   .sidebar-menu-label {
     font-size: 0.85rem;
   }
-  .medium-icon { /* General icon size reduction in header */
+  .medium-icon {
     width: 1.25rem;
     height: 1.25rem;
   }
 }
 
-/* Add this class to .dashboard-main via JS when mobile menu is open */
+
 .dashboard-main.menu-open > .dashboard-content {
   filter: blur(3px) brightness(0.8);
-  pointer-events: none; /* Prevent interaction with the blurred content */
+  pointer-events: none;
   transition: filter 0.3s ease-in-out;
 }
 .dashboard-main > .dashboard-content {
-  transition: filter 0.3s ease-in-out; /* Transition for when menu closes */
+  transition: filter 0.3s ease-in-out;
 }
 
 .sidebar-menu-item.active {
-  background-color: #EFF6FF; /* A light blue (blue-50) */
-  color: #3B82F6;          /* A strong blue (blue-500) */
+  background-color: #EFF6FF;
+  color: #3B82F6;         
 }
 
-/* This rule makes the label text bold when the item is active.
-  The color is inherited from the parent `.active` class.
-*/
+
 .sidebar-menu-item.active .sidebar-menu-label {
   font-weight: 600;
 }
 
-/* --- THIS IS THE KEY FIX ---
-  This highly specific rule targets the SVG element *inside* the icon's span
-  when the parent menu item is active. Setting 'stroke' to 'currentColor'
-  ensures the SVG inherits the blue color from its active parent.
-*/
+
 .sidebar-menu-item.active .sidebar-menu-icon svg {
   stroke: #0D74FA;
   fill: #0D74FA;
 }
 
 
-/* --- Supporting Styles (for default and hover states) --- */
 
-/* This is the default state for the icon wrapper */
+
+
 .sidebar-menu-icon {
   width: 1.25rem;
   height: 1.25rem;
@@ -1147,17 +1125,17 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  /* Default color for the icon */
-  color: #6B7280; /* A neutral gray (gray-500) */
+ 
+  color: #6B7280;
   transition: color 0.2s ease-in-out;
 }
 
-/* Darken the icon slightly on hover for better feedback */
+
 .sidebar-menu-item:hover .sidebar-menu-icon {
-    color: #374151; /* A darker gray (gray-700) */
+    color: #374151;
 }
 
-/* This ensures the SVG itself is sized correctly */
+
 .sidebar-menu-icon svg {
     width: 100%;
     height: 100%;
@@ -1242,15 +1220,15 @@ input:checked + .slider:before {
 }
 
 .lessons-bar {
-  background-color: #3B82F6; /* Blue */
+  background-color: #3B82F6;
 }
 
 .class-bar {
-  background-color: #8B5CF6; /* Purple */
+  background-color: #8B5CF6;
 }
 
 .quizzes-bar {
-  background-color: #10B981; /* Green */
+  background-color: #10B981;
 }
 
 .x-axis-label {
@@ -1260,13 +1238,13 @@ input:checked + .slider:before {
   font-weight: 500;
 }
 
-/* Fix the grid line width for the chart container */
+
 .weekly-stats-chart .grid-line {
   width: 100%;
   right: 0;
 }
 
-/* New Styles for Explore Games Section */
+
 .games-section {
   flex: 1;
   background-color: #ffffff;
@@ -1306,11 +1284,11 @@ input:checked + .slider:before {
 }
 
 .new-game-card-blue {
-  background-color: #3B82F6; /* Blue */
+  background-color: #3B82F6;
 }
 
 .new-game-card-green {
-  background-color: #10B981; /* Green */
+  background-color: #10B981;
 }
 
 .new-game-card-media {

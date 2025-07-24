@@ -64,7 +64,6 @@ export function StudentBenefits() {
           dictumst varius ut. Et eget euismod blandit.
         </p>
       </header>
-      {/* Responsive grid for cards */}
       <div className="mt-12 grid grid-flow-col auto-cols-[80%] sm:auto-cols-[45%] md:auto-cols-[30%] gap-6 sm:gap-8 md:gap-4 overflow-x-auto pb-4 md:grid-flow-row md:grid-cols-3 md:auto-cols-auto md:overflow-x-visible">
         {benefits.map((benefit, index) => (
           <BenefitCard key={index} {...benefit} />

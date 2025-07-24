@@ -5,7 +5,6 @@ import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Header from '../../Component/Home/Header.tsx';
 import Server_url from '../../config.js';
 
-// Update the interface to match your backend data structure
 interface Lesson {
     id: string;
     title: string;
@@ -17,7 +16,6 @@ interface Lesson {
     updated_at?: string;
 }
 
-// Dropdown Menu Component
 const DropdownMenu: React.FC<{ 
     isOpen: boolean; 
     onClose: () => void; 
@@ -79,7 +77,6 @@ const DropdownMenu: React.FC<{
     );
 };
 
-// Confirmation Modal Component
 const ConfirmationModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
@@ -114,7 +111,6 @@ const ConfirmationModal: React.FC<{
     );
 };
 
-// Updated LessonCard component with image and dropdown
 const LessonCard: React.FC<{ 
     lesson: Lesson; 
     onView: (id: string) => void;
@@ -124,12 +120,10 @@ const LessonCard: React.FC<{
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownButtonRef = useRef<HTMLButtonElement>(null) as React.RefObject<HTMLButtonElement>;
 
-    // Determine tag colors based on the lesson privacy
     const typeTagClass = !lesson.is_private 
         ? 'bg-green-100 text-green-700' 
         : 'bg-orange-100 text-orange-700';
 
-    // Function to get full image URL
     const getImageUrl = (imagePath: string | null | undefined): string | undefined => {
         if (!imagePath) return undefined;
         
@@ -162,7 +156,6 @@ const LessonCard: React.FC<{
     return (
         <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-3">
-                {/* Replace emoji with actual image */}
                 <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center">
                     {lesson.image ? (
                         <img 
@@ -170,7 +163,6 @@ const LessonCard: React.FC<{
                             alt={lesson.title}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                                // Fallback to default icon if image fails to load
                                 e.currentTarget.style.display = 'none';
                                 if (e.currentTarget.nextElementSibling) {
                                     (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
@@ -185,8 +177,6 @@ const LessonCard: React.FC<{
                         📚
                     </span>
                 </div>
-
-                {/* Three dots dropdown */}
                 <div className="relative">
                     <button 
                         ref={dropdownButtonRef}
@@ -222,8 +212,6 @@ const LessonCard: React.FC<{
                     {lesson.lesson_level}
                 </span>
             </div>
-
-            {/* Action buttons */}
             <div className="flex gap-2">
                 <button 
                     onClick={() => onView(lesson.id)}
@@ -235,8 +223,6 @@ const LessonCard: React.FC<{
         </div>
     );
 };
-
-// Loading component
 const LoadingCard: React.FC = () => (
     <div className="bg-white border border-slate-200 rounded-xl p-5 animate-pulse">
         <div className="flex items-start justify-between mb-3">
@@ -251,8 +237,6 @@ const LoadingCard: React.FC = () => (
         </div>
     </div>
 );
-
-// Error component
 const ErrorMessage: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => (
     <div className="col-span-full bg-red-50 border border-red-200 rounded-xl p-6 text-center">
         <p className="text-red-600 mb-4">{message}</p>
@@ -264,20 +248,14 @@ const ErrorMessage: React.FC<{ message: string; onRetry: () => void }> = ({ mess
         </button>
     </div>
 );
-
-// Main component with enhanced API handling
 const LessonsComponent: React.FC = () => {
     const navigate = useNavigate();
-    
-    // State management
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'my' | 'public'>('my');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [lessonToDelete, setLessonToDelete] = useState<Lesson | null>(null);
-
-    // Fetch lessons from backend
     const fetchLessons = async () => {
         const token = localStorage.getItem('authToken');
         
@@ -314,31 +292,22 @@ const LessonsComponent: React.FC = () => {
             }
 
             const data = await response.json();
-            console.log('Lessons fetched:', data);
             
             const lessonsArray = data.results || data.lessons || data || [];
             setLessons(lessonsArray);
             
         } catch (err) {
-            console.error('Error fetching lessons:', err);
             setError(err instanceof Error ? err.message : 'Failed to fetch lessons');
         } finally {
             setIsLoading(false);
         }
     };
-
-    // Handle lesson view
     const handleViewLesson = (lessonId: string) => {
         navigate(`/lesson-view/${lessonId}`);
     };
-
-    // Edit function that navigates to edit page (keep this one)
     const handleEditLesson = (lessonId: string) => {
-        console.log(`🔧 Navigating to edit lesson: ${lessonId}`);
         navigate(`/edit-lesson/${lessonId}`);
     };
-
-    // Handle lesson delete
     const handleDeleteLesson = (lessonId: string) => {
         const lesson = lessons.find(l => l.id === lessonId);
         if (lesson) {
@@ -346,8 +315,6 @@ const LessonsComponent: React.FC = () => {
             setShowDeleteModal(true);
         }
     };
-
-    // Enhanced delete function with better error handling
     const confirmDeleteLesson = async () => {
         if (!lessonToDelete) return;
 
@@ -359,7 +326,6 @@ const LessonsComponent: React.FC = () => {
         }
 
         try {
-            console.log(`Attempting to delete lesson: ${lessonToDelete.id}`);
             
             const response = await fetch(`${Server_url}/api/lessons/lesson/${lessonToDelete.id}/delete/`, {
                 method: 'DELETE',
@@ -369,24 +335,14 @@ const LessonsComponent: React.FC = () => {
                 }
             });
 
-            console.log(`Delete response status: ${response.status}`);
-
             if (response.ok) {
-                // Successfully deleted
-                console.log(`\u2705 Lesson deleted successfully: ${lessonToDelete.title}`);
-                
-                // Remove from local state
                 setLessons(prev => prev.filter(lesson => lesson.id !== lessonToDelete.id));
                 setShowDeleteModal(false);
                 setLessonToDelete(null);
-                
-                // Show success message
                 toast.success(`Lesson "${lessonToDelete.title}" has been deleted successfully.`);
                 
             } else {
-                // Handle different error responses
                 const errorData = await response.text();
-                console.error(`\u274c Delete failed with status ${response.status}:`, errorData);
                 
                 if (response.status === 404) {
                     toast.error('Lesson not found. It may have already been deleted.');
@@ -399,22 +355,15 @@ const LessonsComponent: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.error('\u274c Network error deleting lesson:', error);
             toast.error('Network error occurred while deleting the lesson. Please check your connection and try again.');
         }
     };
-
-    // Handle retry
     const handleRetry = () => {
         fetchLessons();
     };
-
-    // Handle tab change
     const handleTabChange = (tab: 'my' | 'public') => {
         setActiveTab(tab);
     };
-
-    // Fetch lessons on component mount and when active tab changes
     useEffect(() => {
         fetchLessons();
     }, [activeTab]);
@@ -423,14 +372,11 @@ const LessonsComponent: React.FC = () => {
         <div className="min-h-screen flex flex-col bg-slate-50">
             <Header />
             <div className="flex flex-1">
-                {/* Sidebar */}
                 <div className="hidden lg:block w-64 bg-white border-r border-slate-200">
                     <Sidebar />
                 </div>
-                {/* Main Content */}
                 <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
                     <main className="w-full max-w-7xl mx-auto">
-                        {/* Header Section */}
                         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 pb-3 mb-6 gap-4">
                             <nav className="flex items-center">
                                 <button 
@@ -461,19 +407,15 @@ const LessonsComponent: React.FC = () => {
                                 + Create New Lesson
                             </button>
                         </header>
-
-                        {/* Content Section */}
                         {error ? (
                             <ErrorMessage message={error} onRetry={handleRetry} />
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {isLoading ? (
-                                    // Show loading cards
                                     Array.from({ length: 6 }).map((_, index) => (
                                         <LoadingCard key={index} />
                                     ))
                                 ) : lessons.length > 0 ? (
-                                    // Show lesson cards
                                     lessons.map(lesson => (
                                         <LessonCard 
                                             key={lesson.id} 
@@ -484,7 +426,6 @@ const LessonsComponent: React.FC = () => {
                                         />
                                     ))
                                 ) : (
-                                    // Show empty state
                                     <div className="col-span-full bg-white border border-slate-200 rounded-xl p-12 text-center">
                                         <div className="text-6xl mb-4">📚</div>
                                         <h3 className="text-lg font-semibold text-slate-800 mb-2">
@@ -510,7 +451,6 @@ const LessonsComponent: React.FC = () => {
                     </main>
                 </div>
             </div>
-            {/* Delete Confirmation Modal */}
             <ConfirmationModal
                 isOpen={showDeleteModal}
                 onClose={() => {

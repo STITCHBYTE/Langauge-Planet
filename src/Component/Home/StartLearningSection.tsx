@@ -23,7 +23,7 @@ const StartLearningSection = ({ learningItems }) => {
               icon={item.image || ""}
               title={item.title}
               subtitle={item.description}
-              progress={null} // No progress for new users
+              progress={null}
             />
           ))
         )}

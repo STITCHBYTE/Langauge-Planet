@@ -1,14 +1,14 @@
 import React, { useState, useEffect, FormEvent, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google'; // Import Google Auth components
+import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import Sidebar from '../Home/Sidebar.tsx';
 import Header from '../Home/Header.tsx';
-import Server_url, { client_id } from '../../config.js'; // Import client_id
+import Server_url, { client_id } from '../../config.js';
 import { useView } from '../../Context/ViewContext.tsx';
 import { FiArrowLeft, FiUpload, FiPlay, FiDownload, FiLogIn, FiMessageCircle, FiUser, FiClock, FiSend } from 'react-icons/fi';
 import {toast} from 'react-toastify';
-import axios from 'axios'; // Import axios
-import useTrackTime from "../../hooks/useTrackTime.ts"; // Adjust path as needed
+import axios from 'axios';
+import useTrackTime from "../../hooks/useTrackTime.ts";
 
 interface DiscussionData {
   id: string;
@@ -17,7 +17,7 @@ interface DiscussionData {
   content?: string;
   due_date?: string;
   points?: number;
-  file?: string; // Single file field from your API
+  file?: string;
   classroom?: string;
   created_at?: string;
   created_by?: string;
@@ -31,8 +31,8 @@ interface Assignment {
   due_date: string;
   points: number;
   questions: Question[];
-  google_course_id?: string; // The ID of the course in Google Classroom
-  google_classroom_id?: string; // The ID of the assignment (CourseWork) in Google Classroom
+  google_course_id?: string;
+  google_classroom_id?: string;
 }
 
 interface Question {
@@ -48,8 +48,6 @@ interface Answer {
   answer_text?: string;
   file?: File;
 }
-
-// --- NEW Interfaces for Forum ---
 interface Reply {
   id: number;
   thread: number;
@@ -68,8 +66,6 @@ interface Thread {
   created_at: string;
   replies: Reply[];
 }
-
-// Move helper functions here
 const getFileType = (url: string) => {
   if (!url) return null;
   
@@ -93,10 +89,7 @@ const getFileName = (url: string) => {
 const getFileSize = (url: string) => {
   return 'Unknown size';
 };
-
-// --- Google Classroom API Helper ---
 const handleGoogleApiError = (error: any, functionName: string) => {
-  console.error(`Error in Google API function '${functionName}':`, error);
   const message = error.response?.data?.error?.message || 'An unknown Google Classroom API error occurred.';
   toast.error(`Google Classroom: ${message}`, { id: 'google-api-error' });
   throw new Error(message);
@@ -110,8 +103,6 @@ export async function turnInGoogleClassroomAssignment(
   if (!studentGoogleToken) {
     throw new Error("Student's Google authentication token is missing.");
   }
-
-  console.log('[DEBUG] Attempting to turn in assignment using GAPI library...');
 
   return new Promise((resolve, reject) => {
     const gapi = (window as any).gapi;
@@ -139,25 +130,21 @@ export async function turnInGoogleClassroomAssignment(
               return reject(err);
             }
             const submissionId = submissions[0].id;
-            console.log('[DEBUG] Found submission:', submissionId);
             gapi.client.classroom.courses.courseWork.studentSubmissions.turnIn({
               courseId: courseId,
               courseWorkId: courseWorkId,
               id: submissionId
             }).then(
               (turnInResponse: any) => {
-                console.log('[DEBUG] GAPI Success: Turned in on Google Classroom.', turnInResponse);
                 resolve(turnInResponse);
               },
               (turnInError: any) => {
-                console.error('[DEBUG] GAPI Error (turnIn):', turnInError);
                 handleGoogleApiError(turnInError, 'turnInGoogleClassroomAssignment');
                 reject(turnInError);
               }
             );
           },
           (listError: any) => {
-            console.error('[DEBUG] GAPI Error (list):', listError);
             handleGoogleApiError(listError, 'studentSubmissions.list');
             reject(listError);
           }
@@ -179,12 +166,8 @@ const DiscussionSubmitContent: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submittedAssignments, setSubmittedAssignments] = useState<string[]>([]);
-  
-  // --- NEW State for Forum ---
   const [threads, setThreads] = useState<Thread[]>([]);
   const [newReplyContent, setNewReplyContent] = useState('');
-
-  // State for Google Login Modal
   const [showGoogleLoginModal, setShowGoogleLoginModal] = useState(false);
   const [pendingGoogleAssignment, setPendingGoogleAssignment] = useState<Assignment | null>(null);
 
@@ -249,7 +232,6 @@ const DiscussionSubmitContent: React.FC = () => {
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
-      console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
     }
@@ -261,7 +243,6 @@ const DiscussionSubmitContent: React.FC = () => {
 
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      console.log('[DEBUG] Google Login Success:', tokenResponse);
       const accessToken = tokenResponse.access_token;
       localStorage.setItem('googleClassroomToken', accessToken);
       toast.success('Google Login Successful!', { id: 'google-login' });
@@ -272,7 +253,6 @@ const DiscussionSubmitContent: React.FC = () => {
       setShowGoogleLoginModal(false);
     },
     onError: (error) => {
-      console.error('Google Login Failed:', error);
       toast.error('Google Login Failed. Please try again.', { id: 'google-login' });
       setShowGoogleLoginModal(false);
     },
@@ -310,11 +290,8 @@ const DiscussionSubmitContent: React.FC = () => {
         throw new Error("Please accept invite if accepted, then contact support");
       }
       const googleClassroomId = matchingCourseWork.id;
-      console.log(`[DEBUG] Found matching Google CourseWork ID: ${googleClassroomId}`);
       
       toast.success('Found assignment on Google Classroom!', { id: 'google-find' });
-
-      // Step 3: Create a new assignment object with the found IDs and submit
       const googleReadyAssignment: Assignment = {
         ...assignment,
         google_course_id: googleCourseId,
@@ -324,16 +301,11 @@ const DiscussionSubmitContent: React.FC = () => {
       await proceedWithSubmission(googleReadyAssignment);
 
     } catch (error) {
-      console.error('[DEBUG] Failed to find Google IDs:', error);
       toast.error(error.message || 'Could not link to Google Classroom.', { id: 'google-find' });
       setSubmitting(false);
     }
   };
-
-
-  // This function will contain the actual submission logic
   const proceedWithSubmission = async (assignmentToSubmit: Assignment, skipGoogle: boolean = false) => {
-    console.log(`[DEBUG] --- Starting submission for: "${assignmentToSubmit.title}" ---`);
     const token = localStorage.getItem('authToken');
     const studentGoogleToken = localStorage.getItem('googleClassroomToken');
     setSubmitting(true);
@@ -341,7 +313,6 @@ const DiscussionSubmitContent: React.FC = () => {
     try {
       const isGoogleAssignment = assignmentToSubmit.google_course_id && assignmentToSubmit.google_classroom_id;
       if (isGoogleAssignment && studentGoogleToken && !skipGoogle) {
-        console.log('[DEBUG] Conditions met. Attempting to submit to Google Classroom first.');
         toast.info('Turning in on Google Classroom...', { id: 'google-turn-in' });
         try {
           await turnInGoogleClassroomAssignment(
@@ -351,21 +322,14 @@ const DiscussionSubmitContent: React.FC = () => {
           );
           toast.success('Turned in on Google Classroom!', { id: 'google-turn-in' });
         } catch (googleError) {
-          console.error('[DEBUG] Submission to Google Classroom FAILED. Halting process.', googleError);
           throw googleError;
         }
       } else {
-        console.log('[DEBUG] Skipping Google Classroom submission. Conditions not met or skip was requested.');
       }
-      
-      // 2. Submit to Learning Planet Database
-      console.log('[DEBUG] Proceeding with submission to Language Planet server.');
       toast.info('Submitting to Language Planet...', { id: 'lp-submit' });
       
       const formData = new FormData();
       formData.append('assignment', assignmentToSubmit.id);
-      
-      // This array will be JSON.stringified
       const answersPayload = [];
 
       for (const question of assignmentToSubmit.questions || []) {
@@ -374,23 +338,18 @@ const DiscussionSubmitContent: React.FC = () => {
 
         if (question.answer_type === 'FILE' && userAnswer.file) {
           const fileFieldName = `answer_file_${question.id}`;
-          // 1. Append the actual file to FormData with a unique key
           formData.append(fileFieldName, userAnswer.file);
-          // 2. Add a reference to that file in the JSON payload
           answersPayload.push({
             question: question.id,
-            answer_file: fileFieldName, // The key used in FormData
+            answer_file: fileFieldName,
           });
         } else if (question.answer_type === 'TEXT' && userAnswer.answer_text) {
-          // Add text answers directly to the JSON payload
           answersPayload.push({
             question: question.id,
             answer_text: userAnswer.answer_text,
           });
         }
       }
-
-      // Append the JSON string of ALL answers if there are any
       if (answersPayload.length > 0) {
         formData.append('answers', JSON.stringify(answersPayload));
       }
@@ -399,32 +358,23 @@ const DiscussionSubmitContent: React.FC = () => {
       if (skipGoogle) {
         formData.append('google_submission_skipped', 'true');
       }
-
-      console.log('[DEBUG] Payload for Language Planet server (FormData)');
       // Log formData entries for debugging
       for (let [key, value] of formData.entries()) {
-        console.log(`[FormData] ${key}:`, value);
       }
 
       const response = await fetch(`${Server_url}/api/classrooms/assignment-submissions/create/`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,
-          // DO NOT set 'Content-Type' for multipart/form-data, the browser does it.
         },
         body: formData,
       });
 
       const responseData = await response.json();
       if (!response.ok) {
-        console.error('[DEBUG] FAILED to submit to Language Planet server. Response:', responseData);
         throw new Error(responseData.detail || `Failed to submit assignment: ${assignmentToSubmit.title}`);
       }
-
-      console.log('[DEBUG] Successfully submitted to Language Planet server. Response:', responseData);
       toast.success(`Assignment "${assignmentToSubmit.title}" submitted!`, { id: 'lp-submit' });
-
-      // Check if all assignments are now submitted and navigate if so
       const newSubmitted = [...submittedAssignments, assignmentToSubmit.id];
       setSubmittedAssignments(newSubmitted);
 
@@ -435,7 +385,7 @@ const DiscussionSubmitContent: React.FC = () => {
             if (discussionData?.classroom) {
               navigate(`/classes/${discussionData.classroom}/students`);
             } else {
-              navigate(-1); // Fallback navigation
+              navigate(-1);
             }
           }
         });
@@ -448,53 +398,37 @@ const DiscussionSubmitContent: React.FC = () => {
       setPendingGoogleAssignment(null);
     }
   };
-
-  // This is the entry point when the user clicks the submit button
   const handleAssignmentSubmit = async (assignment: Assignment, index: number) => {
     const isGoogleAssignment = assignment.google_course_id && assignment.google_classroom_id;
     const studentGoogleToken = localStorage.getItem('googleClassroomToken');
 
     if (isGoogleAssignment) {
-      // If IDs are already present, the logic is simple.
       if (!studentGoogleToken) {
         setPendingGoogleAssignment(assignment);
-        setShowGoogleLoginModal(true); // Open modal for Google login if token is missing
-        return; // Stop further processing until login is complete
+        setShowGoogleLoginModal(true);
+        return;
       } else {
         await proceedWithSubmission(assignment);
       }
     } else {
-      // --- MODIFIED LOGIC ---
-      // If IDs are MISSING, we try to find them.
-      console.log('[DEBUG] Google IDs missing. Attempting to find them on-the-fly.');
       if (!studentGoogleToken) {
-        // We still need the user to log in first.
         setPendingGoogleAssignment(assignment);
-        setShowGoogleLoginModal(true); // Open modal for Google login if token is missing
-        return; // Stop further processing until login is complete
+        setShowGoogleLoginModal(true);
+        return;
       } else {
-        // User is logged in, so let's start the search.
         await findGoogleIdsAndCreateSubmission(assignment, studentGoogleToken);
       }
     }
   };
-
-  // Function to handle skipping Google submission from the modal
   const handleSkipAndSubmit = async () => {
     if (pendingGoogleAssignment) {
       console.log('[DEBUG] User chose to skip Google Classroom submission.');
       setShowGoogleLoginModal(false);
-      // Proceed with submission, passing the 'skipGoogle' flag as true
       await proceedWithSubmission(pendingGoogleAssignment, true);
     }
   };
-
-  // Function to resume submission after a successful login
   const resumeGoogleClassroomSubmit = async (token: string, assignment: Assignment) => {
     if (!assignment.google_course_id || !assignment.google_classroom_id) return;
-    
-    // After login, the main submission function handles the logic.
-    // We just need to call it.
     await proceedWithSubmission(assignment);
   };
 
@@ -506,8 +440,6 @@ const DiscussionSubmitContent: React.FC = () => {
       
       try {
         setLoading(true);
-        
-        // 1. Fetch discussion details
         const discussionResponse = await fetch(`${Server_url}/api/classrooms/discussions/${discussionId}/`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -517,10 +449,7 @@ const DiscussionSubmitContent: React.FC = () => {
         
         if (!discussionResponse.ok) throw new Error('Failed to fetch discussion data');
         const discussionData = await discussionResponse.json();
-        console.log("Fetched discussion data:", discussionData);
         setDiscussionData(discussionData);
-
-        // 2. Fetch assignments associated with this discussion
         const assignmentsResponse = await fetch(`${Server_url}/api/classrooms/discussions/${discussionId}/assignments/`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -530,12 +459,8 @@ const DiscussionSubmitContent: React.FC = () => {
         
         if (assignmentsResponse.ok) {
           const assignmentsData = await assignmentsResponse.json();
-          console.log("Fetched assignments data:", assignmentsData);
-          // Handle both array and paginated response
           const assignmentsList = Array.isArray(assignmentsData) ? assignmentsData : assignmentsData.results || [];
           setAssignments(assignmentsList);
-
-          // Initialize answers array for all questions from all assignments
           const allQuestions = assignmentsList.flatMap((assignment: Assignment) => assignment.questions || []);
           setAnswers(allQuestions.map((q: Question) => ({
             question_id: q.id,
@@ -543,8 +468,6 @@ const DiscussionSubmitContent: React.FC = () => {
             file: undefined
           })));
         }
-
-        // 3. Fetch Forum Threads for this discussion
         const threadsRes = await fetch(`${Server_url}/api/forums/discussion/${discussionId}/threads/`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -561,13 +484,8 @@ const DiscussionSubmitContent: React.FC = () => {
             }));
             setThreads(threadsWithReplies);
         }
-
-        // The 'my-submissions' endpoint does not exist, so this block is removed.
-        // The 'submittedAssignments' state will now only be managed locally during the session
-
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
-        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
@@ -575,8 +493,6 @@ const DiscussionSubmitContent: React.FC = () => {
 
     fetchData();
   }, [discussionId]);
-
-  // --- NEW: Handler for creating a reply ---
   const handleCreateReply = async (e: FormEvent) => {
     e.preventDefault();
     const mainThread = threads[0];
@@ -595,17 +511,15 @@ const DiscussionSubmitContent: React.FC = () => {
           const errorData = await response.json();
           throw new Error(errorData.detail || 'Failed to post reply.');
         }
-        await fetchData(); // Refetch all data to show the new reply
+        await fetchData();
         setNewReplyContent('');
         toast.success("Reply posted!");
     } catch (err: any) {
         toast.error(err.message);
     }
   };
-
-  // Add this line at the top, after you have access to discussionId and currentUser
   useTrackTime({
-    activityType: "class", // or "assignment" if you want to track per-assignment
+    activityType: "class",
     activityId: discussionId,
     userId: currentUser?.id
   });
@@ -633,11 +547,8 @@ const DiscussionSubmitContent: React.FC = () => {
       )
     );
   };
-
-  // Helper to check if an assignment is unlocked
   const isAssignmentUnlocked = (index: number) => {
     if (index === 0) return true;
-    // Previous assignment must be in submittedAssignments
     return assignments[index - 1] && submittedAssignments.includes(assignments[index - 1].id);
   };
 
@@ -646,22 +557,17 @@ const DiscussionSubmitContent: React.FC = () => {
     setSubmitting(true);
 
     try {
-      // Process each assignment as a separate submission
       for (const assignment of assignments) {
-        
         const answersPayload = [];
-
-        // Use a for...of loop to handle async operations inside
         for (const question of assignment.questions || []) {
           const userAnswer = answers.find(answer => answer.question_id === question.id);
 
           if (userAnswer && (userAnswer.answer_text || userAnswer.file)) {
             if (question.question_type === 'file_upload' && userAnswer.file) {
-              // Convert the file to a Base64 string
               const base64File = await toBase64(userAnswer.file);
               answersPayload.push({
                 question: question.id,
-                answer_file: base64File // Send the Base64 string
+                answer_file: base64File
               });
             } else if (userAnswer.answer_text) {
               answersPayload.push({
@@ -671,16 +577,10 @@ const DiscussionSubmitContent: React.FC = () => {
             }
           }
         }
-
-        // Construct the final JSON body
         const submissionBody = {
           assignment: assignment.id,
           answers: answersPayload,
         };
-
-        console.log(`Submitting JSON for assignment: ${assignment.id}`, submissionBody);
-
-        // 3. Submit this assignment as raw JSON
         const response = await fetch(`${Server_url}/api/classrooms/assignment-submissions/create/`, {
           method: 'POST',
           headers: {
@@ -698,7 +598,6 @@ const DiscussionSubmitContent: React.FC = () => {
 
         const responseData = await response.json();
         toast.success(`Assignment "${assignment.title}" submitted!`);
-        console.log(`Assignment ${assignment.title} submitted successfully:`, responseData);
       }
 
       toast.success("All assignments submitted successfully!");
@@ -707,7 +606,6 @@ const DiscussionSubmitContent: React.FC = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Submission failed');
       toast.error(err instanceof Error ? err.message : 'Submission failed');
-      console.error('Submit error:', err);
     } finally {
       setSubmitting(false);
     }
@@ -757,36 +655,24 @@ const DiscussionSubmitContent: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
       <div className="flex flex-1">
-        {/* Sidebar */}
         <div className="w-64 bg-white shadow-md fixed left-0 top-0 h-full">
           <Sidebar />
         </div>
-        
-        {/* Main Content */}
         <div className="flex-1 ml-64 p-6">
           <div className="max-w-7xl mx-auto">
-            {/* Header with breadcrumb */}
-           
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column - Discussion Content */}
               <div className="lg:col-span-2">
                 <div className="bg-white rounded-lg p-6">
                   <h1 className="text-3xl font-bold text-gray-900 mb-6">
                     {discussionData?.title || 'Basic Spanish Culture'}
                   </h1>
-                  
-                  {/* Discussion Content */}
                   <div className="prose max-w-none mb-8">
                     <p className="text-gray-600 leading-relaxed mb-4">
                       {discussionData?.description || discussionData?.content || 
                        "Lorem ipsum dolor sit amet consectetur. Tincidunt faucibus ut tincidunt malesuada sed quam ac rhoncus. Nisl diam nibh lobortis scelerisque. Nunc sed porta arcu malesuada felis ut aliquam diam."}
                     </p>
                   </div>
-
-                  {/* Media Section */}
                   <div className="flex space-x-4 mb-8">
-                    {/* Video Player */}
                     {discussionData?.video_url && (
                       <div className="relative w-48 h-32 bg-gray-200 rounded-lg overflow-hidden">
                         <video 
@@ -801,8 +687,6 @@ const DiscussionSubmitContent: React.FC = () => {
                         </button>
                       </div>
                     )}
-
-                    {/* PDF Document */}
                     {discussionData?.pdf_url && (
                       <div className="relative w-48 h-32 bg-gray-100 rounded-lg border border-gray-200 flex flex-col items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors">
                         <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center mb-2">
@@ -824,8 +708,6 @@ const DiscussionSubmitContent: React.FC = () => {
                       </div>
                     )}
                   </div>
-
-                  {/* Media Section - Only show if file exists */}
                   {discussionData?.file && (
                     <div className="flex space-x-4 mb-8">
                       {(() => {
@@ -912,8 +794,6 @@ const DiscussionSubmitContent: React.FC = () => {
                   )}
                 </div>
               </div>
-
-              {/* Right Column - Assignment Submission */}
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-lg p-6">
                   {assignments.length > 0 ? (
@@ -1002,8 +882,6 @@ const DiscussionSubmitContent: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* --- NEW: Discussion Forum Section --- */}
             <div className="mt-8">
               {threads.length > 0 && (
                 <DiscussionForumView 
@@ -1017,8 +895,6 @@ const DiscussionSubmitContent: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Google Login Modal */}
       {showGoogleLoginModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center">
@@ -1055,8 +931,6 @@ const DiscussionSubmitContent: React.FC = () => {
     </div>
   );
 };
-
-// --- NEW: Forum Display Component ---
 interface DiscussionForumViewProps {
   thread: Thread;
   replyContent: string;
@@ -1084,8 +958,6 @@ const DiscussionForumView: React.FC<DiscussionForumViewProps> = ({ thread, reply
 
       <h3 className="text-lg font-bold text-gray-900 mb-2">{thread.title}</h3>
       <p className="text-gray-700 mb-4">{thread.message}</p>
-
-      {/* --- REPLIES SECTION --- */}
       <div className="border-t border-gray-200 pt-4 mt-4">
         <h4 className="text-md font-semibold text-gray-800 mb-2">Replies ({thread.replies.length})</h4>
         {thread.replies.length === 0 ? (
@@ -1112,8 +984,6 @@ const DiscussionForumView: React.FC<DiscussionForumViewProps> = ({ thread, reply
           </div>
         )}
       </div>
-
-      {/* --- REPLY FORM --- */}
       <div className="mt-4">
         <h4 className="text-md font-semibold text-gray-800 mb-2">Leave a Reply</h4>
         <form onSubmit={onReplySubmit} className="flex flex-col">
@@ -1135,8 +1005,6 @@ const DiscussionForumView: React.FC<DiscussionForumViewProps> = ({ thread, reply
     </div>
   );
 };
-
-// Create a new wrapper component to provide the Google Auth context
 const DiscussionSubmitPage: React.FC = () => {
   return (
     <GoogleOAuthProvider clientId={client_id}>

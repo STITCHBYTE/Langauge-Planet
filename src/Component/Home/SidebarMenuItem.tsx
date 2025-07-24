@@ -5,12 +5,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 interface SidebarMenuItemProps {
   icon: string;
   label: string;
-  onNavigate?: () => void; // Prop to call after navigation
+  onNavigate?: () => void;
   isTeacher?: boolean;
   studentView?: boolean;
 }
-
-// Define route mappings for both views
 const teacherRoutes: { [key: string]: string } = {
   Dashboard: '/teacher-dashboard',
   Student: '/students-page',
@@ -54,7 +52,7 @@ const SidebarMenuItem = ({
   const handleClick = () => {
     navigate(route);
     if (onNavigate) {
-      onNavigate(); // Call the callback if provided
+      onNavigate();
     }
   };
 

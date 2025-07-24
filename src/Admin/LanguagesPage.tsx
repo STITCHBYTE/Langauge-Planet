@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import Sidebar from './Sidebar.tsx';
 import Server_url from "../config.js"
 
-// --- SVG Icon Components ---
-
 const HomeIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -50,8 +48,6 @@ const CloseIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
 );
 
-// --- Component Props Interfaces ---
-
 interface NavItemProps {
   icon: React.ReactNode;
   label: string;
@@ -72,8 +68,6 @@ interface AddLanguageModalProps {
     language?: any;
     isEditMode?: boolean;
 }
-
-// --- Reusable Components ---
 
 const NavItem: React.FC<NavItemProps> = ({ icon, label, active = false }) => (
   <a href="#" className={`flex items-center px-4 py-3 text-gray-700 rounded-lg transition-colors duration-200 ${active ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-200'}`}>
@@ -105,7 +99,6 @@ const LanguageCard: React.FC<LanguageCardProps & {
     return (
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col">
             <div className="flex justify-between items-start">
-                {/* Use flag as the image source, not flagUrl */}
                 <img src={flagUrl} alt={`${name} flag`} className="w-12 h-8 object-cover rounded-md shadow-sm" />
                 <div className="relative" ref={dropdownRef}>
                     <button onClick={() => setIsDropdownOpen(prev => !prev)} className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600">
@@ -141,13 +134,11 @@ const AddLanguageModal: React.FC<AddLanguageModalProps> = ({ isOpen, onClose, on
     const [flagFile, setFlagFile] = React.useState<File | null>(null);
     const [flagPreview, setFlagPreview] = React.useState<string | null>(null);
     const [languageName, setLanguageName] = React.useState('');
-
-    // Populate fields if editing
     useEffect(() => {
         if (isEditMode && language) {
             setLanguageName(language.name || '');
             setFlagPreview(language.flag || null);
-            setFlagFile(null); // Only set if user uploads a new file
+            setFlagFile(null);
         } else {
             setLanguageName('');
             setFlagPreview(null);
@@ -248,9 +239,6 @@ const AddLanguageModal: React.FC<AddLanguageModalProps> = ({ isOpen, onClose, on
     );
 };
 
-
-// --- Main Page Component ---
-
 const App: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [languages, setLanguages] = useState([]);
@@ -258,8 +246,6 @@ const App: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLanguage, setSelectedLanguage] = useState(null);
     const [isEditMode, setIsEditMode] = useState(false);
-
-    // Fetch languages from API
     const fetchLanguages = async () => {
         try {
             const token = localStorage.getItem('authToken');
@@ -272,17 +258,14 @@ const App: React.FC = () => {
             if (!response.ok) throw new Error('Failed to fetch languages');
             const data = await response.json();
             setLanguages(data);
-            setFilteredLanguages(data); // Initialize filtered list
+            setFilteredLanguages(data);
         } catch (err) {
-            console.error(err);
         }
     };
 
     useEffect(() => {
         fetchLanguages();
     }, []);
-
-    // Filter languages by search term
     useEffect(() => {
         if (!searchTerm) {
             setFilteredLanguages(languages);
@@ -294,13 +277,11 @@ const App: React.FC = () => {
             );
         }
     }, [searchTerm, languages]);
-
-    // Handler functions for API actions
     const handleAddLanguage = async (languageData, isPublic) => {
         const token = localStorage.getItem('authToken');
         const formData = new FormData();
         formData.append('name', languageData.name);
-        formData.append('flag', languageData.flag); // File object
+        formData.append('flag', languageData.flag);
         formData.append('is_published', isPublic ? 'true' : 'false');
 
         await fetch(`${Server_url}/api/users/languages/`, {
@@ -310,7 +291,7 @@ const App: React.FC = () => {
             },
             body: formData
         });
-        await fetchLanguages(); // Refresh list
+        await fetchLanguages(); 
     };
 
     const handleEditLanguage = async (languageId, languageData, isPublic) => {
@@ -318,8 +299,8 @@ const App: React.FC = () => {
         const formData = new FormData();
         formData.append('id', languageId);
         formData.append('name', languageData.name);
-        if (languageData.flag) formData.append('flag', languageData.flag); // File object
-        formData.append('is_published', isPublic ? 'true' : 'false'); // <-- FIXED HERE
+        if (languageData.flag) formData.append('flag', languageData.flag);
+        formData.append('is_published', isPublic ? 'true' : 'false');
 
         await fetch(`${Server_url}/api/users/languages/${languageId}/update/`, {
             method: 'PUT',
@@ -328,7 +309,7 @@ const App: React.FC = () => {
             },
             body: formData
         });
-        await fetchLanguages(); // Refresh list
+        await fetchLanguages();
     };
 
     const handlePublishLanguage = async (languageId) => {
@@ -341,7 +322,7 @@ const App: React.FC = () => {
             },
             body: JSON.stringify({ id: languageId })
         });
-        await fetchLanguages(); // Refresh list
+        await fetchLanguages();
     };
 
     const handleDeleteLanguage = async (languageId) => {
@@ -354,10 +335,8 @@ const App: React.FC = () => {
             },
             body: JSON.stringify({ id: languageId })
         });
-        await fetchLanguages(); // Refresh list
+        await fetchLanguages();
     };
-
-    // Modal open for add/edit
     const openAddModal = () => {
         setSelectedLanguage(null);
         setIsEditMode(false);
@@ -374,7 +353,6 @@ const App: React.FC = () => {
             <div className="flex h-screen bg-gray-50 font-sans">
                 <Sidebar />
                 <main className="flex-1 flex flex-col">
-                    {/* Header */}
                     <header className="h-20 bg-white border-b flex items-center px-8 justify-between">
                         <div>
                             <h1 className="text-xl font-bold text-gray-800">Languages</h1>

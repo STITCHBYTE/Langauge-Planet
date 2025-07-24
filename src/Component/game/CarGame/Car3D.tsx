@@ -28,22 +28,16 @@ const Car3D: React.FC<Car3DProps> = ({
     const [isLoading, setIsLoading] = useState(true);
 
     const cleanup = useCallback(() => {
-        // Stop animation loop
         if (animationIdRef.current) {
             cancelAnimationFrame(animationIdRef.current);
             animationIdRef.current = null;
         }
-
-        // Remove renderer from DOM
         if (mountRef.current && rendererRef.current?.domElement) {
             try {
                 mountRef.current.removeChild(rendererRef.current.domElement);
             } catch (e) {
-                // Element might already be removed
             }
         }
-        
-        // Dispose of resources
         if (sceneRef.current) {
             sceneRef.current.traverse((object) => {
                 if (object instanceof THREE.Mesh) {
@@ -56,14 +50,10 @@ const Car3D: React.FC<Car3DProps> = ({
                 }
             });
         }
-
-        // Dispose renderer
         if (rendererRef.current) {
             rendererRef.current.dispose();
             rendererRef.current = null;
         }
-
-        // Clear refs
         sceneRef.current = null;
         cameraRef.current = null;
         modelRef.current = null;
@@ -71,35 +61,23 @@ const Car3D: React.FC<Car3DProps> = ({
 
     useEffect(() => {
         if (!mountRef.current) return;
-
-        // Wait for element to have dimensions
         const checkDimensions = () => {
             if (!mountRef.current || mountRef.current.clientWidth === 0 || mountRef.current.clientHeight === 0) {
                 setTimeout(checkDimensions, 10);
                 return;
             }
-
-            // Cleanup any existing renderer
             cleanup();
-
-            // Scene setup
             const scene = new THREE.Scene();
             sceneRef.current = scene;
-
-            // Camera setup
             const camera = new THREE.PerspectiveCamera(
                 75,
                 mountRef.current.clientWidth / mountRef.current.clientHeight,
                 0.1,
                 1000
             );
-            
-            // Position camera for a better preview (slightly behind, to the side, and above)
             camera.position.set(2, 1.5, 4);
             camera.lookAt(0, 0, 0);
             cameraRef.current = camera;
-
-            // Renderer setup with better configuration
             const renderer = new THREE.WebGLRenderer({ 
                 antialias: true, 
                 alpha: true,
@@ -107,43 +85,30 @@ const Car3D: React.FC<Car3DProps> = ({
             });
             rendererRef.current = renderer;
             renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
-            renderer.shadowMap.enabled = false; // Disable shadows for performance
-            
-            // Style the canvas to fit the container
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.domElement.style.width = '100%';
             renderer.domElement.style.height = '100%';
             renderer.domElement.style.display = 'block';
             
             mountRef.current.appendChild(renderer.domElement);
-            
-            console.log('Renderer created with dimensions:', mountRef.current.clientWidth, 'x', mountRef.current.clientHeight);
-
-            // Optimized lighting
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
             
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
             directionalLight.position.set(2, 5, 2);
             scene.add(directionalLight);
-
-            // Load the car model
             const gltfLoader = new GLTFLoader();
             setIsLoading(true);
             gltfLoader.load(
                 modelPath,
                 (gltf) => {
-                    if (!sceneRef.current) return; // Check if component is still mounted
+                    if (!sceneRef.current) return;
                     
                     const model = gltf.scene;
                     modelRef.current = model;
-                    
-                    // Set model properties
                     model.scale.set(scale, scale, scale);
                     model.position.set(position.x, position.y, position.z);
                     model.rotation.y = rotation;
-                    
-                    // Optimize model for performance
                     model.traverse((child) => {
                         if (child instanceof THREE.Mesh) {
                             child.castShadow = false;
@@ -153,35 +118,25 @@ const Car3D: React.FC<Car3DProps> = ({
                     
                     sceneRef.current.add(model);
                     setIsLoading(false);
-                    console.log('3D model loaded successfully:', modelPath);
                 },
                 (progress) => {
-                    console.log('Loading progress:', progress);
                 },
                 (error) => {
-                    console.error(`Error loading car model from ${modelPath}:`, error);
-                    console.error('Full error details:', error);
                     setIsLoading(false);
                 }
             );
-
-            // Optimized animation loop
             const animate = () => {
                 if (!rendererRef.current || !sceneRef.current || !cameraRef.current) {
                     return;
                 }
-                
-                // Auto-rotate the model if enabled
                 if (autoRotate && modelRef.current) {
-                    modelRef.current.rotation.y += 0.01; // Smooth rotation
+                    modelRef.current.rotation.y += 0.01;
                 }
                 
                 animationIdRef.current = requestAnimationFrame(animate);
                 rendererRef.current.render(sceneRef.current, cameraRef.current);
             };
             animate();
-
-            // Handle resize
             const handleResize = () => {
                 if (mountRef.current && cameraRef.current && rendererRef.current) {
                     const width = mountRef.current.clientWidth;
@@ -193,8 +148,6 @@ const Car3D: React.FC<Car3DProps> = ({
                 }
             };
             window.addEventListener('resize', handleResize);
-
-            // Cleanup function
             return () => {
                 window.removeEventListener('resize', handleResize);
                 cleanup();
@@ -203,8 +156,6 @@ const Car3D: React.FC<Car3DProps> = ({
 
         checkDimensions();
     }, [modelPath, position.x, position.y, position.z, rotation, scale, autoRotate, cleanup]);
-
-    // Update position when it changes
     useEffect(() => {
         if (modelRef.current) {
             modelRef.current.position.set(position.x, position.y, position.z);

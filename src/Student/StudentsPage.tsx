@@ -104,26 +104,20 @@ const StudentsPage = () => {
 
                 const resData = await response.json();
                 const data = resData.students || resData;
-
-                // Map over students and fetch their scores concurrently
                 const mappedData = await Promise.all(data.map(async (item, index) => {
                     const s = item.student;
                     let totalPoints = 0;
 
                     try {
-                        // Fetch assignment submissions for each student
                         const submissionsRes = await fetch(`${SERVER_URL}/api/classrooms/assignment-submissions/?student=${s.id}`, {
                             headers: { Authorization: `Bearer ${token}` }
                         });
 
                         if (submissionsRes.ok) {
                             const submissions = await submissionsRes.json();
-                            // Sum the 'score' from each submission
                             totalPoints = submissions.reduce((acc, submission) => acc + (submission.score || 0), 0);
                         }
                     } catch (scoreError) {
-                        console.error(`Failed to fetch scores for student ${s.id}:`, scoreError);
-                        // If fetching scores fails, points will remain 0
                     }
 
                     return {
@@ -132,7 +126,7 @@ const StudentsPage = () => {
                         username: s.username || '@unknown',
                         initial: s.username?.[1]?.toUpperCase() || 'U',
                         lastLogin: s.last_login || 'N/A',
-                        learningPoints: totalPoints, // Use the calculated total score
+                        learningPoints: totalPoints,
                         lessonsCompleted: s.lessons_completed ?? 0,
                         avgLearningTime: s.avg_learning_time || '0 Mins',
                         status: s.status || 'Invited',
@@ -141,7 +135,6 @@ const StudentsPage = () => {
 
                 setAllStudents(mappedData);
             } catch (err) {
-                console.error("Error fetching students:", err.message);
                 toast.error('Error fetching students list.');
             }
         };
@@ -173,14 +166,11 @@ const StudentsPage = () => {
         <div className="min-h-screen flex flex-col bg-gray-100">
             <Header />
             <div className="flex flex-1">
-                {/* Sidebar */}
                 <div>
                     <Sidebar />
                 </div>
-                {/* Main Content */}
                 <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto ml-0 lg:ml-[17%]">
                     <div className="max-w-7xl mx-auto">
-                        {/* Top Bar */}
                         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 w-full md:w-auto">Students</h1>
                             <div className="flex flex-col sm:flex-row items-stretch gap-2 md:gap-4 w-full md:w-auto">
@@ -219,10 +209,7 @@ const StudentsPage = () => {
                                 </button>
                             </div>
                         </div>
-
-                        {/* Table/Card List */}
                         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                            {/* Desktop Table Header */}
                             <div className="hidden md:grid grid-cols-6 gap-4 p-4 border-b border-gray-200 bg-gray-50 text-xs font-semibold text-gray-500 uppercase">
                                 <div>Name</div>
                                 <div>Last Login</div>
@@ -231,13 +218,11 @@ const StudentsPage = () => {
                                 <div>Average Learning Time</div>
                                 <div>Status</div>
                             </div>
-                            {/* Student Rows */}
                             <div>
                                 {filteredStudents.length === 0 ? (
                                     <div className="p-8 text-center text-gray-500">No students found.</div>
                                 ) : (
                                     filteredStudents.map(student => (
-                                        // Desktop: Table row, Mobile: Card
                                         <div
                                             key={student.id}
                                             className="md:block hidden"
@@ -246,7 +231,6 @@ const StudentsPage = () => {
                                         </div>
                                     ))
                                 )}
-                                {/* Mobile Card List */}
                                 <div className="md:hidden">
                                     {filteredStudents.map(student => (
                                         <div
@@ -276,7 +260,6 @@ const StudentsPage = () => {
                                     ))}
                                 </div>
                             </div>
-                            {/* Pagination */}
                             {totalPages > 1 && (
                                 <Pagination
                                     currentPage={currentPage}

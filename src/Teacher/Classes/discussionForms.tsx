@@ -6,7 +6,6 @@ import Server_url from '../../config.js';
 import { toast } from 'react-toastify';
 import { FiSend, FiArrowLeft, FiMessageCircle, FiUser, FiClock } from 'react-icons/fi';
 
-// --- Interfaces (no changes needed) ---
 interface Reply {
   id: number;
   thread: number;
@@ -33,7 +32,6 @@ interface Discussion {
     classroom: string;
 }
 
-// --- Main Component ---
 const DiscussionForum: React.FC = () => {
     const { discussionId } = useParams<{ discussionId: string }>();
     const navigate = useNavigate();
@@ -44,7 +42,6 @@ const DiscussionForum: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // --- Data Fetching (no changes needed) ---
     const fetchData = async () => {
         setLoading(true);
         setError(null);
@@ -93,7 +90,6 @@ const DiscussionForum: React.FC = () => {
         }
     }, [discussionId]);
 
-    // --- Event Handlers (updated for new UI) ---
     const handleCreateThread = async (e: FormEvent) => {
         e.preventDefault();
         if (!newThreadContent.trim() || !discussionId) return;
@@ -137,7 +133,6 @@ const DiscussionForum: React.FC = () => {
         }
     };
 
-    // --- Render Logic ---
     if (loading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
     if (error) return <div className="flex h-screen items-center justify-center text-red-500">Error: {error}</div>;
 
@@ -155,10 +150,8 @@ const DiscussionForum: React.FC = () => {
                             Back to Class Info
                         </button>
 
-                        {/* Main Thread Display */}
                         {mainThread ? (
                             <div className="bg-white rounded-lg shadow-md border border-gray-200">
-                                {/* Thread Header */}
                                 <div className="p-6 border-b border-gray-200">
                                     <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">{mainThread.title}</h1>
                                     <div className="flex items-center gap-4 text-sm text-gray-500 mt-3">
@@ -172,12 +165,9 @@ const DiscussionForum: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
-                                {/* Thread Body */}
                                 <div className="p-6 text-gray-800 text-base leading-relaxed whitespace-pre-wrap">
                                     {mainThread.message}
                                 </div>
-
-                                {/* Replies Section */}
                                 <div className="p-6 bg-gray-50 rounded-b-lg">
                                     <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                                         <FiMessageCircle />
@@ -200,7 +190,6 @@ const DiscussionForum: React.FC = () => {
                                         ))}
                                     </div>
                                     
-                                    {/* Add Reply Form */}
                                     <form onSubmit={handleCreateReply} className="mt-6 pt-6 border-t border-gray-200">
                                         <textarea
                                             placeholder="Add your reply..."
@@ -217,7 +206,6 @@ const DiscussionForum: React.FC = () => {
                                 </div>
                             </div>
                         ) : (
-                            /* Create Thread Form (only shows if no thread exists) */
                             <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                                 <h2 className="text-xl font-bold text-gray-800 mb-1">Start the Discussion</h2>
                                 <p className="text-sm text-gray-500 mb-4">Post the main topic or question for this discussion. Only one thread can be created.</p>

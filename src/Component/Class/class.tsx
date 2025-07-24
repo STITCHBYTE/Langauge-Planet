@@ -9,8 +9,6 @@ import Sidebar from "../Home/Sidebar.tsx";
 import Server_url from "../../config.js";
 import '../Home/Style.css';
 import { useView } from "../../Context/ViewContext.tsx";
-
-// Define an interface for the classroom data from the API
 interface Classroom {
   id: string;
   title: string;
@@ -19,7 +17,7 @@ interface Classroom {
   teacher: string;
   students_count?: number;
   status?: 'ACCEPTED' | 'PENDING' | 'INVITED' | 'REJECTED' | 'REQUESTED' | 'ENROLLED' | null;
-  membership_id?: string; // ID of the membership/invitation
+  membership_id?: string;
 }
 
 function Lessons() {
@@ -35,20 +33,16 @@ function Lessons() {
       const response = await fetch(`${Server_url}/api/classrooms/classroom/${classId}/memberships/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      console.log(`Raw Memberships Response for class ${classId}:`, response);
       const data = await response.json();
-      console.log(`Parsed Memberships Data for class ${classId}:`, data);
 
       if (Array.isArray(data)) {
         return data;
       } else if (data && data.results && Array.isArray(data.results)) {
         return data.results;
       } else {
-        console.warn(`Unexpected memberships data structure for class ${classId}:`, data);
         return [];
       }
     } catch (error) {
-      console.error(`Error fetching memberships for class ${classId}:`, error);
       return [];
     }
   };
@@ -61,37 +55,27 @@ function Lessons() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const classesData: Classroom[] = await response.json();
-      console.log("Fetched classesData:", classesData);
 
       const classesWithMemberships = await Promise.all(
         classesData.map(async (cls) => {
           const memberships = await fetchMembershipsForClass(cls.id);
-          console.log(`Memberships for class ${cls.id} (${cls.title}):`, memberships);
 
           if (!currentUser || !currentUser.email) {
-            console.log("No currentUser or email for class:", cls.title);
             return { ...cls, status: null, id: undefined };
           }
           const myMembership = memberships.find(
             (m: any) => m.student === currentUser.email
           );
-          console.log(
-            `For class "${cls.title}", found myMembership:`,
-            myMembership
-          );
           return {
             ...cls,
             status: myMembership?.status ?? null,
-            membership_id: myMembership?.id, // <-- Use membership_id instead
-            // Don't overwrite cls.id - keep the original classroom id
+            membership_id: myMembership?.id,
           };
         })
       );
-      console.log("Classes with user membership info:", classesWithMemberships);
       setClasses(classesWithMemberships);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred.");
-      console.error("fetchClassesWithMemberships error:", err);
     } finally {
       setLoading(false);
     }
@@ -108,11 +92,9 @@ function Lessons() {
     action: 'request' | 'withdraw' | 'accept' | 'decline',
     membershipId?: string
   ) => {
-    console.log("classId:", classId, "action:", action, "membershipId:", membershipId);
     const token = localStorage.getItem('authToken');
     if (!currentUser?.email) {
       setError("User not identified. Cannot perform this action.");
-      console.error("No currentUser.email");
       return;
     }
 
@@ -143,9 +125,6 @@ function Lessons() {
         default:
           return;
       }
-
-      console.log("Sending request:", { url, method, body });
-
       const response = await fetch(url, {
         method,
         headers: {
@@ -154,17 +133,12 @@ function Lessons() {
         },
         body: body && method !== 'DELETE' ? JSON.stringify(body) : null,
       });
-
-      console.log("API raw response:", response);
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("API error response:", errorData);
         throw new Error(errorData.detail || 'API request failed');
       }
 
       if (response.status === 204) {
-        console.log("204 No Content, clearing membership for class:", classId);
         setClasses(prevClasses =>
           prevClasses.map(cls =>
             cls.id === classId
@@ -176,10 +150,8 @@ function Lessons() {
         let updatedMembership;
         try {
           updatedMembership = await response.json();
-          console.log("Join request response JSON:", updatedMembership);
         } catch (e) {
           updatedMembership = null;
-          console.error("Error parsing join request response JSON:", e);
         }
         setClasses(prevClasses =>
           prevClasses.map(cls =>
@@ -194,7 +166,6 @@ function Lessons() {
         );
       } else {
         const updatedMembership = await response.json();
-        console.log("Membership action response JSON:", updatedMembership);
         setClasses(prevClasses =>
           prevClasses.map(cls =>
             cls.id === classId
@@ -209,21 +180,10 @@ function Lessons() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred.");
-      console.error("handleMembershipAction error:", err);
     }
   };
 
   const getButtonProps = (cls: Classroom) => {
-    console.log(
-      "Button logic for class:",
-      cls.title,
-      "| Status:",
-      cls.status,
-      "| Classroom ID:",
-      cls.id, // This is now the classroom id
-      "| Membership ID:",
-      cls.membership_id // This is the membership id
-    );
     switch (cls.status) {
       case 'ENROLLED':
       case 'ACCEPTED':
@@ -243,7 +203,7 @@ function Lessons() {
         return [{
           variant: 'blue',
           label: 'Request to Join',
-          onClick: () => handleMembershipAction(cls.id, 'request') // classroom id only
+          onClick: () => handleMembershipAction(cls.id, 'request')
         }];
     }
   };

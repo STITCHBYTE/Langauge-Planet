@@ -19,8 +19,6 @@ const Header = () => {
 
   const [showProfileModal, setShowProfileModal] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-
-  // Close modal when clicking outside
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
@@ -49,15 +47,12 @@ const Header = () => {
     localStorage.clear();
     navigate('/login');
   };
-console.log('currentUser', currentUser);
   return (
     <header className="w-full bg-white shadow-sm px-3 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-2 sticky top-0 z-30 ml-0 transition-all">
-      {/* Left: Greeting & Hamburger */}
       <div className="flex items-center w-full sm:w-auto justify-between">
         <div>
           <h1 className="text-lg sm:text-xl font-semibold text-gray-800">{greeting}</h1>
         </div>
-        {/* Hamburger button - shown only on mobile and when menu is closed */}
         {isMobileView && !isMobileMenuOpen && (
           <button className="ml-2 sm:hidden" onClick={toggleMobileMenu}>
             <svg viewBox="0 0 100 80" width="25" height="25" fill="#333">
@@ -68,8 +63,6 @@ console.log('currentUser', currentUser);
           </button>
         )}
       </div>
-
-      {/* Right: Actions */}
       <div className="flex items-center gap-2 flex-wrap justify-end w-full sm:w-auto mt-2 sm:mt-0">
         {isTeacher ? (
           <div className="flex items-center gap-2">
@@ -114,7 +107,6 @@ console.log('currentUser', currentUser);
             className="icon-image small-icon"
           />
         </div>
-        {/* Profile Avatar with Modal */}
         <div
           className="flex items-center gap-1 relative"
           ref={profileRef}
@@ -145,7 +137,6 @@ console.log('currentUser', currentUser);
             aria-haspopup="true"
             aria-expanded={showProfileModal}
           />
-          {/* Profile Modal */}
           {showProfileModal && (
             <div className="absolute right-0 top-12 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2">
               <div className="px-4 py-2 border-b border-gray-100">

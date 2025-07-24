@@ -2,10 +2,8 @@ import React from 'react';
 import './Style.css';
 
 const BarChart = ({ data = [], yAxisMax = 5 }) => {
-  // Helper to generate labels for the Y-axis based on the max value
   const generateYAxisLabels = (maxValue) => {
     const labels = [];
-    // Create 5 steps for the axis (e.g., if max is 10, steps are 10, 8, 6, 4, 2, 0)
     for (let i = 5; i >= 0; i--) {
       labels.push((maxValue / 5) * i);
     }
@@ -28,7 +26,6 @@ const BarChart = ({ data = [], yAxisMax = 5 }) => {
         {yAxisLabels.map((value, index) => (
           <div key={index} className="y-axis-row">
             <span className="y-axis-label">
-              {/* Show integer if it's a whole number, otherwise 1 decimal place */}
               {Number.isInteger(value) ? value : value.toFixed(1)} hrs
             </span>
             <div className="grid-line" />

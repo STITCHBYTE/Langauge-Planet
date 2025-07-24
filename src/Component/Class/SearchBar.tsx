@@ -1,5 +1,5 @@
 import React from 'react';
-import './class.css'; // Link to external stylesheet
+import './class.css';
 
 const SearchBar = () => {
   return (

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import "./GameCard.css"; // Import the CSS styles
+import "./GameCard.css"; 
 
 interface GameCardProps {
   backgroundClass: string;

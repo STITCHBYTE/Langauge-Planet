@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Character from './Character.tsx'; // Assuming Character.tsx exists
-import './FightingGame.css'; // Assuming FightingGame.css exists
-import './luxury-mcq.css'; // Import the new luxury-mcq.css file for luxury MCQ modal styles
+import Character from './Character.tsx';
+import './FightingGame.css';
+import './luxury-mcq.css';
 
-// --- (Interfaces and other constants remain the same) ---
 interface CharacterType {
     key: string;
     name: string;
@@ -40,8 +39,6 @@ interface VocabularyQuestion {
 const FightingFriendsOnline: React.FC = () => {
     const { roomCode: urlRoomId } = useParams<{ roomCode: string }>();
     const navigate = useNavigate();
-
-    // --- State Management ---
     const [gameState, setGameState] = useState<GameState>('CONNECTING');
     const [allCharacters, setAllCharacters] = useState<CharacterType[]>([]);
     const [myCharacter, setMyCharacter] = useState<CharacterType | null>(null);
@@ -49,35 +46,21 @@ const FightingFriendsOnline: React.FC = () => {
     const [player1Selection, setPlayer1Selection] = useState<string | null>(null);
     const [player2Selection, setPlayer2Selection] = useState<string | null>(null);
     const [pendingGameStart, setPendingGameStart] = useState<any | null>(null);
-    
-    // State to manage the "Copied!" feedback message
     const [isCopied, setIsCopied] = useState(false);
-
-    // Network and Game states
     const [gameMessage, setGameMessage] = useState('Connecting to server...');
     const [myPlayerNumber, setMyPlayerNumber] = useState<number | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
-
-    // Player fight states
     const [player1, setPlayer1] = useState<PlayerState>({ x: 100, health: 100, action: 'idle', direction: 'right', hitEffect: 0, triggerActionAnim: 0 });
     const [player2, setPlayer2] = useState<PlayerState>({ x: window.innerWidth - 400, health: 100, action: 'idle', direction: 'left', hitEffect: 0, triggerActionAnim: 0 });
     const [winner, setWinner] = useState<string | null>(null);
-    
-    // Game constants
     const moveSpeed = 20;
     const attackRange = 250;
     const characterWidth = 150;
-
-    // Quiz states
     const [quizActive, setQuizActive] = useState(false);
     const [quizQuestion, setQuizQuestion] = useState<VocabularyQuestion | null>(null);
     const [vocab, setVocab] = useState<VocabularyQuestion[]>([]);
     const [pendingAttackType, setPendingAttackType] = useState<'attack1' | 'attack2' | null>(null);
     const [quizResult, setQuizResult] = useState<null | 'correct' | 'incorrect'>(null);
-
-
-    // --- (useEffect for fetchCharacters and WebSocket logic remains the same) ---
-    // --- Initial Setup ---
     useEffect(() => {
         const fetchCharacters = async () => {
             try {
@@ -85,35 +68,28 @@ const FightingFriendsOnline: React.FC = () => {
                 const data = await response.json();
                 setAllCharacters(data);
             } catch (error) {
-                console.error("Failed to load characters:", error);
                 setGameMessage('Error: Could not load character data.');
             }
         };
         fetchCharacters();
     }, []);
-
-    // Fetch vocabulary on mount
     useEffect(() => {
         fetch('/assets/vocabulary.json')
           .then(res => res.json())
           .then(data => setVocab(data.vocabulary))
           .catch(() => setVocab([]));
     }, []);
-
-    // --- WebSocket Logic ---
     useEffect(() => {
         if (!urlRoomId) {
             navigate('/');
             return;
         };
-        console.log('Connecting to room:', urlRoomId);
 
         const connect = () => {
             const ws = new WebSocket('ws://localhost:3001');
             wsRef.current = ws;
 
             ws.onopen = () => {
-                console.log('✅ WebSocket connection opened.');
                 setGameMessage('Connection successful. Entering room...');
                 const message = { type: 'ENTER_ROOM', roomId: urlRoomId };
                 ws.send(JSON.stringify(message));
@@ -142,7 +118,6 @@ const FightingFriendsOnline: React.FC = () => {
                         break;
 
                     case 'START_GAME':
-                        console.log("START_GAME message received. Queuing for processing.");
                         setPendingGameStart(data);
                         break;
                     
@@ -154,7 +129,6 @@ const FightingFriendsOnline: React.FC = () => {
                     case 'PLAYER_ACTION': {
                         const setter = data.playerNumber === 1 ? setPlayer1 : setPlayer2;
                         setter(prev => ({...prev, action: data.action, triggerActionAnim: prev.triggerActionAnim + 1}));
-                        console.log('PLAYER_ACTION received:', data);
                         break;
                     }
                     case 'HEALTH_UPDATE': {
@@ -190,7 +164,6 @@ const FightingFriendsOnline: React.FC = () => {
             };
 
             ws.onerror = (err) => {
-                console.error('WebSocket error:', err);
                 setGameMessage('Could not connect to the server.');
             };
         };
@@ -204,7 +177,6 @@ const FightingFriendsOnline: React.FC = () => {
     // Safely process the START_GAME message
     useEffect(() => {
         if (pendingGameStart && allCharacters.length > 0) {
-            console.log("Processing queued START_GAME message now that characters are loaded.");
             const data = pendingGameStart;
 
             const myCharKey = myPlayerNumber === 1 ? data.player1Character : data.player2Character;
@@ -221,7 +193,6 @@ const FightingFriendsOnline: React.FC = () => {
         }
     }, [pendingGameStart, allCharacters, myPlayerNumber]);
 
-    // --- (Game Logic, Keyboard Handlers, and Memoized image maps remain the same) ---
     const executeAttack = useCallback((attackType: 'attack1' | 'attack2') => {
         if (!myPlayerNumber || gameState !== 'FIGHTING') return;
 
@@ -234,36 +205,19 @@ const FightingFriendsOnline: React.FC = () => {
         setTimeout(() => {
             mySetter(prev => prev.action === attackType ? { ...prev, action: 'idle' } : prev);
         }, 400);
-
-
-        // Use left edge for distance calculation for more intuitive hit detection
         const distance = Math.abs(me.x - opponent.x);
-        // You can tune this value to match your sprite size visually
         const tunedAttackRange = 150;
         const isInRange = distance <= tunedAttackRange;
-        // For now, allow facing any direction (for easier testing)
         const isFacingTarget = true;
 
-        console.log('Attack:', {
-          meX: me.x,
-          opponentX: opponent.x,
-          distance,
-          isInRange,
-          isFacingTarget,
-          myDirection: me.direction,
-          opponentDirection: opponent.direction
-        });
-
         if (isInRange && isFacingTarget) {
-            // Show quiz before sending attack
             if (vocab.length > 0) {
               setQuizQuestion(vocab[Math.floor(Math.random() * vocab.length)]);
               setQuizActive(true);
               setPendingAttackType(attackType);
-              return; // Don't send attack yet
+              return;
             }
         } else {
-            // Out of range: just play animation, no quiz, no damage
             wsRef.current?.send(JSON.stringify({
                 type: 'PLAYER_ACTION',
                 action: attackType,
@@ -272,8 +226,6 @@ const FightingFriendsOnline: React.FC = () => {
             }));
         }
     }, [myPlayerNumber, player1, player2, gameState, attackRange, characterWidth, vocab]);
-
-    // Quiz answer handler
     const handleQuizAnswer = (option: string) => {
       if (!quizQuestion || !pendingAttackType) return;
       const correct = option === quizQuestion.spanish;
@@ -281,10 +233,8 @@ const FightingFriendsOnline: React.FC = () => {
 
       if (correct) {
         setTimeout(() => {
-          // Play attack animation (set action to attack)
           const mySetter = myPlayerNumber === 1 ? setPlayer1 : setPlayer2;
           mySetter(prev => ({ ...prev, action: pendingAttackType, triggerActionAnim: prev.triggerActionAnim + 1 }));
-          // Send the attack to the server immediately after starting animation
           wsRef.current?.send(JSON.stringify({
             type: 'PLAYER_ACTION',
             action: pendingAttackType,
@@ -293,27 +243,23 @@ const FightingFriendsOnline: React.FC = () => {
           }));
           setPendingAttackType(null);
           setTimeout(() => {
-            // After attack animation, always set to idle and increment triggerActionAnim
             mySetter(prev => ({ ...prev, action: 'idle', triggerActionAnim: prev.triggerActionAnim + 1 }));
-            // After attack and idle, clear quiz modal and feedback
             setTimeout(() => {
               setQuizActive(false);
               setQuizQuestion(null);
               setQuizResult(null);
-            }, 100); // Ensure idle is visible before closing modal
-          }, 400); // Attack animation duration
-        }, 1200); // Show correct feedback for 1.2s
+            }, 100);
+          }, 400);
+        }, 1200);
       } else {
         setTimeout(() => {
           setQuizActive(false);
           setQuizQuestion(null);
           setQuizResult(null);
           setPendingAttackType(null);
-        }, 1200); // Show incorrect feedback for 1.2s
+        }, 1200);
       }
     };
-
-    // --- Keyboard Input Handler ---
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (gameState !== 'FIGHTING') return;
@@ -362,7 +308,6 @@ const FightingFriendsOnline: React.FC = () => {
         };
     }, [gameState, myPlayerNumber, player1, player2, executeAttack]);
 
-    // Memoized image maps
     const myImages = useMemo(() => {
         if (!myCharacter) return {} as { [key: string]: string };
         return {
@@ -401,31 +346,23 @@ const FightingFriendsOnline: React.FC = () => {
             'take_hit-right': `/assets/sprites/${opponentCharacter.key}/take_hit.png`
         };
     }, [opponentCharacter]);
-
-
-    // --- UI Handlers ---
     const handleSelectCharacter = (charKey: string) => {
         const mySelection = myPlayerNumber === 1 ? player1Selection : player2Selection;
-        if (mySelection) return; // Prevent changing selection
+        if (mySelection) return;
 
         wsRef.current?.send(JSON.stringify({ type: 'SELECT_CHARACTER', characterKey: charKey }));
         if (myPlayerNumber === 1) setPlayer1Selection(charKey);
         if (myPlayerNumber === 2) setPlayer2Selection(charKey);
     };
-    
-    // **MODIFIED**: Handler now copies the full window URL
     const handleCopyRoomCode = () => {
-        // Copies the full URL, e.g., "http://localhost:3000/room/ABCD"
         navigator.clipboard.writeText(window.location.href).then(() => {
             setIsCopied(true);
-            setTimeout(() => setIsCopied(false), 2000); // Hide message after 2 seconds
+            setTimeout(() => setIsCopied(false), 2000);
         }, (err) => {
-            console.error('Could not copy text: ', err);
         });
     };
 
     const handleRestart = () => {
-        // Reset all relevant states
         setPlayer1({ x: 100, health: 100, action: 'idle', direction: 'right', hitEffect: 0, triggerActionAnim: 0 });
         setPlayer2({ x: window.innerWidth - 400, health: 100, action: 'idle', direction: 'left', hitEffect: 0, triggerActionAnim: 0 });
         setWinner(null);
@@ -438,8 +375,6 @@ const FightingFriendsOnline: React.FC = () => {
         setGameState('CHARACTER_SELECT');
         wsRef.current?.send(JSON.stringify({ type: 'RESTART_GAME', roomId: urlRoomId }));
     };
-
-    // --- Render Logic ---
     const renderContent = () => {
         switch (gameState) {
             case 'CONNECTING':
@@ -453,7 +388,6 @@ const FightingFriendsOnline: React.FC = () => {
                            <h2>{gameMessage}</h2>
                            <div className="room-info">
                                 <span>Room: {urlRoomId}</span>
-                                {/* MODIFIED: Tooltip updated to reflect the new action */}
                                 <button onClick={handleCopyRoomCode} className="copy-button" title="Copy Room URL">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                         <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
@@ -495,8 +429,6 @@ const FightingFriendsOnline: React.FC = () => {
                         </div>
                     </div>
                 );
-
-            // --- (FIGHTING and GAME_OVER cases remain the same) ---
             case 'FIGHTING':
                 if (!myCharacter || !opponentCharacter) return <div>Loading assets...</div>;
                 return (
@@ -584,8 +516,6 @@ const FightingFriendsOnline: React.FC = () => {
 
     return (
         <div className="game-container">
-            {/* The game header is now rendered outside the switch statement */}
-            {/* <div className="game-header"><h1>Fighting Friends Online</h1></div> */}
             {renderContent()}
             {quizActive && quizQuestion && (
               <div className="luxury-mcq-modal">

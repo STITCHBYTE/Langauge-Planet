@@ -17,15 +17,14 @@ import Header from '../../Component/Home/Header.tsx';
 import Sidebar from '../../Component/Home/Sidebar.tsx';
 import Server_url from '../../config';
 
-// --- INTERFACES ---
 interface Discussion {
   id: string;
   title: string;
 }
 
 interface Question {
-  id?: string; // Existing questions have an ID
-  temp_id?: number; // New questions get a temporary frontend ID
+  id?: string; 
+  temp_id?: number; 
   question_text: string;
   points: number;
   answer_type: 'TEXT' | 'FILE';
@@ -37,7 +36,7 @@ interface Assignment {
   title: string;
   description: string;
   due_date: string;
-  discussion?: string; // For receiving the discussion ID
+  discussion?: string; 
   points?: number;
   classroom: string;
   assigned_students?: string[];
@@ -50,7 +49,6 @@ interface Student {
   email: string;
 }
 
-// Custom DatePicker Input Component
 const CustomDateInput = React.forwardRef<HTMLInputElement, any>(({ value, onClick, placeholder }, ref) => (
   <div className="relative w-full">
     <input
@@ -67,7 +65,6 @@ const CustomDateInput = React.forwardRef<HTMLInputElement, any>(({ value, onClic
   </div>
 ));
 
-// --- UI COMPONENTS ---
 const QuestionDisplayCard = ({ question, index, onEdit, onDelete }) => (
   <div className="bg-white border border-gray-200 rounded-lg p-4 transition-all duration-300">
     <div className="flex justify-between items-center mb-4">
@@ -132,29 +129,25 @@ const LoadingSpinner = () => (
     </div>
 );
 
-// --- MAIN COMPONENT ---
 const EditAssignmentPage: React.FC = () => {
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const navigate = useNavigate();
 
-  // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState<Date | null>(null); // Changed to Date object
-  const [discussionId, setDiscussionId] = useState(''); // State for selected discussion
+  const [dueDate, setDueDate] = useState<Date | null>(null); 
+  const [discussionId, setDiscussionId] = useState(''); 
   const [classroomId, setClassroomId] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [discussionOptions, setDiscussionOptions] = useState<Discussion[]>([]); // State for discussion options
+  const [discussionOptions, setDiscussionOptions] = useState<Discussion[]>([]); 
   const [enrolledStudents, setEnrolledStudents] = useState<Student[]>([]);
   const [assignedStudents, setAssignedStudents] = useState<string[]>([]);
 
-  // Control state
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const questionsEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch assignment details on mount
   useEffect(() => {
     const fetchAssignmentDetails = async () => {
       const token = localStorage.getItem('authToken');
@@ -169,12 +162,11 @@ const EditAssignmentPage: React.FC = () => {
         });
         if (!response.ok) throw new Error('Failed to fetch assignment details.');
         const data: Assignment = await response.json();
-        console.log("Fetched Assignment Data:", data);
         setTitle(data.title);
         setDescription(data.description);
-        setDueDate(data.due_date ? new Date(data.due_date) : null); // Convert to Date object
+        setDueDate(data.due_date ? new Date(data.due_date) : null); 
         setClassroomId(data.classroom);
-        setDiscussionId(data.discussion || ''); // Set the initial discussion
+        setDiscussionId(data.discussion || ''); 
         setAssignedStudents(data.assigned_students || []);
         setQuestions(data.questions?.map(q => ({ ...q, isEditing: false })) || []);
       } catch (err) {
@@ -186,7 +178,6 @@ const EditAssignmentPage: React.FC = () => {
     fetchAssignmentDetails();
   }, [assignmentId]);
 
-  // Fetch enrolled students and discussions once classroomId is known
   useEffect(() => {
     if (!classroomId) return;
     const token = localStorage.getItem('authToken');
@@ -201,7 +192,6 @@ const EditAssignmentPage: React.FC = () => {
         const data = await response.json();
         setEnrolledStudents(data.results || data);
       } catch (err) {
-        console.error(err);
       }
     };
 
@@ -214,7 +204,6 @@ const EditAssignmentPage: React.FC = () => {
         const data = await response.json();
         setDiscussionOptions(data);
       } catch (err) {
-        console.error(err);
       }
     };
 
@@ -222,12 +211,10 @@ const EditAssignmentPage: React.FC = () => {
     fetchDiscussions();
   }, [classroomId]);
 
-  // Student selection handlers
   const isAllStudentsSelected = enrolledStudents.length > 0 && assignedStudents.length === enrolledStudents.length;
   const handleToggleStudent = (studentId: string) => setAssignedStudents(p => p.includes(studentId) ? p.filter(id => id !== studentId) : [...p, studentId]);
   const handleToggleAllStudents = () => setAssignedStudents(isAllStudentsSelected ? [] : enrolledStudents.map(s => s.id));
 
-  // Question handlers
   const handleAddQuestion = () => {
     if (questions.some(q => q.isEditing)) {
       toast.error("Please save the currently editing question first.");
@@ -290,7 +277,6 @@ const EditAssignmentPage: React.FC = () => {
     );
   };
 
-  // Form submission handler
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -306,7 +292,7 @@ const EditAssignmentPage: React.FC = () => {
       title,
       description,
       discussion: discussionId,
-      due_date: dueDate ? dueDate.toISOString() : null, // Convert Date to ISO string
+      due_date: dueDate ? dueDate.toISOString() : null, 
       assigned_students: assignedStudents,
       questions: questionsPayload,
     };
@@ -353,7 +339,6 @@ const EditAssignmentPage: React.FC = () => {
             </header>
             <form onSubmit={handleSubmit}>
               <main className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-                {/* Left Column: Details */}
                 <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-lg shadow-sm">
                   <h2 className="text-lg sm:text-xl font-bold text-gray-800">Assignment Details</h2>
                   <div className="mt-6 space-y-6">
@@ -384,7 +369,6 @@ const EditAssignmentPage: React.FC = () => {
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                       </div>
                     </div>
-                    {/* Due Date with Material Design 3 DatePicker */}
                     <div>
                       <label className="block text-xs sm:text-sm font-medium text-gray-700">
                         Due Date <span className="text-gray-500">(optional)</span>
@@ -425,7 +409,6 @@ const EditAssignmentPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {/* Right Column: Questions */}
                 <div className="flex flex-col">
                   <h2 className="text-lg sm:text-xl font-bold text-gray-800">Questions</h2>
                   <div className="mt-6 space-y-4 flex-grow overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 20rem)' }}>
@@ -445,7 +428,6 @@ const EditAssignmentPage: React.FC = () => {
                   </button>
                 </div>
               </main>
-              {/* Action Buttons */}
               <div className="mt-8 flex flex-col sm:flex-row justify-end items-center gap-3 border-t pt-6">
                 {error && <div className="flex items-center text-sm text-red-600 mr-auto"><AlertCircle className="w-5 h-5 mr-2" /> {error}</div>}
                 <button type="button" className="w-full sm:w-auto px-6 py-2 border rounded-lg text-sm font-semibold" onClick={() => navigate(-1)}>Cancel</button>
@@ -458,7 +440,6 @@ const EditAssignmentPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Custom CSS for Material Design 3 styling */}
       <style jsx>{`
         .react-datepicker-popper {
           z-index: 9999 !important;

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Server_url from '../../config.js';
 import { FiVolume2 } from 'react-icons/fi';
 import { FaCheckCircle, FaTimesCircle, FaFlag } from 'react-icons/fa';
-import useTrackTime from "../../hooks/useTrackTime.ts"; // Add this import at the top
+import useTrackTime from "../../hooks/useTrackTime.ts";
 
 type MultipleChoiceAnswer = {
   id: string;
@@ -43,10 +43,9 @@ const LessonStudentStage: React.FC = () => {
   const [selected, setSelected] = useState<any>(null);
   const [showFeedback, setShowFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [translateOrder, setTranslateOrder] = useState<string[]>([]);
-  // Buffer for each translate exercise's answer
   const [translateAnswers, setTranslateAnswers] = useState<{ [idx: number]: string[] }>({});
   const [matchedPairs, setMatchedPairs] = useState<{ [key: number]: boolean }>({});
-  const [matchSelections, setMatchSelections] = useState<{ left?: string; right?: string }>({}); // <-- Move here
+  const [matchSelections, setMatchSelections] = useState<{ left?: string; right?: string }>({});
   const [draggedToken, setDraggedToken] = useState<string | null>(null);
   const [matchupScoreShown, setMatchupScoreShown] = useState(false);
   const [startTime, setStartTime] = useState<number>(Date.now());
@@ -67,10 +66,8 @@ const LessonStudentStage: React.FC = () => {
         });
         if (!res.ok) throw new Error('Failed to fetch exercises');
         const data = await res.json();
-        console.log("[LessonStudentStage] Exercises fetched:", data);
         setExercises(data);
       } catch (err) {
-        console.error("[LessonStudentStage] Fetch error:", err);
         setExercises([]);
       } finally {
         setLoading(false);
@@ -81,41 +78,33 @@ const LessonStudentStage: React.FC = () => {
 
   useEffect(() => {
     setStartTime(Date.now());
-    console.log("[LessonStudentStage] Stage started at:", Date.now());
   }, []);
 
-  // Add this line after you have access to stageId and userId (studentId)
   useTrackTime({
     activityType: "stage",
     activityId: stageId,
     userId: localStorage.getItem('userId')
   });
 
-  // When finished, set endTime
   useEffect(() => {
     if (currentIdx === exercises.length) {
       setEndTime(Date.now());
-      console.log("[LessonStudentStage] Stage ended at:", Date.now());
     }
   }, [currentIdx, exercises.length]);
 
-  // Calculate accuracy and time
   const totalNonPairExercises = exercises.filter(
     ex => ex.exercise_type !== 'matchup' && ex.exercise_type !== 'word-match'
   ).length;
 
   const totalPossible = totalPairs + totalNonPairExercises;
-  const totalCorrect = totalCorrectPairs + correctCount; // correctCount for non-pair exercises
+  const totalCorrect = totalCorrectPairs + correctCount;
 
   const accuracy = totalPossible > 0 ? Math.round((totalCorrect / totalPossible) * 100) : 0;
   const timeTaken = endTime ? Math.floor((endTime - startTime) / 1000) : 0;
   const minutes = Math.floor(timeTaken / 60);
   const seconds = timeTaken % 60;
   const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
-  // Completion screen
   if (stageCompleted) {
-    // Format time: mm:ss if < 1 hour, hh:mm:ss if >= 1 hour
     let formattedTimeDisplay = "00:00";
     if (timeTaken >= 3600) {
       const hours = Math.floor(timeTaken / 3600);
@@ -159,21 +148,17 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
   }
 
   const exercise = exercises[currentIdx];
-
-  // Prevent rendering main UI if exercise is undefined
   if (!exercise) {
     return null;
   }
 
   const progress = ((currentIdx + 1) / exercises.length) * 100;
 
-  // Multiple Choice Handlers
   const handleChoiceClick = (answer: MultipleChoiceAnswer) => {
     setSelected(answer.id);
     setShowFeedback(answer.is_correct ? 'correct' : 'incorrect');
   };
 
-  // Translate Handlers
   const handleTokenClick = (token: string) => {
     if (translateOrder.includes(token)) return;
     setTranslateOrder([...translateOrder, token]);
@@ -190,11 +175,9 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
     } else {
       setShowFeedback('incorrect');
     }
-    // Buffer the answer for this exercise
+
     setTranslateAnswers(prev => ({ ...prev, [currentIdx]: [...translateOrder] }));
   };
-
-  // Matchup Handlers
   const handleMatchClick = (side: 'left' | 'right', value: string) => {
     setMatchSelections(prev => ({ ...prev, [side]: value }));
   };
@@ -212,8 +195,6 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
       setShowFeedback('incorrect');
     }
   };
-
-  // Drag and Drop Handlers
   const handleDragStart = (token: string) => {
     setDraggedToken(token);
   };
@@ -233,10 +214,8 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
     setDraggedToken(null);
   };
 
-  // Next Exercise
   const handleContinue = () => {
     if (exercise.exercise_type === 'translate') {
-      // Buffer the answer for this exercise before moving on
       setTranslateAnswers(prev => ({ ...prev, [currentIdx]: [...translateOrder] }));
     }
     if (showFeedback === 'correct') {
@@ -254,27 +233,19 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
       setEndTime(end);
       setStageCompleted(true);
 
-      // --- POST SUBMISSION TO BACKEND ---
-      const studentId = localStorage.getItem('userId'); // or get from context
+      const studentId = localStorage.getItem('userId');
       const exerciseId = exercises.length > 0 ? exercises[0].id : null;
       const timeTakenSeconds = Math.floor((end - startTime) / 1000);
-      // ISO 8601 duration string
       const timeTakenISO = `PT${timeTakenSeconds}S`;
-
-      // Build answers array
       const answers = exercises.map((ex, idx) => {
         if (ex.exercise_type === 'multiple-choice') {
-          // selected_option: id of chosen answer
           return {
             selected_option: selected || ''
           };
         } else if (ex.exercise_type === 'matchup' || ex.exercise_type === 'word-match') {
-          // word_match_pairs: [{ term, definition }]
           let pairs = [];
           if (ex.word_match?.matches) {
             pairs = ex.word_match.matches.map((pair, i) => {
-              // Try to get selected definition for each term
-              // If you store selectedDefs, use that, else fallback to pair.definition
               return {
                 term: pair.term,
                 definition: pair.definition
@@ -285,7 +256,6 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
             word_match_pairs: pairs
           };
         } else if (ex.exercise_type === 'translate') {
-          // Use buffered answer for this exercise
           const selectedWords = translateAnswers[idx] || [];
           return {
             translated_phrase: selectedWords.join(' '),
@@ -311,22 +281,17 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
         })
         .then(res => res.json())
         .then(data => {
-          console.log('Quiz submitted:', data);
         })
         .catch(err => {
-          console.error('Quiz submit error:', err);
         });
       }
-      // --- END POST ---
     }
   };
 
-  // UI
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Progress Bar & Header */}
       <div className="flex items-center justify-between px-12 pt-8">
-        <span className="text-gray-600 font-semibold text-sm">STAGE 1</span>
+        <span className="text-gray-600 font-semibold text-sm">STAGE</span>
         <div className="w-2/3 h-2 bg-gray-200 rounded-full relative overflow-hidden">
           <div
             className="absolute left-0 top-0 h-2 bg-blue-500 rounded-full transition-all"
@@ -342,13 +307,8 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
         </button>
       </div>
 
-      {/* Prompt */}
+     
       <div className="flex flex-col items-center mt-12 mb-8">
-        {/* <h2 className="text-xl font-semibold mb-8 text-gray-800 text-center">
-          {exercise.prompt || "Can you guess the meaning of the word below?"}
-        </h2> */}
-
-        {/* MULTIPLE CHOICE */}
         {exercise.exercise_type === 'multiple-choice' && (
           <>
           <h2 className="text-xl font-semibold mb-8 text-gray-800 text-center">
@@ -406,14 +366,11 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
             </div>
           </>
         )}
-
-        {/* TRANSLATE */}
         {exercise.exercise_type === 'translate' && (
           <>
             <div className="flex flex-col items-center mb-8">
               <div className="bg-blue-100 border-2 border-blue-400 rounded-lg px-10 py-6 flex flex-col items-center gap-2 mb-2">
                 <FiVolume2 className="text-2xl text-gray-500 mb-2" />
-                {/* Show image inside the box if present */}
                 {exercise.translate.image && (
                   <img
                     src={`${Server_url}${exercise.translate.image}`}
@@ -421,11 +378,9 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
                     className="w-32 h-32 object-contain rounded-xl mb-2"
                   />
                 )}
-                {/* Show prompt inside the box */}
                 <span className="text-lg font-semibold text-gray-700">
                   {exercise.phrase_to_translate}
                 </span>
-                {/* If you have a prompt field for translate */}
                 {exercise.translate?.prompt && (
                   <span className="text-base text-gray-600">
                     {exercise.translate.prompt}
@@ -447,7 +402,6 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
                   {token}
                 </button>
               ))}
-              {/* Show a placeholder if empty */}
               {translateOrder.length === 0 && (
                 <span className="text-gray-400 px-4 py-2">Drag words here</span>
               )}
@@ -488,13 +442,10 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
             </button>
           </>
         )}
-
-        {/* MATCHUP */}
         {(exercise.exercise_type === 'matchup' || exercise.exercise_type === 'word-match') && exercise.word_match?.matches && (
           <>
             <div className="flex flex-col items-center mb-8">
               <h3 className="text-lg font-semibold mb-4">{exercise.word_match.prompt || "Match the accurate translation"}</h3>
-              {/* Step-by-step matching */}
               <MatchupStep
                 pairs={exercise.word_match.matches}
                 isLastExercise={currentIdx === exercises.length - 1}
@@ -509,10 +460,7 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
           </>
         )}
       </div>
-
-      {/* Feedback & Footer */}
       <div className="flex items-center justify-between px-12 pb-8 mt-auto">
-        {/* Feedback */}
         {showFeedback === 'correct' && (
           <div className="flex items-center gap-2 text-green-600 font-semibold text-lg">
             <FaCheckCircle /> Fantastic!
@@ -523,17 +471,12 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
             <FaTimesCircle /> Incorrect!
           </div>
         )}
-
-        {/* Left buttons */}
         <div className="flex gap-4">
           <button className="flex items-center gap-2 border border-gray-300 rounded-lg px-6 py-2 bg-white text-gray-600 font-semibold hover:bg-gray-50 transition">
             <FaFlag className="text-gray-400" /> Report
           </button>
         </div>
-
-        {/* Right button */}
         <div>
-          {/* MCQ and Translate logic unchanged */}
           {(exercise.exercise_type === 'multiple-choice' || exercise.exercise_type === 'translate') && (
             showFeedback !== null ? (
               <button
@@ -559,7 +502,6 @@ console.log(correctCount, exercises.length, accuracy, timeTaken, formattedTime);
               </button>
             )
           )}
-          {/* Matchup: show button only when score is shown */}
           {(exercise.exercise_type === 'matchup' || exercise.exercise_type === 'word-match') && matchupScoreShown && (
             <button
               className="bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg hover:bg-blue-700 transition"
@@ -608,7 +550,6 @@ const MatchupStep: React.FC<{
     const pair = pairs[currentPairIdx];
     setSelectedDefs(prev => {
       const updated = { ...prev, [pair.id]: def };
-      // If this was the last pair, auto-check
       if (currentPairIdx === pairs.length - 1) {
         setShowScore(true);
       } else {
@@ -622,7 +563,6 @@ const MatchupStep: React.FC<{
     setShowScore(true);
   };
 
-  // Feedback text and color/icon
   let feedbackText = '';
   let feedbackColor = '';
   let feedbackIcon = null;
@@ -689,7 +629,6 @@ const MatchupStep: React.FC<{
           </div>
         ) : (
           <div className="w-full flex flex-col items-center">
-            {/* Feedback UI same as MCQ */}
             <div className={`flex items-center justify-center gap-2 font-semibold text-lg mb-4 ${feedbackColor}`}>
               {feedbackIcon} {feedbackText}
             </div>
@@ -726,39 +665,6 @@ const MatchupStep: React.FC<{
           </div>
         )}
       </div>
-      {/* Buttons always at the page bottom, all in one row */}
-      {/* <div className="absolute left-0 right-0 bottom-0 flex items-center justify-between px-12 pb-8">
-        <div className="flex gap-4">
-          <button className="flex items-center gap-2 border border-gray-300 rounded-lg px-6 py-2 bg-white text-gray-600 font-semibold hover:bg-gray-50 transition">
-            <FaFlag className="text-gray-400" /> Report
-          </button>
-          <button
-            className="border border-gray-300 rounded-lg px-6 py-2 bg-white text-gray-600 font-semibold hover:bg-gray-50 transition"
-            onClick={onContinue}
-          >
-            Skip Exercise
-          </button>
-        </div>
-        <div>
-          {(!showScore && allMatched) ? (
-            <button
-              className="bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg hover:bg-blue-700 transition"
-              onClick={handleCheck}
-            >
-              Check
-            </button>
-          ) : showScore ? (
-            <button
-              className="bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg hover:bg-blue-700 transition"
-              onClick={onContinue}
-            >
-              {isLastExercise
-                ? 'Finish Learning'
-                : 'Continue Learning'}
-            </button>
-          ) : null}
-        </div>
-      </div> */}
     </div>
   );
 };

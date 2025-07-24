@@ -7,8 +7,6 @@ const Sidebar: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { currentUser } = useView();
-
-    // Helper to check if route is active
     const isActive = (path: string) => location.pathname.startsWith(path);
 
     return (
@@ -101,7 +99,6 @@ const Sidebar: React.FC = () => {
             </nav>
             <div className="p-4 border-t">
                 <div className="flex items-center">
-                    {/* Show avatar if available, otherwise show initials */}
                     {currentUser.avatar_url ? (
                         <img src={currentUser.avatar_url} alt={currentUser.name || currentUser.first_name || 'User'} className="w-10 h-10 rounded-full object-cover" />
                     ) : (
@@ -111,7 +108,6 @@ const Sidebar: React.FC = () => {
                         </div>
                     )}
                     <div className="ml-3">
-                        {/* Show user name, email, initials, and avatar if available */}
                         {(() => {
                             const name = currentUser.name || `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'User';
                             const email = currentUser.email || '';

@@ -7,7 +7,6 @@ const useTrackTime = ({ activityType, activityId, userId }) => {
 
   const flushTime = () => {
     const now = Date.now();
-    // Always accumulate up to the moment of flush
     if (!document.hidden) {
       totalActiveTime.current += now - lastVisibleTime.current;
       lastVisibleTime.current = now;
@@ -16,17 +15,9 @@ const useTrackTime = ({ activityType, activityId, userId }) => {
       activity_type: activityType,
       activity_id: activityId,
       active_seconds: Math.floor(totalActiveTime.current / 1000),
-      // user_id: userId
     };
 
     const token = localStorage.getItem('authToken');
-    console.log("[useTrackTime] Flushing time:", {
-      now,
-      lastVisibleTime: lastVisibleTime.current,
-      totalActiveTime: totalActiveTime.current,
-      payload,
-      token
-    });
 
     fetch(`${Server_url}/api/users/activity/`, {
       method: "POST",
@@ -37,9 +28,7 @@ const useTrackTime = ({ activityType, activityId, userId }) => {
       body: JSON.stringify(payload),
       keepalive: true
     }).then(res => {
-      console.log("[useTrackTime] Activity sent, status:", res.status);
     }).catch(err => {
-      console.error("[useTrackTime] Activity send error:", err);
     });
   };
 
@@ -49,19 +38,14 @@ const useTrackTime = ({ activityType, activityId, userId }) => {
       if (document.hidden) {
         // Pause timer, but do NOT send request
         totalActiveTime.current += now - lastVisibleTime.current;
-        console.log("[useTrackTime] Tab hidden. Timer paused. Added to totalActiveTime:", now - lastVisibleTime.current, "New total:", totalActiveTime.current);
-      } else {
+       } else {
         // Resume timer from now
         lastVisibleTime.current = now;
-        console.log("[useTrackTime] Tab visible. lastVisibleTime updated:", now);
       }
     };
-
-    console.log("[useTrackTime] Effect mounted", { activityType, activityId, userId });
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("beforeunload", flushTime);
     return () => {
-      console.log("[useTrackTime] Effect cleanup (unmount or deps change)");
       flushTime();
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("beforeunload", flushTime);

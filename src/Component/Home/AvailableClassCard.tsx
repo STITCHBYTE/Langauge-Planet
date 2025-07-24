@@ -32,7 +32,6 @@ const AvailableClassCard = ({ classId, icon, title, teacher }) => {
         toast.error('Failed to send request');
       }
     } catch (error) {
-      console.error('Error requesting to join class:', error);
       toast.error('Error sending request');
     } finally {
       setIsRequesting(false);

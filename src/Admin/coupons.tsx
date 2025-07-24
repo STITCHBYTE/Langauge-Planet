@@ -128,8 +128,6 @@ const AddCouponModal: React.FC<{
     });
     onClose();
   };
-
-  // Generate unique code using uuid
   const handleGenerateCode = () => {
     setCode(uuidv4().split("-")[0].toUpperCase());
   };
@@ -235,7 +233,7 @@ const CouponsPage: React.FC = () => {
     await fetch(`${Server_url}/api/users/coupons/`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json", // <-- Add this!
+        "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(couponData),

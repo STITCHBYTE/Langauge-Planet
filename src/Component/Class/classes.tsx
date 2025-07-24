@@ -57,8 +57,6 @@ const ClassDetailPage: React.FC = () => {
       
       try {
         setLoading(true);
-        
-        // 1. Fetch class details
         const classResponse = await fetch(`${Server_url}/api/classrooms/classroom/${classId}/`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -68,11 +66,7 @@ const ClassDetailPage: React.FC = () => {
         
         if (!classResponse.ok) throw new Error('Failed to fetch class data');
         const classData = await classResponse.json();
-        console.log("All class data fields:", Object.keys(classData)); // See available fields
-        console.log("Fetched class data:", classData);
         setClassData(classData);
-
-        // 2. Fetch discussions  
         const discussionsResponse = await fetch(`${Server_url}/api/classrooms/classroom/${classId}/discussions/`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -82,13 +76,9 @@ const ClassDetailPage: React.FC = () => {
         
         if (discussionsResponse.ok) {
           const discussionsData = await discussionsResponse.json();
-          console.log("Fetched discussions data:", discussionsData); // Debug log
-          // Handle both array and paginated response
           const discussionsList = Array.isArray(discussionsData) ? discussionsData : discussionsData.results || [];
           setDiscussions(discussionsList);
         }
-
-        // 3. Fetch assignments
         const assignmentsResponse = await fetch(`${Server_url}/api/classrooms/classroom/${classId}/assignments/`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -98,13 +88,9 @@ const ClassDetailPage: React.FC = () => {
         
         if (assignmentsResponse.ok) {
           const assignmentsData = await assignmentsResponse.json();
-          console.log("Fetched assignments data:", assignmentsData); // Debug log
-          // Handle both array and paginated response
           const assignmentsList = Array.isArray(assignmentsData) ? assignmentsData : assignmentsData.results || [];
           setAssignments(assignmentsList);
         }
-
-        // 4. Fetch submissions
         const submissionsResponse = await fetch(`${Server_url}/api/classrooms/classroom/${classId}/my-assignment-submissions/`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -113,15 +99,13 @@ const ClassDetailPage: React.FC = () => {
           
         });
         if (submissionsResponse.ok) {
-          const submissionsData = await submissionsResponse.json();// Debug log
-          // submissionsData should be an array of submissions with assignment IDs
+          const submissionsData = await submissionsResponse.json();
           const submittedIds = submissionsData.map((sub: any) => sub.assignment);
           setSubmittedAssignments(submittedIds);
         }
 
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
-        console.error('Error fetching class data:', err);
       } finally {
         setLoading(false);
       }
@@ -252,8 +236,6 @@ const ClassDetailPage: React.FC = () => {
                             isLocked = false;
                           }
                         }
-
-                        // Check if the student has submitted the related assignment
                         const isSubmitted = relatedAssignment && submittedAssignments.includes(relatedAssignment.id);
 
                         return (
@@ -296,8 +278,6 @@ const ClassDetailPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Right Column - Assignments */}
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-lg p-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-2">Your Assignments</h2>
@@ -318,7 +298,6 @@ const ClassDetailPage: React.FC = () => {
                           {assignment.points && (
                             <p className="text-sm text-blue-600 mb-2">Points: {assignment.points}</p>
                           )}
-                          {/* Go To Assignment button removed */}
                         </div>
                       ))
                     ) : (
