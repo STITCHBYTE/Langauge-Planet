@@ -64,6 +64,7 @@ import Admin_Add_Quiz from "./Admin/LessonAdmin/Admin_Add_Quiz.tsx";
 import QuizzesSubmission from "./Component/Learning/quizzesSubmission.tsx";
 import FightingGameOnline from "./Component/FightingGame/FightingFriends.tsx";
 import CarGame from "./Component/game/CarGame/carGame.tsx";
+import CarGameOnline from "./Component/game/CarSelectionOnline/carGameOnline.tsx"
 function App() {
   const AppRoutes = () => {
     const { currentUser } = useView();
@@ -249,6 +250,7 @@ function App() {
                 element={<QuizzesSubmission />}
               />
               <Route path="/carGame" element={<CarGame />} />
+              <Route path="/carGame/:roomId?" element={<CarGameOnline />} />
             </>
           )}
         </Routes>
