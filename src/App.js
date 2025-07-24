@@ -250,7 +250,7 @@ function App() {
                 element={<QuizzesSubmission />}
               />
               <Route path="/carGame" element={<CarGame />} />
-              <Route path="/carGame/:roomId?" element={<CarGameOnline />} />
+              <Route path="/carGame/:roomId" element={<CarGameOnline />} />
             </>
           )}
         </Routes>

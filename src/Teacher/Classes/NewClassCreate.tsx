@@ -240,7 +240,7 @@ const ClassForm: React.FC = () => {
               <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => 
+                  onClick={() => navigate(-1)}
                   className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                 >
                   Cancel

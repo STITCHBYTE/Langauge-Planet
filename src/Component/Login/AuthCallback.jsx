@@ -8,15 +8,17 @@ const AuthCallback = () => {
 
   useEffect(() => {
     const handleOAuthCallback = () => {
-      
       let params = null;
       let accessToken = null;
       let error = null;
       let errorDescription = null;
       let state = null;
+      let refreshToken = null;
+
       if (window.location.hash) {
         params = new URLSearchParams(window.location.hash.substring(1));
         accessToken = params.get('access_token');
+        refreshToken = params.get('refresh_token');
         error = params.get('error');
         errorDescription = params.get('error_description');
         state = params.get('state');
@@ -24,29 +26,27 @@ const AuthCallback = () => {
       if (!accessToken && !error && window.location.search) {
         params = new URLSearchParams(window.location.search.substring(1));
         accessToken = params.get('access_token');
+        refreshToken = params.get('refresh_token');
         error = params.get('error');
         errorDescription = params.get('error_description');
         state = params.get('state');
       }
       if (error) {
         let errorMessage = `Authentication failed: ${error}`;
-        
         if (errorDescription) {
           errorMessage += `\n${errorDescription}`;
         }
-        
         if (error === 'access_denied') {
           errorMessage += '\n\nYou denied access to the application.';
         } else if (error === 'redirect_uri_mismatch') {
           errorMessage += '\n\nRedirect URI mismatch. Please check your Google Cloud Console configuration.';
         }
-        
         toast.error(errorMessage);
         navigate('/');
         return;
       }
-      
 
+      // --- EXISTING TEACHER/ADMIN LOGIC ---
       if (accessToken) {
         if (state === 'admin_login') {
           if (accessToken.length > 10) {
@@ -72,10 +72,48 @@ const AuthCallback = () => {
             toast.error('Received invalid access token. Please try again.');
             navigate('/Profile');
           }
-        } else {
-          toast.error('Invalid login state. Please use the admin login.');
-          navigate('/Profile');
         }
+        // --- END EXISTING TEACHER/ADMIN LOGIC ---
+
+        // --- NEW: LOGIN LOGIC (from AuthCallbackLogin) ---
+        // If state is not admin_login, treat as normal login
+        else {
+          // Store Google tokens in localStorage
+          localStorage.setItem("authToken", accessToken);
+          if (refreshToken) {
+            localStorage.setItem("refreshToken", refreshToken);
+          }
+
+          // Send tokens to backend for app JWT
+          fetch(`${Server_url}/api/auth/google/jwt/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              provider: 'google',
+              access_token: accessToken,
+              // refresh_token: refreshToken,
+            }),
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              console.log(data);
+              if (data.access) {
+                localStorage.setItem("authToken", data.access);
+                // localStorage.setItem("refreshToken", data.refresh);
+                navigate("/Dashboard");
+              } else {
+                toast.error(data.detail || "Google login failed.");
+                navigate("/login");
+              }
+            })
+            .catch((err) => {
+              toast.error("Google login failed.");
+              navigate("/login");
+            });
+        }
+        // --- END LOGIN LOGIC ---
       } else {
         toast.error('No access token received from Google OAuth. Please try again.');
         navigate('/Profile');

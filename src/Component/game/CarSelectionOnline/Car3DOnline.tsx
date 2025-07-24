@@ -35,7 +35,8 @@ const Car3D: React.FC<Car3DProps> = ({
         if (mountRef.current && rendererRef.current?.domElement) {
             try {
                 mountRef.current.removeChild(rendererRef.current.domElement);
-            } catch (e) {}
+            } catch (e) {
+            }
         }
         if (sceneRef.current) {
             sceneRef.current.traverse((object) => {
@@ -89,9 +90,11 @@ const Car3D: React.FC<Car3DProps> = ({
             renderer.domElement.style.width = '100%';
             renderer.domElement.style.height = '100%';
             renderer.domElement.style.display = 'block';
+            
             mountRef.current.appendChild(renderer.domElement);
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
+            
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
             directionalLight.position.set(2, 5, 2);
             scene.add(directionalLight);
@@ -101,6 +104,7 @@ const Car3D: React.FC<Car3DProps> = ({
                 modelPath,
                 (gltf) => {
                     if (!sceneRef.current) return;
+                    
                     const model = gltf.scene;
                     modelRef.current = model;
                     model.scale.set(scale, scale, scale);
@@ -112,10 +116,12 @@ const Car3D: React.FC<Car3DProps> = ({
                             child.receiveShadow = false;
                         }
                     });
+                    
                     sceneRef.current.add(model);
                     setIsLoading(false);
                 },
-                (progress) => {},
+                (progress) => {
+                },
                 (error) => {
                     setIsLoading(false);
                 }
@@ -127,6 +133,7 @@ const Car3D: React.FC<Car3DProps> = ({
                 if (autoRotate && modelRef.current) {
                     modelRef.current.rotation.y += 0.01;
                 }
+                
                 animationIdRef.current = requestAnimationFrame(animate);
                 rendererRef.current.render(sceneRef.current, cameraRef.current);
             };
@@ -135,6 +142,7 @@ const Car3D: React.FC<Car3DProps> = ({
                 if (mountRef.current && cameraRef.current && rendererRef.current) {
                     const width = mountRef.current.clientWidth;
                     const height = mountRef.current.clientHeight;
+                    
                     cameraRef.current.aspect = width / height;
                     cameraRef.current.updateProjectionMatrix();
                     rendererRef.current.setSize(width, height);
@@ -146,9 +154,9 @@ const Car3D: React.FC<Car3DProps> = ({
                 cleanup();
             };
         };
+
         checkDimensions();
     }, [modelPath, position.x, position.y, position.z, rotation, scale, autoRotate, cleanup]);
-
     useEffect(() => {
         if (modelRef.current) {
             modelRef.current.position.set(position.x, position.y, position.z);

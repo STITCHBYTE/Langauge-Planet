@@ -1,8 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Server_url from "../../config";
-import { toast , ToastContainer} from "react-toastify";
+import Server_url, { client_id } from "../../config";
+import { toast } from "react-toastify";
+import { gapi } from "gapi-script";
 
 const InputField: React.FC<{
   label: string;
@@ -86,26 +87,74 @@ const TestimonialCard: React.FC = () => (
   </div>
 );
 
-const SocialLoginButtons: React.FC = () => (
-  <div className="flex gap-3 w-full text-base font-semibold text-gray-600">
-    <button className="flex-1 flex justify-center items-center gap-3 p-3 bg-white rounded-md border border-gray-300">
-      <img
-        src="https://cdn.builder.io/api/v1/image/assets/TEMP/f8de59990e7a1ed9f323c822bd42bfcdafbf13d3"
-        alt="Google logo"
-        className="w-5"
-      />
-      Google
-    </button>
-    <button className="flex-1 flex justify-center items-center gap-3 p-3 bg-white rounded-md border border-gray-300">
-      <img
-        src="https://cdn.builder.io/api/v1/image/assets/TEMP/90cc5286de4dac2099e6fd8a5880304c49ff3443"
-        alt="Twitter logo"
-        className="w-5"
-      />
-      Twitter
-    </button>
-  </div>
-);
+const SocialLoginButtons: React.FC = () => {
+  const GOOGLE_SCOPES = [
+    "openid",
+    "profile",
+    "email",
+    "https://www.googleapis.com/auth/userinfo.profile",
+    "https://www.googleapis.com/auth/userinfo.email",
+  ].join(" ");
+
+  const handleGoogleLogin = () => {
+    const redirectUri = `${window.location.origin}/auth-callback`;
+    const authUrl =
+      `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${encodeURIComponent(client_id)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=${encodeURIComponent(GOOGLE_SCOPES)}&` +
+      `response_type=token&` +
+      `include_granted_scopes=true&` +
+      `access_type=online&` +
+      `state=login`;
+
+    window.location.href = authUrl;
+  };
+
+  const handleFacebookLogin = () => {
+    // Replace with your Facebook OAuth URL and redirect URI
+    const redirectUri = `${window.location.origin}/auth-callback`;
+    const fbClientId = "<YOUR_FACEBOOK_APP_ID>";
+    const fbAuthUrl =
+      `https://www.facebook.com/v12.0/dialog/oauth?` +
+      `client_id=${encodeURIComponent(fbClientId)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=email,public_profile&` +
+      `response_type=token&` +
+      `state=login`;
+
+    window.location.href = fbAuthUrl;
+  };
+
+  return (
+    <div className="flex gap-3 w-full text-base font-semibold text-gray-600">
+      <button
+        className="flex-1 flex justify-center items-center gap-3 p-3 bg-white rounded-md border border-gray-300"
+        onClick={handleGoogleLogin}
+        type="button"
+      >
+        <img
+          src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
+          alt="Google logo"
+          className="w-5 h-5"
+        />
+        Google
+      </button>
+      <button
+        className="flex-1 flex justify-center items-center gap-3 p-3 bg-white rounded-md border border-gray-300"
+        onClick={handleFacebookLogin}
+        type="button"
+      >
+        <img
+          src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/facebook/facebook-original.svg"
+          alt="Facebook logo"
+          className="w-5 h-5"
+        />
+        Facebook
+      </button>
+    </div>
+  );
+};
 
 const DividerWithText: React.FC = () => (
   <div className="flex items-center my-4 text-sm text-slate-500">
@@ -199,12 +248,12 @@ const LoginForm: React.FC = () => {
           break;
         case "signup":
           endpoint = `${Server_url}/api/users/add/`;
-          payload = { 
-            first_name, 
-            last_name, 
-            username: normalizedUsername, 
-            email: normalizedEmail, 
-            password 
+          payload = {
+            first_name,
+            last_name,
+            username: normalizedUsername,
+            email: normalizedEmail,
+            password,
           };
           break;
         case "forgot":
@@ -226,14 +275,22 @@ const LoginForm: React.FC = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data?.message || `Request failed with status ${response.status}`);
-        throw new Error(data?.message || `Request failed with status ${response.status}`);
+        toast.error(
+          data?.message || `Request failed with status ${response.status}`
+        );
+        throw new Error(
+          data?.message || `Request failed with status ${response.status}`
+        );
       }
 
       if (data.success) {
         setSuccessMessage(data.message || "Operation successful.");
-        navigate('/Dashboard');
-        if ((formMode === "login" || formMode === "signup") && data.access && data.refresh) {
+        navigate("/Dashboard");
+        if (
+          (formMode === "login" || formMode === "signup") &&
+          data.access &&
+          data.refresh
+        ) {
           localStorage.setItem("authToken", data.access);
           localStorage.setItem("refreshToken", data.refresh);
         }
@@ -323,13 +380,13 @@ const LoginForm: React.FC = () => {
           />
         )}
 
-          <InputField
-            label="Email Address"
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+        <InputField
+          label="Email Address"
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
         {!isForgot && (
           <>
             <InputField

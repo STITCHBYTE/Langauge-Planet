@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import './App.css';
 import CarSelection from './CarSelectionOnline.tsx';
 import Car3D from './Car3DOnline.tsx';
 import type { CarOption } from './CarSelectionOnline.tsx';
-import { Route } from 'react-router';
 
 interface QuizQuestion {
     question: string;
@@ -30,7 +28,7 @@ const CarGameOnline = () => {
     const [positions, setPositions] = useState<{ player1: number; player2: number }>({ player1: 0, player2: 0 });
     const [gameState, setGameState] = useState<'waiting' | 'starting' | 'racing' | 'finished'>('waiting');
     const [winner, setWinner] = useState<string>('');
-    const [gameStarted, setGameStarted] = useState(false);
+    const [gameStarted, setGameStarted] = useState(false); 
     const [botCarIds, setBotCarIds] = useState<string[]>(BOT_CAR_IDS);
     const [botProgress, setBotProgress] = useState<number[]>(Array(BOT_COUNT).fill(0));
     const [botFinished, setBotFinished] = useState<boolean[]>(Array(BOT_COUNT).fill(false));
@@ -49,6 +47,7 @@ const CarGameOnline = () => {
     const [isCheering, setIsCheering] = useState(false);
     const [winningCarOffset, setWinningCarOffset] = useState(0);
     const [gameEnded, setGameEnded] = useState(false);
+
     const TOTAL_SCROLL_DISTANCE_PX = 4000;
     const SECTION_LENGTH_PX = 800;
     const carOptions: CarOption[] = [
@@ -68,17 +67,20 @@ const CarGameOnline = () => {
         { question: 'What is the capital of France?', answer: 'paris' },
         { question: 'Type "ready" to continue!', answer: 'ready' }
     ];
+
     useEffect(() => {
         if (!roomId) return;
-        if (!ws.current || ws.current.url !== `ws://localhost:3001/` || ws.current.readyState === WebSocket.CLOSED) {
+        if (!ws.current || ws.current.url !== `ws://localhost:8002/` || ws.current.readyState === WebSocket.CLOSED) {
             if (ws.current && ws.current.readyState !== WebSocket.CLOSED) {
                 ws.current.close();
             }
-            const wsUrl = `ws://localhost:3001`;
+            const wsUrl = `ws://localhost:8002`;
             ws.current = new WebSocket(wsUrl);
+
             ws.current.onopen = () => {
                 ws.current?.send(JSON.stringify({ type: 'JOIN_ROOM', roomId }));
             };
+
             ws.current.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 switch (data.type) {
@@ -122,8 +124,12 @@ const CarGameOnline = () => {
                         break;
                 }
             };
-            ws.current.onclose = () => {};
-            ws.current.onerror = (error) => {};
+
+            ws.current.onclose = () => {
+            };
+
+            ws.current.onerror = (error) => {
+            };
         }
         return () => {
             if (ws.current && ws.current.readyState !== WebSocket.CLOSED) {
@@ -152,9 +158,11 @@ const CarGameOnline = () => {
             let animationProgress = 0;
             const animationDuration = 1500;
             const maxOffset = 50;
+
             const interval = setInterval(() => {
                 animationProgress += 50;
                 const currentOffset = (animationProgress / animationDuration) * maxOffset;
+
                 if (animationProgress >= animationDuration) {
                     setWinningCarOffset(maxOffset);
                     clearInterval(interval);
@@ -162,8 +170,10 @@ const CarGameOnline = () => {
                     setWinningCarOffset(currentOffset);
                 }
             }, 50);
+
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 3000);
+
             return () => clearInterval(interval);
         }
         if (gameState !== 'finished') {
@@ -173,6 +183,7 @@ const CarGameOnline = () => {
     useEffect(() => {
         let countdownTimeout: NodeJS.Timeout | null = null;
         let countdownInterval: NodeJS.Timeout | null = null;
+
         if (showCountdown && typeof countdownNumber === 'number' && countdownNumber > 0) {
             countdownInterval = setInterval(() => {
                 setCountdownNumber(prevNum => {
@@ -194,6 +205,7 @@ const CarGameOnline = () => {
                 setCountdownNumber(3);
             }, 1000);
         }
+
         return () => {
             if (countdownInterval) clearInterval(countdownInterval);
             if (countdownTimeout) clearTimeout(countdownTimeout);
@@ -202,8 +214,10 @@ const CarGameOnline = () => {
     const handleSubmitQuiz = (e: React.FormEvent) => {
         e.preventDefault();
         if (isQuestionCooldown || gameState !== 'racing' || !currentQuestion) return;
+
         setIsQuestionCooldown(true);
         const DELAY = 3000;
+
         if (userInput.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim()) {
             setFeedbackMessage('Correct! Speed boost activated!');
             if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -257,6 +271,7 @@ const CarGameOnline = () => {
         if (gameState !== 'waiting') {
             return;
         }
+
         setSelectedCarId(carId);
         if (ws.current && ws.current.readyState === WebSocket.OPEN) {
             ws.current.send(JSON.stringify({ type: 'SELECT_CAR', roomId, carId }));
@@ -286,6 +301,7 @@ const CarGameOnline = () => {
         if (gameState !== 'racing') return;
         setBotFinished(prev => prev.map((f, i) => f || botProgress[i] >= 100));
     }, [botProgress, gameState]);
+
     const [carShake, setCarShake] = useState(0);
     useEffect(() => {
         if (gameState !== 'racing') {
@@ -304,8 +320,10 @@ const CarGameOnline = () => {
             if (raf !== undefined) cancelAnimationFrame(raf);
         };
     }, [gameState]);
+
     const [animatedUserProgress, setAnimatedUserProgress] = useState(0);
     const [roadAnimationProgress, setRoadAnimationProgress] = useState(0);
+
     useEffect(() => {
         let rafId: number;
         const animateRoad = () => {
@@ -324,16 +342,19 @@ const CarGameOnline = () => {
             });
             rafId = requestAnimationFrame(animateRoad);
         };
+
         if (gameState === 'racing' || gameState === 'finished') {
             rafId = requestAnimationFrame(animateRoad);
         } else {
             setRoadAnimationProgress(0);
         }
+
         return () => {
             cancelAnimationFrame(rafId);
         };
     }, [gameState, userProgress, opponentProgress, botProgress]);
     const roadScrollX = -(roadAnimationProgress / 100) * TOTAL_SCROLL_DISTANCE_PX;
+
     function getCarOffsetAbsolute(progress: number, isWinner: boolean = false) {
         const min = 20, max = 80;
         let effectiveProgress = progress;
@@ -343,9 +364,10 @@ const CarGameOnline = () => {
         effectiveProgress = Math.min(100, effectiveProgress);
         return min + (max - min) * (effectiveProgress / 100);
     }
+
     return (
         <div className="min-h-screen bg-gray-900 text-white font-inter flex flex-col items-center justify-center p-4">
-            <h1 className="text-5xl font-extrabold mb-8 text-yellow-400 drop-shadow-lg">Learing Planet</h1>
+            <h1 className="text-5xl font-extrabold mb-8 text-yellow-400 drop-shadow-lg">Langauge Planet</h1>
             {gameState === 'finished' && (
                 <div className="absolute inset-0 bg-gray-900 bg-opacity-90 flex flex-col items-center justify-center z-50">
                     <p className="text-8xl font-extrabold text-yellow-300 mb-8 animate-bounce">
@@ -370,6 +392,7 @@ const CarGameOnline = () => {
                     </button>
                 </div>
             )}
+
             {showCarSelection && (
                 <>
                     <CarSelection
@@ -596,6 +619,7 @@ const CarGameOnline = () => {
                 .animate-cheer-fade {
                     animation: cheer-fade 1.5s ease-out forwards;
                 }
+
                 @keyframes smoke-puff {
                     0% {
                         transform: translate(-50%, 0) scale(0.5);
@@ -613,6 +637,7 @@ const CarGameOnline = () => {
                 .animate-smoke {
                     animation: smoke-puff 1s ease-out infinite;
                 }
+
                 @keyframes pulse-subtle {
                     0%, 100% {
                         box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
@@ -624,14 +649,16 @@ const CarGameOnline = () => {
                 .animate-pulse-subtle {
                     animation: pulse-subtle 2s infinite;
                 }
+
                 @keyframes win-animation {
                     0% { transform: scale(1); }
                     50% { transform: scale(1.1); }
                     100% { transform: scale(1); }
                 }
                 .animate-win {
-                    animation: win-animation 0.5s ease-out;
+                    animation: win-animation 0.5s ease-out; /* Apply once for visual pop */
                 }
+
                 @keyframes confetti-burst {
                     0% { opacity: 0; transform: scale(0.5); }
                     20% { opacity: 1; transform: scale(1); }
@@ -641,6 +668,7 @@ const CarGameOnline = () => {
                 .animate-confetti-burst {
                     animation: confetti-burst 3s ease-out forwards;
                 }
+
                 @keyframes countdown-pop {
                     0% { transform: scale(0.5); opacity: 0; }
                     20% { opacity: 1; }
