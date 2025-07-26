@@ -1336,7 +1336,9 @@ input:checked + .slider:before {
   height: 200px;
   width: 100%;
   position: relative;
+  overflow: auto;
 }
+
 
 .chart-y-axis {
   display: flex;
