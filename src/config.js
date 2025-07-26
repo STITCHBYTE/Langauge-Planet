@@ -1,6 +1,6 @@
-const Server_url = "http://192.168.1.6:8000";
+const Server_url = "https://server.langplanet.org";
 export default Server_url;
 
-const client_id = "128990421285-d6lmk76cbudc1u6h76ilvrv6gr4k9kq2.apps.googleusercontent.com";
+const client_id = "318821705751-d57mq3hrq86krbsojajf64kpjgv0qr4v.apps.googleusercontent.com";
 
 export  { client_id };

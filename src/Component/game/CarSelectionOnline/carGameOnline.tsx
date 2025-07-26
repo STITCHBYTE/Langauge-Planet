@@ -70,11 +70,11 @@ const CarGameOnline = () => {
 
     useEffect(() => {
         if (!roomId) return;
-        if (!ws.current || ws.current.url !== `ws://localhost:8002/` || ws.current.readyState === WebSocket.CLOSED) {
+        if (!ws.current || ws.current.url !== `ws://api1.langplanet.org/` || ws.current.readyState === WebSocket.CLOSED) {
             if (ws.current && ws.current.readyState !== WebSocket.CLOSED) {
                 ws.current.close();
             }
-            const wsUrl = `ws://localhost:8002`;
+            const wsUrl = `ws://api1.langplanet.org`;
             ws.current = new WebSocket(wsUrl);
 
             ws.current.onopen = () => {

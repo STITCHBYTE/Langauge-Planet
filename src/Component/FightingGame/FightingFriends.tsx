@@ -86,7 +86,7 @@ const FightingFriendsOnline: React.FC = () => {
         };
 
         const connect = () => {
-            const ws = new WebSocket('ws://localhost:3001');
+            const ws = new WebSocket('ws://api1.langplanet.org');
             wsRef.current = ws;
 
             ws.onopen = () => {

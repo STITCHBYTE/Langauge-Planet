@@ -23,21 +23,38 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+/* Dashboard wrapper and main layout */
 .dashboard-wrapper {
   display: flex;
-  flex-direction: row;
   min-height: 100vh;
-  background-color: #ffffff;
+  background: #f8fafc;
 }
+
 .dashboard-main {
   flex: 1;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
+
+/* Dashboard content */
 .dashboard-content {
+  margin-left: 0% !important;
+  padding: 32px;
   flex: 1;
- 
+  min-width: 0;
+}
+.dashboard-content-classes{
+  /* padding: 32px; */
+  flex: 1;
   margin-left: 17%;
-  transition: margin-left 0.3s ease-in-out;
+  min-width: 0;
+}
+.dashboard-row-classes{
+  padding: 20px;
+}
+.No-classes-found{
+  margin-left: 15px;
 }
 .dashboard-sections {
   display: flex;
@@ -50,6 +67,124 @@ body {
   gap: 1.5rem;
   align-items: stretch;
 }
+
+.dashboard-row {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.dashboard-sections {
+  width: 100%;
+}
+.dashboard-main{
+  margin-left: 17%;
+}
+/* Responsive: stack columns on small screens */
+@media (max-width: 1024px) {
+  .dashboard-content {
+    padding: 16px;
+  }
+  .dashboard-row {
+    gap: 16px;
+  }
+  .dashboard-main{
+  margin-left: 0% !important;
+}
+}
+
+@media (max-width: 768px) {
+  .dashboard-wrapper {
+    flex-direction: column;
+  }
+  .dashboard-content {
+    padding: 8px;
+  }
+  .dashboard-row {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .dashboard-row-classes{
+  padding: 10px !important;
+}
+.No-classes-found{
+  margin-left: 10px !important;
+}
+.dashboard-content-classes {
+    /* padding: 32px; */
+    flex: 1 1;
+    margin-left: 0% !important;
+    min-width: 0;
+}
+  .weekly-stats-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .games-list {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-content {
+    padding: 4px;
+  }
+  .dashboard-row {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .weekly-stats-header {
+    gap: 0.3rem;
+    margin-bottom: 0.5rem;
+  }
+  .games-list {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .section-title,
+  .weekly-stats-title {
+    font-size: 1rem;
+  }
+  .view-all-button,
+  .weekly-stats-button {
+    font-size: 0.85rem;
+    padding: 4px 8px;
+  }
+}
+
+/* Cards and lists */
+.class-cards-list,
+.continue-learning-grid,
+.games-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .class-cards-list,
+  .continue-learning-grid,
+  .games-list {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* Sidebar responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    position: static;
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 16px;
+  }
+}
+
 .sidebar-container {
   position: fixed;
   top: 0;
@@ -688,6 +823,8 @@ body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   padding: 1rem 1.5rem;
   transition: all 0.3s ease-in-out;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 .header-title {
   font-size: 1.125rem;
@@ -750,6 +887,22 @@ body {
     transform: translateX(0);
     z-index: 1050;
   }
+
+  .dashboard-row {
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .weekly-stats-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .games-list {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 }
 
 
@@ -805,6 +958,22 @@ body {
   .mobile-menu-close-button {
     top: 0.75rem;
     right: 1rem;
+  }
+
+  .dashboard-row {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .weekly-stats-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .games-list {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 }
 
@@ -954,6 +1123,8 @@ input:checked + .slider:before {
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   padding: 1rem 1.5rem;
   transition: all 0.3s ease-in-out;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 
@@ -1035,6 +1206,22 @@ input:checked + .slider:before {
     top: 0.75rem;
     right: 1rem;
   }
+
+  .dashboard-row {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .weekly-stats-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .games-list {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
 }
 
 
@@ -1059,7 +1246,11 @@ input:checked + .slider:before {
     gap: 0.5rem;
    
   }
- 
+ .games-list {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr) !important;
+    gap: 1.5rem;
+}
   .header-actions .language-group,
   .header-actions .avatar-group,
   .header-actions .student-header-icon {

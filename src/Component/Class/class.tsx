@@ -211,10 +211,10 @@ function Lessons() {
   return (
     <div className="dashboard-wrapper">
       <Sidebar />
-      <section className="dashboard-content">
+      <section className="dashboard-content-classes">
         <Header />
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "40px", justifyContent: "space-between", alignItems: "flex-end", width: "100%" }}>
-          <div style={{ paddingTop: "16px", fontSize: "14px", minWidth: "240px", color: "#64748B", width: "330px" }}>
+        <div className="dashboard-row-classes" style={{ display: "flex", flexWrap: "wrap", gap: "40px", justifyContent: "space-between", alignItems: "flex-end", width: "100%" }}>
+          <div style={{ paddingTop: "16px", fontSize: "14px", minWidth: "240px", color: "#64748B", width: "330px", }}>
             <div style={{ display: "flex", gap: "8px", alignItems: "flex-start", maxWidth: "100%", minHeight: "48px", width: "330px" }}>
               <SearchBar />
             </div>
@@ -245,7 +245,7 @@ function Lessons() {
                   );
                 })
               ) : (
-                <p>No classes found.</p>
+                <p className="No-classes-found">No classes found.</p>
               )}
             </div>
           )}

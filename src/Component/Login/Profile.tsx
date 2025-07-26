@@ -104,8 +104,8 @@ const CharacterSelectionModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-2 sm:p-6 w-full max-w-xs sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h3 className="text-2xl font-bold text-gray-800">Choose Your Character</h3>
@@ -212,9 +212,8 @@ const AvatarEditor: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-6 max-w-3xl w-full flex flex-col md:flex-row gap-6">
-        
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-2 sm:p-6 w-full max-w-xs sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex-shrink-0 flex flex-col items-center gap-4 bg-gray-100 p-6 rounded-xl">
           <h3 className="text-lg font-bold text-gray-800">Your Avatar</h3>
           {selectedCharacter && (

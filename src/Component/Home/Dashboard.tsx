@@ -135,7 +135,7 @@ const DashboardReturning = () => {
       id: 'game-1',
       title: 'Word Racing Game',
       description: 'Lorem ipsum dolor sit amet consectetur. Cursus diam nisi sit lacinia diam integer urna proin malesuada.',
-      image: 'https://i.imgur.com/sJGG8a9.png',
+      image: 'https://cdn.builder.io/api/v1/image/assets/TEMP/620c4404ba32be14d604579e55c1a6f129050c79?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775',
       color: 'blue',
       path: '/games/racing'
     },
@@ -143,7 +143,7 @@ const DashboardReturning = () => {
       id: 'game-2',
       title: 'Word Fight Game',
       description: 'Lorem ipsum dolor sit amet consectetur. Cursus diam nisi sit lacinia diam integer urna proin malesuada.',
-      image: 'https://i.imgur.com/uI4aJ1j.png',
+      image: 'https://cdn.builder.io/api/v1/image/assets/TEMP/0fac39aa374587add36623d9f96c01305d023183?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775',
       color: 'green',
       path: '/games'
     }
@@ -232,8 +232,8 @@ const DashboardReturning = () => {
     <div className="dashboard-wrapper">
       <Sidebar />
       <div className="dashboard-main">
-        <div className="dashboard-content">
           <Header />
+        <div className="dashboard-content">
           <div className="dashboard-sections">
             {isNewUser ? (
               <>
