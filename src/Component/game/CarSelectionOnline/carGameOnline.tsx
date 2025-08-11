@@ -1,4 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FiArrowLeft, FiAward, FiPlay, FiRotateCcw } from 'react-icons/fi'; // Changed FiTrophy to FiAward
+import { AiOutlineCar, AiOutlineQuestionCircle } from 'react-icons/ai';
+import { MdSpeed, MdFlag } from 'react-icons/md';
+import { IoCarSportOutline } from 'react-icons/io5';
 import CarSelection from './CarSelectionOnline.tsx';
 import Car3D from './Car3DOnline.tsx';
 import type { CarOption } from './CarSelectionOnline.tsx';
@@ -19,6 +24,8 @@ const BOT_ANSWER_DELAY = 2500;
 const BOT_CAR_IDS = ['suv-luxury', 'van'];
 
 const CarGameOnline = () => {
+    const navigate = useNavigate();
+    
     const pathParts = window.location.pathname.split('/');
     const gameIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const roomId = pathParts[2] || '';
@@ -365,14 +372,31 @@ const CarGameOnline = () => {
         return min + (max - min) * (effectiveProgress / 100);
     }
 
+    const handleBackToGames = () => {
+        navigate('/game');
+    };
+
     return (
         <div className="min-h-screen bg-gray-900 text-white font-inter flex flex-col items-center justify-center p-4">
-            <h1 className="text-5xl font-extrabold mb-8 text-yellow-400 drop-shadow-lg">Langauge Planet</h1>
+            {/* Back to Games Button */}
+            <button 
+                className="absolute top-5 left-5 z-50 bg-white bg-opacity-90 text-gray-700 border-none py-3 px-6 rounded-full cursor-pointer text-base font-bold shadow-lg transition-all duration-300 hover:bg-gray-100 hover:-translate-x-1 flex items-center gap-2"
+                onClick={handleBackToGames}
+            >
+                <FiArrowLeft className="w-4 h-4" />
+                Back to Games
+            </button>
+
+            <h1 className="text-5xl font-extrabold mb-8 text-yellow-400 drop-shadow-lg">Language Planet</h1>
+            
             {gameState === 'finished' && (
                 <div className="absolute inset-0 bg-gray-900 bg-opacity-90 flex flex-col items-center justify-center z-50">
-                    <p className="text-8xl font-extrabold text-yellow-300 mb-8 animate-bounce">
-                        {winner === 'You' ? 'YOU WON!' : `${winner} WON!`}
-                    </p>
+                    <div className="flex items-center gap-4 mb-8">
+                        <FiAward className="text-8xl text-yellow-300 animate-bounce" />
+                        <p className="text-8xl font-extrabold text-yellow-300 animate-bounce">
+                            {winner === 'You' ? 'YOU WON!' : `${winner} WON!`}
+                        </p>
+                    </div>
                     {showConfetti && (
                         <img
                             src="/2979685.png"
@@ -386,8 +410,9 @@ const CarGameOnline = () => {
                                 ws.current.send(JSON.stringify({ type: 'RESTART_GAME', roomId }));
                             }
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full shadow-lg transform transition duration-300 hover:scale-105 text-2xl mt-8"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full shadow-lg transform transition duration-300 hover:scale-105 text-2xl mt-8 flex items-center gap-3"
                     >
+                        <FiRotateCcw className="w-6 h-6" />
                         Play Again
                     </button>
                 </div>
@@ -411,22 +436,37 @@ const CarGameOnline = () => {
                         }}
                     />
                     {(!selectedCarId || !opponentCarId) && (
-                        <p className="text-xl text-gray-400 mt-4">
-                            {selectedCarId ? 'Waiting for opponent to select car...' : 'Please select your car to start!'}
-                        </p>
+                        <div className="flex items-center gap-2 text-xl text-gray-400 mt-4">
+                            <AiOutlineCar className="w-6 h-6" />
+                            <p>
+                                {selectedCarId ? 'Waiting for opponent to select car...' : 'Please select your car to start!'}
+                            </p>
+                        </div>
                     )}
                     {selectedCarId && opponentCarId && gameState === 'waiting' && (
-                         <p className="text-xl text-yellow-300 mt-4 animate-pulse">
-                             Both cars selected. Waiting for race to start...
-                         </p>
+                        <div className="flex items-center gap-2 text-xl text-yellow-300 mt-4 animate-pulse">
+                            <MdSpeed className="w-6 h-6" />
+                            <p>Both cars selected. Waiting for race to start...</p>
+                        </div>
                     )}
                 </>
             )}
+            
             {showCountdown && (
                 <div className="absolute inset-0 flex items-center justify-center z-40">
-                    <p className={`text-9xl font-extrabold text-yellow-400 countdown-pop ${countdownNumber === 'GO!' ? 'text-green-400' : ''}`}>{countdownNumber}</p>
+                    <div className="flex items-center gap-4">
+                        {countdownNumber === 'GO!' ? (
+                            <MdFlag className="text-9xl text-green-400" />
+                        ) : (
+                            <IoCarSportOutline className="text-9xl text-yellow-400" />
+                        )}
+                        <p className={`text-9xl font-extrabold countdown-pop ${countdownNumber === 'GO!' ? 'text-green-400' : 'text-yellow-400'}`}>
+                            {countdownNumber}
+                        </p>
+                    </div>
                 </div>
             )}
+            
             {(gameState === 'racing' || gameState === 'finished') && (
                 <div className="flex flex-col w-full max-w-6xl bg-gray-800 rounded-xl shadow-2xl overflow-hidden h-[calc(100vh-160px)]">
                 <div className="relative w-full h-1/2 overflow-hidden rounded-t-xl">
@@ -570,8 +610,13 @@ const CarGameOnline = () => {
                 })}
                 </div>
                     <div className="w-full h-1/2 p-6 flex flex-col justify-center items-center bg-gray-700 rounded-b-xl">
-                        <h2 className="text-3xl font-bold mb-6 text-yellow-300">Quiz Time!</h2>
+                        <div className="flex items-center gap-3 mb-6">
+                            <AiOutlineQuestionCircle className="text-3xl text-yellow-300" />
+                            <h2 className="text-3xl font-bold text-yellow-300">Quiz Time!</h2>
+                        </div>
+                        
                         <p className="text-xl mb-2 text-center">Question {questionsAnsweredCount + 1} of {quizQuestions.length}</p>
+                        
                         {currentQuestion ? (
                             <form onSubmit={handleSubmitQuiz} className="w-full max-w-sm">
                                 <p className="text-2xl mb-4 text-center">{currentQuestion.question}</p>
@@ -587,20 +632,25 @@ const CarGameOnline = () => {
                                 />
                                 <button
                                     type="submit"
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transform transition duration-300 hover:scale-105 text-xl"
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transform transition duration-300 hover:scale-105 text-xl flex items-center justify-center gap-2"
                                     disabled={gameState !== 'racing' || isQuestionCooldown}
                                 >
+                                    <FiPlay className="w-5 h-5" />
                                     Submit Answer
                                 </button>
                             </form>
                         ) : (
-                            <p className="text-2xl mt-4 font-semibold text-green-400">
-                                {gameState === 'racing' && questionsAnsweredCount >= quizQuestions.length
-                                    ? "All questions answered! Awaiting race finish..."
-                                    : "Quiz will start with the race!"
-                                }
-                            </p>
+                            <div className="flex items-center gap-2 text-2xl mt-4 font-semibold text-green-400">
+                                <MdFlag className="w-6 h-6" />
+                                <p>
+                                    {gameState === 'racing' && questionsAnsweredCount >= quizQuestions.length
+                                        ? "All questions answered! Awaiting race finish..."
+                                        : "Quiz will start with the race!"
+                                    }
+                                </p>
+                            </div>
                         )}
+                        
                         {feedbackMessage && (
                             <p className={`text-xl mt-4 font-semibold ${feedbackMessage.includes('Correct') ? 'text-green-400' : 'text-red-400'}`}>
                                 {feedbackMessage}
@@ -609,6 +659,7 @@ const CarGameOnline = () => {
                     </div>
                 </div>
             )}
+            
             <style>{`
                 @keyframes cheer-fade {
                     0% { opacity: 0; }

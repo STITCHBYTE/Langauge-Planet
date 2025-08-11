@@ -1,10 +1,53 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Sidebar from "../../Component/Home/Sidebar.tsx";
-import Header from "../../Component/Home/Header.tsx";
+import Sidebar from "../Sidebar.tsx";
+// import Header from "../../Component/Home/Header.tsx";
 import Server_url from "../../config.js";
 import { FiArrowLeft, FiUsers, FiCheckCircle, FiXCircle, FiClock, FiEdit3 } from "react-icons/fi";
 import { MdAssignment } from "react-icons/md";
+import { useView } from '../../Context/ViewContext.tsx'; 
+// Header Component
+const Header: React.FC = () => {
+    const { currentUser } = useView(); // Import useView from your ViewContext
+    
+    return (
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center px-8 justify-between">
+            <div>
+                <h1 className="text-xl font-bold text-gray-800">Lesson</h1>
+            </div>
+            <div className="flex items-center space-x-6">
+                
+                <div className="flex items-center space-x-3">
+                    {currentUser?.avatar_url ? (
+                        <img 
+                            src={currentUser.avatar_url} 
+                            alt={currentUser.first_name || 'User'} 
+                            className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-lg border-2 border-blue-100">
+                            {currentUser ? 
+                                (currentUser.first_name?.[0] || currentUser.username?.[0] || 'U').toUpperCase()
+                                : 'AD'
+                            }
+                        </div>
+                    )}
+                    <div className="hidden sm:block">
+                        <p className="text-sm font-medium text-gray-800">
+                            {currentUser?.first_name && currentUser?.last_name 
+                                ? `${currentUser.first_name} ${currentUser.last_name}`
+                                : currentUser?.username || 'Admin Panel'
+                            }
+                        </p>
+                        <p className="text-xs text-gray-500">
+                            {currentUser?.is_superuser ? 'Super User' : 'Admin'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </header>
+    );
+};
 
 const LessonReport: React.FC = () => {
   const { lessonId } = useParams();
@@ -69,10 +112,12 @@ const LessonReport: React.FC = () => {
 
   if (loading || !report) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <Sidebar />
-        <div className="flex-1 flex flex-col ml-[17%]">
-          <Header />
+     <div className="min-h-screen flex bg-slate-50">
+            <div className="w-64 bg-white border-r border-gray-200">
+                <Sidebar />
+            </div>
+            <div className="flex-1 flex flex-col">
+                <Header />
           <main className="flex-1 p-8">
             <div className="text-center text-gray-500 py-12">Loading...</div>
           </main>
@@ -101,10 +146,11 @@ const LessonReport: React.FC = () => {
   const exerciseOptions = prompts || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
-      <div className="flex-1 flex flex-col ml-[17%]">
-        <Header />
+     <div className="flex h-screen bg-slate-50">
+            <Sidebar />
+            <div className="flex-1 flex flex-col">
+                <Header />
+                <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto">
         <main className="flex-1 p-8">
           <div className="flex items-center gap-2 text-gray-400 mb-10 text-base">
             <button className="text-blue-600 hover:underline" onClick={() => navigate('/admin/lesson/display')}>
@@ -321,6 +367,7 @@ const LessonReport: React.FC = () => {
             </div>
           )}
         </main>
+        </div>
       </div>
     </div>
   );

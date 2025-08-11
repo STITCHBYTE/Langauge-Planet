@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar.tsx";
 import Server_url from "../config.js";
 import { v4 as uuidv4 } from "uuid";
+import { useView } from '../Context/ViewContext.tsx';
 
 const CouponCard: React.FC<{
   coupon: any;
@@ -115,13 +116,16 @@ const AddCouponModal: React.FC<{
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Always set time to midnight
+    const fromDateMidnight = fromDate ? `${fromDate}T00:00:00` : "";
+    const toDateMidnight = toDate ? `${toDate}T00:00:00` : "";
     onSave({
       title,
       code,
       amount,
       amount_type: amountType,
-      from_date: fromDate,
-      to_date: toDate,
+      from_date: fromDateMidnight,
+      to_date: toDateMidnight,
       limit_of_uses: limitOfUses,
       user_type: userType,
       active,
@@ -174,11 +178,22 @@ const AddCouponModal: React.FC<{
           <div className="flex gap-2">
             <div className="flex-1 max-w-[140px]">
               <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-              <input type="datetime-local" value={fromDate} onChange={e => setFromDate(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+              <input
+                type="date"
+                value={fromDate}
+                onChange={e => setFromDate(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              />
             </div>
             <div className="flex-1 max-w-[140px]">
               <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-              <input type="datetime-local" value={toDate} onChange={e => setToDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+              <input
+                type="date"
+                value={toDate}
+                onChange={e => setToDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              />
             </div>
           </div>
           <div>
@@ -204,6 +219,47 @@ const AddCouponModal: React.FC<{
       </div>
     </div>
   );
+};
+
+const Header: React.FC = () => {
+    const { currentUser } = useView();
+    return (
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center px-8 justify-between">
+            <div>
+                <h1 className="text-xl font-bold text-gray-800">Coupon Codes</h1>
+            </div>
+            <div className="flex items-center space-x-6">
+               
+                <div className="flex items-center space-x-3">
+                    {currentUser?.avatar_url ? (
+                        <img 
+                            src={currentUser.avatar_url} 
+                            alt={currentUser.first_name || 'User'} 
+                            className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-lg border-2 border-blue-100">
+                            {currentUser ? 
+                                (currentUser.first_name?.[0] || currentUser.username?.[0] || 'U').toUpperCase()
+                                : 'AD'
+                            }
+                        </div>
+                    )}
+                    <div className="hidden sm:block">
+                        <p className="text-sm font-medium text-gray-800">
+                            {currentUser?.first_name && currentUser?.last_name 
+                                ? `${currentUser.first_name} ${currentUser.last_name}`
+                                : currentUser?.username || 'Admin Panel'
+                            }
+                        </p>
+                        <p className="text-xs text-gray-500">
+                            {currentUser?.is_superuser ? 'Super User' : 'Admin'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </header>
+    );
 };
 
 const CouponsPage: React.FC = () => {
@@ -284,42 +340,45 @@ const CouponsPage: React.FC = () => {
   return (
     <div className="flex">
       <Sidebar />
-      <main className="flex-1 bg-gray-50 min-h-screen p-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">Coupon Codes</h1>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
-            onClick={() => {
-              setIsModalOpen(true);
-              setSelectedCoupon(null);
-              setIsEditMode(false);
-            }}
-          >
-            Add Coupon
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {coupons.map((coupon) => (
-            <CouponCard
-              key={coupon.id}
-              coupon={coupon}
-              onEdit={() => {
-                setSelectedCoupon(coupon);
-                setIsEditMode(true);
+      <main className="flex-1 bg-gray-50 min-h-screen">
+        <Header />
+        <div className="p-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-2xl font-bold text-gray-800">Coupon Codes</h1>
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+              onClick={() => {
                 setIsModalOpen(true);
+                setSelectedCoupon(null);
+                setIsEditMode(false);
               }}
-              onDelete={() => handleDeleteCoupon(coupon.id)}
-              onToggleActive={() => handleToggleActive(coupon)}
-            />
-          ))}
+            >
+              Add Coupon
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {coupons.map((coupon) => (
+              <CouponCard
+                key={coupon.id}
+                coupon={coupon}
+                onEdit={() => {
+                  setSelectedCoupon(coupon);
+                  setIsEditMode(true);
+                  setIsModalOpen(true);
+                }}
+                onDelete={() => handleDeleteCoupon(coupon.id)}
+                onToggleActive={() => handleToggleActive(coupon)}
+              />
+            ))}
+          </div>
+          <AddCouponModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSave={isEditMode ? handleEditCoupon : handleAddCoupon}
+            coupon={selectedCoupon}
+            isEditMode={isEditMode}
+          />
         </div>
-        <AddCouponModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSave={isEditMode ? handleEditCoupon : handleAddCoupon}
-          coupon={selectedCoupon}
-          isEditMode={isEditMode}
-        />
       </main>
     </div>
   );

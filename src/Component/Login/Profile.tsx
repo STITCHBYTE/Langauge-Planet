@@ -372,6 +372,7 @@ const PersonalInfoCard: React.FC<{
       });
       if (!res.ok) throw new Error('Failed to update avatar on server');
       toast.success('Avatar updated successfully!');
+      window.location.reload();
     } catch (err) {
       toast.error('Failed to save avatar. Please try again.');
       if (user?.avatar_url) setDisplayAvatarUrl(user.avatar_url);
@@ -455,7 +456,7 @@ const PersonalInfoCard: React.FC<{
                   <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
                   {isGoogleConnected ? 'Deactivate Google Classroom' : 'Connect Google Classroom'}
                 </button>
-                <button
+                {/* <button
                   className="btn-secondary flex items-center justify-center gap-2 w-full py-3"
                   onClick={() => {
                     const clientId = '6mZnmwLrrhHc2wYzUNvAwH4tevY834BBWCUfkAMKCZBTT8mzUBUWkBfVwENKuvPY'; // Your developer API key
@@ -468,7 +469,7 @@ const PersonalInfoCard: React.FC<{
                 >
                   <img src="https://static.instructure.com/images/canvas-logo.png" alt="Canvas" className="w-5 h-5" />
                   Connect with Canvas
-                </button>
+                </button> */}
               </div>
             </div>
           )}

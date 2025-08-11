@@ -1,7 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar.tsx';
 import Server_url from '../config.js';
-
+import { useView } from '../Context/ViewContext.tsx'; 
+// Header Component
+const Header: React.FC = () => {
+    const { currentUser } = useView(); // Import useView from your ViewContext
+    
+    return (
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center px-8 justify-between">
+            <div>
+                <h1 className="text-xl font-bold text-gray-800">Teachers</h1>
+            </div>
+            <div className="flex items-center space-x-6">
+              
+                <div className="flex items-center space-x-3">
+                    {currentUser?.avatar_url ? (
+                        <img 
+                            src={currentUser.avatar_url} 
+                            alt={currentUser.first_name || 'User'} 
+                            className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-lg border-2 border-blue-100">
+                            {currentUser ? 
+                                (currentUser.first_name?.[0] || currentUser.username?.[0] || 'U').toUpperCase()
+                                : 'AD'
+                            }
+                        </div>
+                    )}
+                    <div className="hidden sm:block">
+                        <p className="text-sm font-medium text-gray-800">
+                            {currentUser?.first_name && currentUser?.last_name 
+                                ? `${currentUser.first_name} ${currentUser.last_name}`
+                                : currentUser?.username || 'Admin Panel'
+                            }
+                        </p>
+                        <p className="text-xs text-gray-500">
+                            {currentUser?.is_superuser ? 'Super User' : 'Admin'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </header>
+    );
+};
 const HomeIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -93,22 +135,45 @@ const TeacherTableRow: React.FC<{ teacher: Teacher }> = ({ teacher }) => {
     );
 };
 
-const Pagination: React.FC = () => (
-    <div className="flex justify-center items-center mt-6 text-sm py-4">
-        <button className="px-3 py-1 rounded-md hover:bg-gray-200 text-gray-500">&lt;</button>
-        <button className="px-3 py-1 rounded-md hover:bg-gray-200 text-gray-700">1</button>
-        <button className="px-3 py-1 rounded-md hover:bg-gray-200 text-gray-700">2</button>
-        <button className="px-3 py-1 rounded-md bg-blue-100 text-blue-600 font-semibold">3</button>
-        <button className="px-3 py-1 rounded-md hover:bg-gray-200 text-gray-700">4</button>
-        <button className="px-3 py-1 rounded-md hover:bg-gray-200 text-gray-700">5</button>
-        <button className="px-3 py-1 rounded-md hover:bg-gray-200 text-gray-700">6</button>
-        <button className="px-3 py-1 rounded-md hover:bg-gray-200 text-gray-500">&gt;</button>
-    </div>
-);
+const Pagination: React.FC<{ currentPage: number, totalPages: number, setCurrentPage: (page: number) => void }> = ({ currentPage, totalPages, setCurrentPage }) => {
+    return (
+        <div className="flex justify-center items-center mt-6 text-sm py-4">
+            <button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 rounded-md hover:bg-gray-200 text-gray-500 disabled:opacity-50"
+            >
+                &lt;
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                    key={i + 1}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`px-3 py-1 rounded-md hover:bg-gray-200 ${currentPage === i + 1 ? 'bg-blue-100 text-blue-600 font-semibold' : 'text-gray-700'}`}
+                >
+                    {i + 1}
+                </button>
+            ))}
+            <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 rounded-md hover:bg-gray-200 text-gray-500 disabled:opacity-50"
+            >
+                &gt;
+            </button>
+        </div>
+    );
+};
+
 const App: React.FC = () => {
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // Get current user id (from context, props, or localStorage)
+    const currentUserId = localStorage.getItem('userId'); // Adjust as needed
 
     useEffect(() => {
         const fetchTeachers = async () => {
@@ -137,21 +202,18 @@ const App: React.FC = () => {
         fetchTeachers();
     }, []);
 
+    const filteredTeachers = teachers.filter(t => t.id !== currentUserId);
+    const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage);
+    const paginatedTeachers = filteredTeachers.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+
     return (
         <div className="flex h-screen bg-gray-50 font-sans">
             <Sidebar activePage="Teachers" />
             <main className="flex-1 flex flex-col">
-                <header className="h-20 bg-white border-b flex items-center px-8 justify-between">
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-800">Teachers</h1>
-                    </div>
-                    <div className="flex items-center space-x-6">
-                        <button className="text-gray-500 hover:text-gray-700 relative">
-                            <BellIcon className="w-6 h-6" />
-                        </button>
-                        <img src="https://placehold.co/40x40/E0E7FF/4F46E5?text=VA" alt="User Avatar" className="w-10 h-10 rounded-full" />
-                    </div>
-                </header>
+               <Header/>
                 <div className="flex-1 p-8 overflow-y-auto">
                     <div className="flex justify-between items-center mb-6">
                         <div className="relative w-full max-w-xs">
@@ -184,13 +246,15 @@ const App: React.FC = () => {
                                     ) : error ? (
                                         <tr><td colSpan={6} className="text-center py-10 text-red-500">Error: {error}</td></tr>
                                     ) : (
-                                        teachers.map(teacher => <TeacherTableRow key={teacher.id} teacher={teacher} />)
+                                        paginatedTeachers.map(teacher => <TeacherTableRow key={teacher.id} teacher={teacher} />)
                                     )}
                                 </tbody>
                             </table>
                         </div>
-                         { !loading && !error && teachers.length > 0 && <Pagination /> }
-                         { !loading && !error && teachers.length === 0 && <div className="text-center py-10 text-gray-500">No teachers found.</div>}
+                        {!loading && !error && totalPages > 1 && (
+                          <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
+                        )}
+                        { !loading && !error && filteredTeachers.length === 0 && <div className="text-center py-10 text-gray-500">No teachers found.</div>}
                     </div>
                 </div>
             </main>

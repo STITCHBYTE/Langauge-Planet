@@ -1,9 +1,52 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "react-toastify";
-import Sidebar from '../../Component/Home/Sidebar.tsx';
-import Header from '../../Component/Home/Header.tsx';
+import Sidebar from '../Sidebar.tsx';
 import Server_url from '../../config.js';
+import { useView } from '../../Context/ViewContext.tsx'; 
+// Admin Header Component
+// Update the AdminHeader component
+const AdminHeader: React.FC = () => {
+    const { currentUser } = useView(); // Import useView from your ViewContext
+    
+    return (
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center px-8 justify-between">
+            <div>
+                <h1 className="text-xl font-bold text-gray-800">Lesson</h1>
+            </div>
+            <div className="flex items-center space-x-6">
+               
+                <div className="flex items-center space-x-3">
+                    {currentUser?.avatar_url ? (
+                        <img 
+                            src={currentUser.avatar_url} 
+                            alt={currentUser.first_name || 'User'} 
+                            className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-lg border-2 border-blue-100">
+                            {currentUser ? 
+                                (currentUser.first_name?.[0] || currentUser.username?.[0] || 'U').toUpperCase()
+                                : 'AD'
+                            }
+                        </div>
+                    )}
+                    <div className="hidden sm:block">
+                        <p className="text-sm font-medium text-gray-800">
+                            {currentUser?.first_name && currentUser?.last_name 
+                                ? `${currentUser.first_name} ${currentUser.last_name}`
+                                : currentUser?.username || 'Admin Panel'
+                            }
+                        </p>
+                        <p className="text-xs text-gray-500">
+                            {currentUser?.is_superuser ? 'Super User' : 'Admin'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </header>
+    );
+};
 
 interface Lesson {
     id: string;
@@ -367,13 +410,11 @@ const LessonsComponent: React.FC = () => {
     }, [activeTab]);
 
     return (
-        <div className="min-h-screen flex flex-col bg-slate-50">
-            <Header />
-            <div className="flex flex-1">
-                <div className="hidden lg:block w-64 bg-white border-r border-slate-200">
-                    <Sidebar />
-                </div>
-                <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
+        <div className="flex h-screen bg-slate-50">
+            <Sidebar />
+            <div className="flex-1 flex flex-col">
+                <AdminHeader />
+                <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto">
                     <main className="w-full max-w-7xl mx-auto">
                         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 pb-3 mb-6 gap-4">
                             <nav className="flex items-center">

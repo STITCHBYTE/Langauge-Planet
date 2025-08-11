@@ -1,16 +1,24 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Style.css';
 
 interface LearningCardProps {
+  id: string;
   icon: string;
   title: string;
   subtitle: string;
   progress?: string | null;
 }
 
-const LearningCard = ({ icon, title, subtitle, progress }: LearningCardProps) => {
+const LearningCard = ({ id, icon, title, subtitle, progress }: LearningCardProps) => {
+  const navigate = useNavigate();
+
+  const handleGoToLesson = () => {
+    navigate(`/lesson/${id}`);
+  };
+
   return (
-    <button className="learning-card">
+    <button className="learning-card" onClick={handleGoToLesson}>
       <div className="learning-card-header">
         <div className="icon-wrapper">
           <img src={icon} alt={title} className="icon-image" />

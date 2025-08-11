@@ -1,7 +1,49 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Sidebar from './Sidebar.tsx';
 import Server_url from "../config.js"
-
+import { useView } from '../Context/ViewContext.tsx'; 
+// Header Component
+const Header: React.FC = () => {
+    const { currentUser } = useView(); // Import useView from your ViewContext
+    
+    return (
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center px-8 justify-between">
+            <div>
+                <h1 className="text-xl font-bold text-gray-800">Language</h1>
+            </div>
+            <div className="flex items-center space-x-6">
+                
+                <div className="flex items-center space-x-3">
+                    {currentUser?.avatar_url ? (
+                        <img 
+                            src={currentUser.avatar_url} 
+                            alt={currentUser.first_name || 'User'} 
+                            className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-lg border-2 border-blue-100">
+                            {currentUser ? 
+                                (currentUser.first_name?.[0] || currentUser.username?.[0] || 'U').toUpperCase()
+                                : 'AD'
+                            }
+                        </div>
+                    )}
+                    <div className="hidden sm:block">
+                        <p className="text-sm font-medium text-gray-800">
+                            {currentUser?.first_name && currentUser?.last_name 
+                                ? `${currentUser.first_name} ${currentUser.last_name}`
+                                : currentUser?.username || 'Admin Panel'
+                            }
+                        </p>
+                        <p className="text-xs text-gray-500">
+                            {currentUser?.is_superuser ? 'Super User' : 'Admin'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </header>
+    );
+};
 const HomeIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -353,17 +395,7 @@ const App: React.FC = () => {
             <div className="flex h-screen bg-gray-50 font-sans">
                 <Sidebar />
                 <main className="flex-1 flex flex-col">
-                    <header className="h-20 bg-white border-b flex items-center px-8 justify-between">
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-800">Languages</h1>
-                        </div>
-                        <div className="flex items-center space-x-6">
-                            <button className="text-gray-500 hover:text-gray-700 relative">
-                                <BellIcon className="w-6 h-6" />
-                                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                            </button>
-                        </div>
-                    </header>
+                   <Header/>
                     <div className="flex-1 p-8 overflow-y-auto">
                         <div className="flex justify-between items-center mb-6">
                             <div className="relative w-full max-w-xs">

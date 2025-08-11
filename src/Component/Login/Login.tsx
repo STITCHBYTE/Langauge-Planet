@@ -273,14 +273,26 @@ const LoginForm: React.FC = () => {
       });
 
       const data = await response.json();
+      console.log(data);
 
       if (!response.ok) {
-        toast.error(
-          data?.message || `Request failed with status ${response.status}`
-        );
-        throw new Error(
-          data?.message || `Request failed with status ${response.status}`
-        );
+        // Handle server validation errors
+        let errorMessage = "Request failed";
+        
+        if (data.password && Array.isArray(data.password)) {
+          errorMessage = data.password[0]; // "Password or email is invalid."
+        } else if (data.email && Array.isArray(data.email)) {
+          errorMessage = data.email[0];
+        } else if (data.username && Array.isArray(data.username)) {
+          errorMessage = data.username[0];
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        }
+        
+        // toast.error(errorMessage);
+        throw new Error(errorMessage);
       }
 
       if (data.success) {

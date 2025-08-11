@@ -219,7 +219,20 @@ function Lessons() {
               <SearchBar />
             </div>
           </div>
-          <FilterStatus />
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <FilterStatus count={classes.length}/>
+            {/* <span style={{
+              background: "#F1F5F9",
+              color: "#334155",
+              borderRadius: "999px",
+              padding: "4px 12px",
+              fontWeight: 600,
+              fontSize: "15px",
+              marginLeft: "4px"
+            }}>
+              {classes.length}
+            </span> */}
+          </div>
         </div>
 
         <main style={{ marginTop: "16px", width: "100%" }}>
@@ -231,17 +244,19 @@ function Lessons() {
                 classes.map((cls) => {
                   const buttons = getButtonProps(cls);
                   return (
-                    <LessonCard
-                      key={cls.id}
-                      title={cls.title}
-                      description={cls.description}
-                      instructorName={cls.teacher}
-                      studentCount={cls.students_count || 0}
-                      imageUrl={cls.image_url || 'https://via.placeholder.com/300x150'}
-                      buttons={buttons}
-                      instructorImage="https://cdn.builder.io/api/v1/image/assets/TEMP/dd67f6684cf9b20459da76c3b0ed19da63d41bf0?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775"
-                      studentsImage="https://cdn.builder.io/api/v1/image/assets/TEMP/78e55b3a1644eb4a5df84ada4e201496061b5a02?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775"
-                    />
+                    <div style={{ padding: "10px" }}>
+                      <LessonCard
+                        key={cls.id}
+                        title={cls.title}
+                        description={cls.description}
+                        instructorName={cls.teacher}
+                        studentCount={cls.students_count || 0}
+                        imageUrl={cls.image_url || 'https://via.placeholder.com/300x150'}
+                        buttons={buttons}
+                        instructorImage="https://cdn.builder.io/api/v1/image/assets/TEMP/dd67f6684cf9b20459da76c3b0ed19da63d41bf0?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775"
+                        studentsImage="https://cdn.builder.io/api/v1/image/assets/TEMP/78e55b3a1644eb4a5df84ada4e201496061b5a02?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775"
+                      />
+                    </div>
                   );
                 })
               ) : (

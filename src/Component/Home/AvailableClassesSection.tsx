@@ -24,6 +24,7 @@ const AvailableClassesSection = ({ availableClasses }) => {
           availableClasses.map((classItem, index) => (
             <AvailableClassCard
               key={classItem.id || index}
+              id={classItem.id || index}
               classId={classItem.id}
               icon={classItem.image || ""}
               title={classItem.title}

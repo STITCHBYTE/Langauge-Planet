@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar.tsx';
 import Header from './Header.tsx';
 import LearningCard from './LearningCard.tsx';
@@ -94,7 +95,7 @@ const ContinueLearningSection = ({ learningItems }) => (
       <button className="continue-learning-button"><span>View All</span><img src="https://cdn.builder.io/api/v1/image/assets/TEMP/84f114468c32a8742b810c1d02fef2aa97bc858e?placeholderIfAbsent=true&apiKey=1b496253e45e4fc2b46bf96bdfd3025b" alt="" className="arrow-icon" /></button>
     </div>
     <div className="continue-learning-grid">
-      {learningItems.length === 0 ? <div className="text-gray-400 text-center py-8">No lessons found.</div> : learningItems.map((item) => <LearningCard key={item.id} icon={getFullImageUrl(item.image)} title={item.title} subtitle={item.description} progress={item.progress || null} />)}
+      {learningItems.length === 0 ? <div className="text-gray-400 text-center py-8">No lessons found.</div> : learningItems.map((item) => <LearningCard key={item.id} id={item.id} icon={getFullImageUrl(item.image)} title={item.title} subtitle={item.description} progress={item.progress || null} />)}
     </div>
   </div>
 );
@@ -106,22 +107,43 @@ const JoinedClassesSection = ({ joinedClasses }) => (
       <button className="view-all-button"><span>View All</span><img src="https://cdn.builder.io/api/v1/image/assets/TEMP/84f114468c32a8742b810c1d02fef2aa97bc858e?placeholderIfAbsent=true&apiKey=1b496253e45e4fc2b46bf96bdfd3025b" alt="" className="arrow-icon" /></button>
     </div>
     <div className="class-cards-list">
-      {joinedClasses.length === 0 ? <div className="text-gray-400 text-center py-8">No classes found.</div> : joinedClasses.map((c) => <ClassCard key={c.id} icon={getFullImageUrl(c.image)} title={c.title} teacher={c.teacher_name ? `Teacher: ${c.teacher_name}` : ""} status={c.status || ""} />)}
+      {joinedClasses.length === 0 ? <div className="text-gray-400 text-center py-8">No classes found.</div> : joinedClasses.map((c) => <ClassCard key={c.id} icon={getFullImageUrl(c.image)} title={c.title} teacher={c.teacher_name ? `Teacher: ${c.teacher_name}` : ""} status={c.status || ""} id={c.id} />)}
     </div>
   </div>
 );
 
-const GamesSection = ({ games }) => (
-  <div className="games-section">
-    <div className="games-header">
-      <h2 className="section-title">Explore Games</h2>
-      <button className="view-all-button"><span>View All</span><img src="https://cdn.builder.io/api/v1/image/assets/TEMP/84f114468c32a8742b810c1d02fef2aa97bc858e?placeholderIfAbsent=true&apiKey=1b496253e45e4fc2b46bf96bdfd3025b" alt="" className="arrow-icon" /></button>
+const GamesSection = ({ games }) => {
+  const navigate = useNavigate();
+
+  const handleGameClick = (path) => {
+    navigate(path);
+  };
+
+  return (
+    <div className="games-section">
+      <div className="games-header">
+        <h2 className="section-title">Explore Games</h2>
+        <button className="view-all-button"><span>View All</span><img src="https://cdn.builder.io/api/v1/image/assets/TEMP/84f114468c32a8742b810c1d02fef2aa97bc858e?placeholderIfAbsent=true&apiKey=1b496253e45e4fc2b46bf96bdfd3025b" alt="" className="arrow-icon" /></button>
+      </div>
+      <div className="games-list">
+        {games.length === 0 ? (
+          <div className="text-gray-400 text-center py-8">No games available.</div>
+        ) : (
+          games.map((game) => (
+            <div key={game.id} onClick={() => handleGameClick(game.path)} style={{ cursor: 'pointer' }}>
+              <GameCard
+                image={game.image}
+                title={game.title}
+                description={game.description}
+                color={game.color}
+              />
+            </div>
+          ))
+        )}
+      </div>
     </div>
-    <div className="games-list">
-      {games.length === 0 ? <div className="text-gray-400 text-center py-8">No games available.</div> : games.map((game) => <GameCard key={game.id} image={game.image} title={game.title} description={game.description} color={game.color} />)}
-    </div>
-  </div>
-);
+  );
+};
 
 const DashboardReturning = () => {
   const [learningItems, setLearningItems] = useState([]);
@@ -137,7 +159,7 @@ const DashboardReturning = () => {
       description: 'Lorem ipsum dolor sit amet consectetur. Cursus diam nisi sit lacinia diam integer urna proin malesuada.',
       image: 'https://cdn.builder.io/api/v1/image/assets/TEMP/620c4404ba32be14d604579e55c1a6f129050c79?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775',
       color: 'blue',
-      path: '/games/racing'
+      path: '/game' // Changed from '/games/racing' to match your route
     },
     {
       id: 'game-2',
@@ -145,7 +167,7 @@ const DashboardReturning = () => {
       description: 'Lorem ipsum dolor sit amet consectetur. Cursus diam nisi sit lacinia diam integer urna proin malesuada.',
       image: 'https://cdn.builder.io/api/v1/image/assets/TEMP/0fac39aa374587add36623d9f96c01305d023183?placeholderIfAbsent=true&apiKey=c188224ad6fd4a1e9cd2698c98d29775',
       color: 'green',
-      path: '/games'
+      path: '/game' // Changed from '/games' to match your route
     }
   ];
 

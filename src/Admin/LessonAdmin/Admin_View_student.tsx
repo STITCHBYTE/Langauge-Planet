@@ -2,9 +2,52 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiSearch, FiFilter, FiCopy, FiMoreVertical, FiArrowLeft } from "react-icons/fi";
 import { toast } from "react-toastify";
-import Header from "../../Component/Home/Header.tsx";
-import Sidebar from "../../Component/Home/Sidebar.tsx";
+// import Header from "../../Component/Home/Header.tsx";
+import Sidebar from "../Sidebar.tsx";
 import Server_url from "../../config.js";
+import { useView } from '../../Context/ViewContext.tsx'; 
+// Header Component
+const Header: React.FC = () => {
+    const { currentUser } = useView(); // Import useView from your ViewContext
+    
+    return (
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center px-8 justify-between">
+            <div>
+                <h1 className="text-xl font-bold text-gray-800">Lesson</h1>
+            </div>
+            <div className="flex items-center space-x-6">
+               
+                <div className="flex items-center space-x-3">
+                    {currentUser?.avatar_url ? (
+                        <img 
+                            src={currentUser.avatar_url} 
+                            alt={currentUser.first_name || 'User'} 
+                            className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-lg border-2 border-blue-100">
+                            {currentUser ? 
+                                (currentUser.first_name?.[0] || currentUser.username?.[0] || 'U').toUpperCase()
+                                : 'AD'
+                            }
+                        </div>
+                    )}
+                    <div className="hidden sm:block">
+                        <p className="text-sm font-medium text-gray-800">
+                            {currentUser?.first_name && currentUser?.last_name 
+                                ? `${currentUser.first_name} ${currentUser.last_name}`
+                                : currentUser?.username || 'Admin Panel'
+                            }
+                        </p>
+                        <p className="text-xs text-gray-500">
+                            {currentUser?.is_superuser ? 'Super User' : 'Admin'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </header>
+    );
+};
 
 const ViewStudent: React.FC = () => {
   const { lesson_id } = useParams();
@@ -125,14 +168,11 @@ const ViewStudent: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#f8fafc] min-h-screen flex flex-col">
-      <div>
-        <Sidebar />
-      </div>
-      <div className="ml-[17%]">
-        <Header />
-
-        <div className="flex-1 flex flex-col p-6">
+     <div className="flex h-screen bg-slate-50">
+            <Sidebar />
+            <div className="flex-1 flex flex-col">
+                <Header />
+                <div className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto">
           <div className="flex items-center text-sm mb-6 flex-wrap">
             <button onClick={() => navigate('/admin/lesson/display')} className="flex items-center text-gray-500 hover:text-gray-700">
               <FiArrowLeft className="h-4 w-4 mr-2" />

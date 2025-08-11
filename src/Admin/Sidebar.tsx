@@ -62,11 +62,11 @@ const Sidebar: React.FC = () => {
                 </a>
                 <a
                     className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 cursor-pointer relative ${
-                        isActive('/admin/lessons') ? 'bg-blue-500 text-white' : 'text-gray-700 hover:bg-gray-200'
+                        (isActive('/admin/lesson') || isActive('/admin/lessons')) ? 'bg-blue-500 text-white' : 'text-gray-700 hover:bg-gray-200'
                     }`}
-                    onClick={() => navigate('/admin/lessons')}
+                    onClick={() => navigate('/admin/lesson/display')}
                 >
-                    {isActive('/admin/lessons') && (
+                    {(isActive('/admin/lesson') || isActive('/admin/lessons')) && (
                         <span className="absolute left-0 top-0 h-full w-1 bg-blue-600 rounded-r"></span>
                     )}
                     <BookOpenIcon className="w-5 h-5" />
@@ -99,28 +99,38 @@ const Sidebar: React.FC = () => {
             </nav>
             <div className="p-4 border-t">
                 <div className="flex items-center">
-                    {currentUser.avatar_url ? (
+                    {currentUser?.avatar_url ? (
                         <img src={currentUser.avatar_url} alt={currentUser.name || currentUser.first_name || 'User'} className="w-10 h-10 rounded-full object-cover" />
                     ) : (
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-lg">
-                            {(currentUser.name || `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'U')
-                                .split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)}
+                            {currentUser ? 
+                                (currentUser.name || `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'U')
+                                    .split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) 
+                                : 'MB'
+                            }
                         </div>
                     )}
                     <div className="ml-3">
-                        {(() => {
-                            const name = currentUser.name || `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'User';
-                            const email = currentUser.email || '';
-                            return (
-                                <>
-                                    <p className="font-semibold text-sm text-gray-800">{name}</p>
-                                    <p className="text-xs text-gray-500">{email}</p>
-                                </>
-                            );
-                        })()}
+                        <p className="font-semibold text-sm text-gray-800">
+                            {currentUser ? 
+                                (currentUser.name || `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'User')
+                                : 'Mayur Bhargava'
+                            }
+                        </p>
+                        <p className="text-xs text-gray-500">
+                            {currentUser?.email || 'mayur@gmail.com'}
+                        </p>
                     </div>
-                    <button className="ml-auto text-gray-500 hover:text-gray-700">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    <button 
+                        className="ml-auto text-gray-500 hover:text-gray-700"
+                        onClick={() => {
+                            localStorage.removeItem('authToken');
+                            navigate('/login');
+                        }}
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
                     </button>
                 </div>
             </div>
